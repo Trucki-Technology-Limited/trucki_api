@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 25.0.1706.8
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "trucki_api", "trucki_api\trucki_api.csproj", "{8ADF1AEB-63E5-42DA-953A-B8FD4860ACDA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "trucki", "trucki\trucki.csproj", "{8ADF1AEB-63E5-42DA-953A-B8FD4860ACDA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

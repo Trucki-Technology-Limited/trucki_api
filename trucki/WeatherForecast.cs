@@ -1,4 +1,4 @@
-﻿namespace trucki_api;
+﻿namespace trucki;
 
 public class WeatherForecast
 {

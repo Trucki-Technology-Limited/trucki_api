@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace trucki_api.Controllers;
+namespace trucki.Controllers;
 
 [ApiController]
 [Route("[controller]")]
