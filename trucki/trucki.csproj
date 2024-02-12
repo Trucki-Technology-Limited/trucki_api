@@ -29,4 +29,11 @@
 		</Content>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="DTOs\" />
+	  <Folder Include="Mapper\" />
+	  <Folder Include="Interfaces\" />
+	  <Folder Include="Implementations\" />
+	</ItemGroup>
+
 </Project>
