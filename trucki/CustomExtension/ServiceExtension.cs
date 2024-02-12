@@ -2,15 +2,9 @@
 {
     public static class ServiceExtension
     {
-        public static void AddDependencyInjection(this IServiceCollection services, IConfiguration configuration)
+        public static void AddDependencyInjection(this IServiceCollection services)
         {
-            services.AddAuthorization(options =>
-            {
-
-                options.AddPolicy("CanDoSomething", policy =>
-                                  policy.RequireClaim("Permission", "Permission"));
-            });
-
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             //Mapper
             //services.AddScoped<Interface, Implemenation>();
 
