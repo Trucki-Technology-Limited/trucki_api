@@ -19,8 +19,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-var connectionString = config.GetConnectionString("connectionString");
-// SeedData.EnsureSeedData(connectionString).Wait();
+var connectionString = config.GetConnectionString("LocalConnection");
+SeedData.EnsureSeedData(connectionString).Wait();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -36,6 +36,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseIdentityServer();
+app.UseAuthentication();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

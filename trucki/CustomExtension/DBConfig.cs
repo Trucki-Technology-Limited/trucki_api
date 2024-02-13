@@ -11,7 +11,7 @@ namespace trucki.CustomExtension
 
             services.AddDbContext<TruckiDBContext>(options =>
             {
-                options.UseNpgsql(connectionString);
+                options.UseNpgsql(connectionString, sql => sql.MigrationsAssembly(typeof(DBConfig).Assembly.FullName));
             });
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         }

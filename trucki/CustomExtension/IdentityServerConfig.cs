@@ -10,7 +10,7 @@ public static class IdentityServerConfig
 		public static void AddIdentityServerConfig(this IServiceCollection serviceDescriptors, IConfiguration configuration)
 		{
             var assembly = typeof(IdentityServerConfig).Assembly.GetName().Name;
-            var connectionString = configuration.GetConnectionString("connectionString");
+            var connectionString = configuration.GetConnectionString("LocalConnection");
             var discoveryUrl = configuration.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value;
 
 
