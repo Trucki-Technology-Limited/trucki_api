@@ -39,6 +39,6 @@ jobs:
             
             docker build -t trucki-api -f trucki/Dockerfile trucki
             
-            docker stop trucki-api-container || true
-            docker rm trucki-api-container || true
-            docker run -d -p 8080:80 --name trucki-api-container trucki-api:latest
+            docker stop trucki-api || true
+            docker rm trucki-api || true
+            docker run -d -p 8080:80 --name trucki-api trucki-api:latest
