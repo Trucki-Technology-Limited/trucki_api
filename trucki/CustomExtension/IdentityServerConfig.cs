@@ -48,7 +48,16 @@ public static class IdentityServerConfig
                 options.SaveToken = true;
                 options.RequireHttpsMetadata = false;
             });
-
+            serviceDescriptors.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminPolicy", policy => policy.RequireRole("admin"));
+                options.AddPolicy("ManagerPolicy", policy => policy.RequireRole("manager"));
+                options.AddPolicy("DriverPolicy", policy => policy.RequireRole("driver"));
+                options.AddPolicy("CargoOwnerPolicy", policy => policy.RequireRole("cargo owner"));
+                options.AddPolicy("TransporterPolicy", policy => policy.RequireRole("transporter"));
+                options.AddPolicy("FinanceManagerPolicy", policy => policy.RequireRole("finance manager"));
+                options.AddPolicy("HrPolicy", policy => policy.RequireRole("hr"));
+            });
             var serviceProvider = serviceDescriptors.BuildServiceProvider();
             using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
             scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();

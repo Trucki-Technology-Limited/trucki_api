@@ -24,5 +24,7 @@ public static class IdentityConfiguration
             .AddEntityFrameworkStores<TruckiDBContext>()
             .AddDefaultTokenProviders(); // to provide the need token for reset password and confirm email
         // services.AddDefaultIdentity<ApplicationUser>();
+        services.AddIdentityCore<ApplicationRole>().AddRoles<ApplicationRole>()
+            .AddEntityFrameworkStores<TruckiDBContext>();
     }
 }
