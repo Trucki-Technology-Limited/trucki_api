@@ -38,10 +38,10 @@ jobs:
             ls -la
             
             # Stop and remove existing containers
-            docker-compose down
+            docker compose down
             
             # Build and start containers defined in docker-compose.yml
-            docker-compose up -d
+            docker compose up -d
             #docker build -t trucki-api -f trucki/Dockerfile trucki
             
             #docker stop trucki-api || true
