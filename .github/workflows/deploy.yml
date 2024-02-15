@@ -37,6 +37,8 @@ jobs:
             
             ls -la
             
+            cd trucki
+            
             # Stop and remove existing containers
             docker compose down
             
