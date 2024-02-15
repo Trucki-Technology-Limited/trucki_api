@@ -37,7 +37,7 @@ jobs:
             
             ls -la
             
-            docker build -t trucki -f trucki/Dockerfile trucki
+            docker build -t trucki-api -f trucki/Dockerfile trucki
             
             docker stop trucki-api-container || true
             docker rm trucki-api-container || true
