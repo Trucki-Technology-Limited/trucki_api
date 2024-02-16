@@ -6,7 +6,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace trucki.Migrations.ConfigurationDb
 {
-    public partial class addSeedDat : Migration
+    public partial class removeRolesAndPermission : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

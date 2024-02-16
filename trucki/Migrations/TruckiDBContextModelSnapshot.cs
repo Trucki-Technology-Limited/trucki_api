@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using trucki.DBContext;
+using trucki.DatabaseContext;
 
 #nullable disable
 
@@ -154,7 +154,7 @@ namespace trucki.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("trucki.Models.Driver", b =>
+            modelBuilder.Entity("trucki.Entities.Driver", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -192,7 +192,7 @@ namespace trucki.Migrations
                     b.ToTable("Drivers");
                 });
 
-            modelBuilder.Entity("trucki.Models.Location", b =>
+            modelBuilder.Entity("trucki.Entities.Location", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -230,7 +230,7 @@ namespace trucki.Migrations
                     b.ToTable("Locations");
                 });
 
-            modelBuilder.Entity("trucki.Models.Manager", b =>
+            modelBuilder.Entity("trucki.Entities.Manager", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -265,7 +265,7 @@ namespace trucki.Migrations
                     b.ToTable("Managers");
                 });
 
-            modelBuilder.Entity("trucki.Models.User", b =>
+            modelBuilder.Entity("trucki.Entities.User", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -357,7 +357,7 @@ namespace trucki.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("trucki.Models.User", null)
+                    b.HasOne("trucki.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -366,7 +366,7 @@ namespace trucki.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("trucki.Models.User", null)
+                    b.HasOne("trucki.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -381,7 +381,7 @@ namespace trucki.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("trucki.Models.User", null)
+                    b.HasOne("trucki.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -390,7 +390,7 @@ namespace trucki.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("trucki.Models.User", null)
+                    b.HasOne("trucki.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

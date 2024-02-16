@@ -2,9 +2,9 @@
 using System.Net;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
-using trucki.DBContext;
+using trucki.DatabaseContext;
+using trucki.Entities;
 using trucki.Interfaces.IServices;
-using trucki.Models;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 

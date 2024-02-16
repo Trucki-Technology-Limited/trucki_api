@@ -1,7 +1,8 @@
 using IdentityModel.Client;
 using Microsoft.Extensions.Options;
+using trucki.Entities;
 using trucki.Interfaces.IServices;
-using trucki.Models;
+
 
 namespace trucki.Services;
 

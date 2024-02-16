@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace trucki.Migrations.ConfigurationDb
 {
     [DbContext(typeof(ConfigurationDbContext))]
-    [Migration("20240212224828_addSeedDat")]
-    partial class addSeedDat
+    [Migration("20240216111713_removeRolesAndPermission")]
+    partial class removeRolesAndPermission
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
