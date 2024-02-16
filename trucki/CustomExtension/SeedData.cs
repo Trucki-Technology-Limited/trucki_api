@@ -11,8 +11,8 @@ namespace trucki.CustomExtension;
 
 public class SeedData
     {
-        private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private static UserManager<User> _userManager;
+        private static RoleManager<IdentityRole> _roleManager;
         
         public SeedData(UserManager<User> userManager,RoleManager<IdentityRole> roleManager
     
@@ -48,6 +48,7 @@ public class SeedData
             var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
             context.Database.Migrate();
             EnsureSeedData(context);
+            // await SeedAsync();
             var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
             ctx.Database.Migrate();
         }
@@ -192,7 +193,7 @@ public class SeedData
 
         }
         
-        public async Task SeedAsync()
+        private static async Task SeedAsync()
 {
     // Create roles if they don't exist
     var roles = new[] { "admin", "manager", "driver", "cargo owner", "transporter", "finance manager", "hr" };

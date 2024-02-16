@@ -60,7 +60,7 @@ public static class IdentityServerConfig
             });
             serviceDescriptors.AddCors(options =>
             {
-                options.AddPolicy("CorsPolicy", builder =>
+                options.AddDefaultPolicy(builder =>
                 {
                     builder.WithOrigins("*");
                     builder.AllowAnyMethod();            
