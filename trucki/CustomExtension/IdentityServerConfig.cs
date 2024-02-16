@@ -62,7 +62,7 @@ public static class IdentityServerConfig
             {
                 options.AddPolicy("CorsPolicy", builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000");
+                    builder.WithOrigins("*");
                     builder.AllowAnyMethod();            
                     builder.AllowAnyHeader();            
                 });
