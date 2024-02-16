@@ -1,7 +1,7 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using trucki.Models;
+using trucki.Entities;
 
 namespace trucki.CustomExtension;
 
@@ -48,7 +48,25 @@ public static class IdentityServerConfig
                 options.SaveToken = true;
                 options.RequireHttpsMetadata = false;
             });
-
+            serviceDescriptors.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminPolicy", policy => policy.RequireRole("admin"));
+                options.AddPolicy("ManagerPolicy", policy => policy.RequireRole("manager"));
+                options.AddPolicy("DriverPolicy", policy => policy.RequireRole("driver"));
+                options.AddPolicy("CargoOwnerPolicy", policy => policy.RequireRole("cargo owner"));
+                options.AddPolicy("TransporterPolicy", policy => policy.RequireRole("transporter"));
+                options.AddPolicy("FinanceManagerPolicy", policy => policy.RequireRole("finance manager"));
+                options.AddPolicy("HrPolicy", policy => policy.RequireRole("hr"));
+            });
+            serviceDescriptors.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", builder =>
+                {
+                    builder.WithOrigins("http://localhost:3000");
+                    builder.AllowAnyMethod();            
+                    builder.AllowAnyHeader();            
+                });
+            });
             var serviceProvider = serviceDescriptors.BuildServiceProvider();
             using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
             scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();

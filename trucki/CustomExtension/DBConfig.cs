@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using trucki.DBContext;
+using trucki.DatabaseContext;
 
 namespace trucki.CustomExtension
 {

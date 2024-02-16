@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using trucki.CustomExtension;
-using trucki.DBContext;
+using trucki.DatabaseContext;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;

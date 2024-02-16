@@ -3,13 +3,24 @@ using Duende.IdentityServer.EntityFramework.Mappers;
 using Duende.IdentityServer.EntityFramework.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using trucki.DBContext;
-using trucki.Models;
+using trucki.DatabaseContext;
+using trucki.Entities;
+
 
 namespace trucki.CustomExtension;
 
 public class SeedData
     {
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        
+        public SeedData(UserManager<User> userManager,RoleManager<IdentityRole> roleManager
+    
+        )
+        {
+            _userManager = userManager;
+            _roleManager = roleManager;
+        }
         public static async Task EnsureSeedData(string connectionString)
         {
             var services = new ServiceCollection();
@@ -180,4 +191,44 @@ public class SeedData
             }
 
         }
+        
+        public async Task SeedAsync(CancellationToken cancellationToken = default)
+{
+    // Create roles if they don't exist
+    var roles = new[] { "admin", "manager", "driver", "cargo owner", "transporter", "finance manager", "hr" };
+    foreach (var roleName in roles)
+    {
+        if (!await _roleManager.RoleExistsAsync(roleName))
+        {
+            await _roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
+
+    // Create permissions if they don't exist (add your permission logic here)
+    // ...
+    
+    if (await _userManager.FindByEmailAsync("admin@trucki.com")== null)
+    {
+        var user = new User
+        {
+            Id = "admin",
+            UserName = "admin@trucki.com",
+            NormalizedUserName = "admin@trucki.com".ToUpper(),
+            Email = "admin@trucki.com",
+            NormalizedEmail = "admin@trucki.com".ToUpper(),
+            EmailConfirmed = true,
+            PasswordHash = new PasswordHasher<User>().HashPassword(null, "Admin@1234"), // Change to your desired password
+            SecurityStamp = string.Empty,
+            firstName = "Trucki",
+            lastName = "Admin",
+            IsActive = true,
+        };
+
+        var result = await _userManager.CreateAsync(user);
+        if (result.Succeeded)
+        {
+            await _userManager.AddToRoleAsync(user, "admin");
+        }
+    }
+}
     }

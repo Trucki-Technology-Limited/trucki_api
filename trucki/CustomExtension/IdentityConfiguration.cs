@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
-using trucki.DBContext;
-using trucki.Models;
+using trucki.DatabaseContext;
+using trucki.Entities;
+
 
 namespace trucki.CustomExtension;
 
@@ -24,5 +25,7 @@ public static class IdentityConfiguration
             .AddEntityFrameworkStores<TruckiDBContext>()
             .AddDefaultTokenProviders(); // to provide the need token for reset password and confirm email
         // services.AddDefaultIdentity<ApplicationUser>();
+        // services.AddIdentityCore<ApplicationRole>().AddRoles<ApplicationRole>()
+        //     .AddEntityFrameworkStores<TruckiDBContext>();
     }
 }

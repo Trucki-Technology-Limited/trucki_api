@@ -1,4 +1,4 @@
-﻿namespace trucki.Models
+﻿namespace trucki.Entities
 {
     public class Location : BaseClass
     {

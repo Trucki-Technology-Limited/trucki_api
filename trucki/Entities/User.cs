@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace trucki.Models;
+namespace trucki.Entities;
 
 public class User: IdentityUser
 {

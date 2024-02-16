@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace trucki.Models
+namespace trucki.Entities
 {
     public class Driver : BaseClass
     {
