@@ -192,7 +192,7 @@ public class SeedData
 
         }
         
-        public async Task SeedAsync(CancellationToken cancellationToken = default)
+        public async Task SeedAsync()
 {
     // Create roles if they don't exist
     var roles = new[] { "admin", "manager", "driver", "cargo owner", "transporter", "finance manager", "hr" };
