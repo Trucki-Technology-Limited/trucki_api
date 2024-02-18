@@ -42,10 +42,5 @@ jobs:
             # Stop and remove existing containers
             docker compose down
             
-            # Build and start containers defined in docker-compose.yml
             docker compose up -d
-            #docker build -t trucki-api -f trucki/Dockerfile trucki
-            
-            #docker stop trucki-api || true
-            #docker rm trucki-api || true
-            #docker run -d -p 8080:80 --name trucki-api trucki-api:latest
+
