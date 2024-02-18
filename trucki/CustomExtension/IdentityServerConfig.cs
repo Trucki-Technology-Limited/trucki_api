@@ -9,16 +9,6 @@ public static class IdentityServerConfig
 	{
 		public static void AddIdentityServerConfig(this IServiceCollection serviceDescriptors, IConfiguration configuration)
 		{
-            serviceDescriptors.AddCors(options =>
-            {
-                options.AddDefaultPolicy(builder =>
-                {
-                    builder.AllowAnyOrigin();
-                    builder.AllowCredentials();
-                    builder.AllowAnyMethod();            
-                    builder.AllowAnyHeader();            
-                });
-            });
             var assembly = typeof(IdentityServerConfig).Assembly.GetName().Name;
             var connectionString = configuration.GetConnectionString("LocalConnection");
             var discoveryUrl = configuration.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value;
