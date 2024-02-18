@@ -13,7 +13,7 @@ public static class IdentityServerConfig
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.AllowAnyOrigin();
+                    builder.WithOrigins("http://localhost:3000");
                     builder.AllowAnyMethod();            
                     builder.AllowAnyHeader();            
                 });
