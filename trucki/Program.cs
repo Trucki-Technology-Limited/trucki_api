@@ -40,9 +40,7 @@ app.UseIdentityServer();
 app.UseAuthentication();
 app.UseHttpsRedirection();
 app.UseCors();
-app.UseAuthorization();
-
 app.MapControllers();
-
+app.UseAuthorization();
 app.Run();
 

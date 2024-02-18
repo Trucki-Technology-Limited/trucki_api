@@ -9,6 +9,15 @@ public static class IdentityServerConfig
 	{
 		public static void AddIdentityServerConfig(this IServiceCollection serviceDescriptors, IConfiguration configuration)
 		{
+            serviceDescriptors.AddCors(options =>
+            {
+                options.AddDefaultPolicy(builder =>
+                {
+                    builder.AllowAnyOrigin();
+                    builder.AllowAnyMethod();            
+                    builder.AllowAnyHeader();            
+                });
+            });
             var assembly = typeof(IdentityServerConfig).Assembly.GetName().Name;
             var connectionString = configuration.GetConnectionString("LocalConnection");
             var discoveryUrl = configuration.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value;
@@ -57,15 +66,6 @@ public static class IdentityServerConfig
                 options.AddPolicy("TransporterPolicy", policy => policy.RequireRole("transporter"));
                 options.AddPolicy("FinanceManagerPolicy", policy => policy.RequireRole("finance manager"));
                 options.AddPolicy("HrPolicy", policy => policy.RequireRole("hr"));
-            });
-            serviceDescriptors.AddCors(options =>
-            {
-                options.AddDefaultPolicy(builder =>
-                {
-                    builder.AllowAnyOrigin();
-                    builder.AllowAnyMethod();            
-                    builder.AllowAnyHeader();            
-                });
             });
             var serviceProvider = serviceDescriptors.BuildServiceProvider();
             using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
