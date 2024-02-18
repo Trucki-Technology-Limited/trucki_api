@@ -20,14 +20,13 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 app.UseCors();
 var connectionString = config.GetConnectionString("LocalConnection");
-SeedData.EnsureSeedData(connectionString).Wait();
 
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<TruckiDBContext>();
     context.Database.Migrate();
 }
-
+SeedData.EnsureSeedData(connectionString).Wait();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
