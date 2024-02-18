@@ -1,10 +1,8 @@
 ﻿namespace trucki.Entities
 {
-    public class Location : BaseClass
+    public class Routes : BaseClass
     {
         public string Name { get; set; }
-
-        public int NumberOfTons { get; set; }
 
         public string FromRoute { get; set; }
 
@@ -12,7 +10,9 @@
 
         public float Price { get; set; }
 
-        public string Address { get; set; }
+        public bool IsActive { get; set; }
+        
+        public Business? User { get; set; }
 
     }
 }

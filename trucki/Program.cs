@@ -39,7 +39,7 @@ if (app.Environment.IsDevelopment())
 app.UseIdentityServer();
 app.UseAuthentication();
 app.UseHttpsRedirection();
-
+app.UseCors();
 app.UseAuthorization();
 
 app.MapControllers();

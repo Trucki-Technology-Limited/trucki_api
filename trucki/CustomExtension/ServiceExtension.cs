@@ -1,4 +1,6 @@
-﻿using trucki.Interfaces.IServices;
+﻿using trucki.Interfaces.IRepository;
+using trucki.Interfaces.IServices;
+using trucki.Repository;
 using trucki.Services;
 
 namespace trucki.CustomExtension
@@ -10,6 +12,8 @@ namespace trucki.CustomExtension
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IAdminRepository, AdminRepository>();
+            services.AddScoped<IAdminService, AdminService>();
             //Mapper
             //services.AddScoped<Interface, Implemenation>();
 

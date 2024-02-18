@@ -62,7 +62,7 @@ public static class IdentityServerConfig
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("*");
+                    builder.WithOrigins("*", "localhost:3000","http://localhost:3000","http://69.10.59.248");
                     builder.AllowAnyMethod();            
                     builder.AllowAnyHeader();            
                 });
