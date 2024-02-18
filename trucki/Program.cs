@@ -28,6 +28,17 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
+app.UseCors(builder =>
+{
+    builder
+        .WithOrigins("http://localhost:3000", "https://localhost:3000")
+        .SetIsOriginAllowedToAllowWildcardSubdomains()
+        .AllowAnyHeader()
+        .AllowCredentials()
+        .WithMethods("GET", "PUT", "POST", "DELETE", "OPTIONS")
+        .SetPreflightMaxAge(TimeSpan.FromSeconds(3600));
+
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
