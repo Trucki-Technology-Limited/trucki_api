@@ -13,7 +13,7 @@ namespace trucki.CustomExtension
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000","https://localhost:3000","http://127.0.0.1:3000", "http://172.21.192.1:8080", "http://172.19.240.1:8080", "http://127.0.0.1:8080", " http://172.27.48.1:8080", "https://69.10.59.248", "http://69.10.59.248") // Replace with your HTML file's origin
+                    builder.WithOrigins("http://localhost:3000","https://localhost:3000", "https://69.10.59.248", "http://69.10.59.248") // Replace with your HTML file's origin
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
