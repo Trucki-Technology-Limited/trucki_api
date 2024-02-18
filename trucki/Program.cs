@@ -36,10 +36,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors();
 app.UseIdentityServer();
 app.UseAuthentication();
 app.UseHttpsRedirection();
-app.UseCors();
 app.MapControllers();
 app.UseAuthorization();
 app.Run();
