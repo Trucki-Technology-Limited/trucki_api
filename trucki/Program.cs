@@ -14,11 +14,11 @@ builder.Services.AddDependencyInjection();
 
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseCors();
 var connectionString = config.GetConnectionString("LocalConnection");
 SeedData.EnsureSeedData(connectionString).Wait();
 
@@ -37,9 +37,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseIdentityServer();
-app.UseCors();
 app.UseAuthentication();
-// app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 app.MapControllers();
 app.UseAuthorization();
 app.Run();
