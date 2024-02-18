@@ -35,11 +35,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseIdentityServer();
-app.UseCors();
-app.UseAuthentication();
 app.UseHttpsRedirection();
+app.UseIdentityServer();
+app.UseAuthentication();
 app.MapControllers();
 app.UseAuthorization();
 app.Run();
