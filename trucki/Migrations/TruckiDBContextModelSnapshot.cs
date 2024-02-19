@@ -8,7 +8,7 @@ using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations.TruckiDB
+namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
     partial class TruckiDBContextModelSnapshot : ModelSnapshot

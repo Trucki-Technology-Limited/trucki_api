@@ -9,10 +9,10 @@ using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations.TruckiDB
+namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
-    [Migration("20240219080239_initialMigration")]
+    [Migration("20240219090853_initialMigration")]
     partial class initialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
