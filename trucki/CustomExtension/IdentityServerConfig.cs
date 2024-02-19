@@ -59,12 +59,12 @@ public static class IdentityServerConfig
                 options.AddPolicy("FinanceManagerPolicy", policy => policy.RequireRole("finance manager"));
                 options.AddPolicy("HrPolicy", policy => policy.RequireRole("hr"));
             });
-            var serviceProvider = serviceDescriptors.BuildServiceProvider();
-            using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
-            scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
-            //scope.ServiceProvider.GetService<OperationalDbContext>().Database.Migrate();
-            var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
-            context.Database.Migrate();
-            //EnsureSeedData(context, configuration);
+            // var serviceProvider = serviceDescriptors.BuildServiceProvider();
+            // using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            // scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
+            // //scope.ServiceProvider.GetService<OperationalDbContext>().Database.Migrate();
+            // var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
+            // context.Database.Migrate();
+            // //EnsureSeedData(context, configuration);
         }
     }

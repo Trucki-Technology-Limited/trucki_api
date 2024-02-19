@@ -12,7 +12,7 @@ using trucki.DatabaseContext;
 namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
-    [Migration("20240219090853_initialMigration")]
+    [Migration("20240219101654_initialMigration")]
     partial class initialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

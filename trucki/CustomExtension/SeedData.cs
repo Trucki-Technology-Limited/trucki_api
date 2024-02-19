@@ -42,12 +42,12 @@ public class SeedData
         });
         var serviceProvider = services.BuildServiceProvider();
         using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
-        scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
         var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
         context.Database.Migrate();
-        EnsureSeedData(context);
         var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
         ctx.Database.Migrate();
+        scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
+        EnsureSeedData(context);
         await SeedAsync(serviceProvider);
     }
 
