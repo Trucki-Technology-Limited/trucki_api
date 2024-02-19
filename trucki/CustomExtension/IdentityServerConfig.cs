@@ -63,8 +63,8 @@ public static class IdentityServerConfig
             using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
             var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
             ctx.Database.Migrate();
-            scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
             var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
             context.Database.Migrate();
+            scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
         }
     }
