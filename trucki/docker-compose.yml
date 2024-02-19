@@ -25,7 +25,7 @@ services:
       POSTGRES_DB: truckiDb
     restart: always
     volumes:
-      - postgres_datab:/var/lib/postgresql/data
+      - postgres_dat:/var/lib/postgresql/data
     networks:
       - aspnetcoreapp-network
 
@@ -35,4 +35,4 @@ networks:
     
 
 volumes:
-  postgres_datab:
+  postgres_dat:
