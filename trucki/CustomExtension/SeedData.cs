@@ -46,9 +46,9 @@ public class SeedData
         var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
         context.Database.Migrate();
         EnsureSeedData(context);
-        await SeedAsync(serviceProvider);
         var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
         ctx.Database.Migrate();
+        await SeedAsync(serviceProvider);
     }
 
     private static void EnsureSeedData(ConfigurationDbContext context)
