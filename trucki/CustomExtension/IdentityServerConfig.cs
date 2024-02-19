@@ -1,6 +1,7 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using trucki.DatabaseContext;
 using trucki.Entities;
 
 namespace trucki.CustomExtension;
@@ -60,6 +61,8 @@ public static class IdentityServerConfig
             });
             var serviceProvider = serviceDescriptors.BuildServiceProvider();
             using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
+            ctx.Database.Migrate();
             scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
             var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
             context.Database.Migrate();
