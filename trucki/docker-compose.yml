@@ -6,7 +6,7 @@ services:
     image: 'aspnetcoreapp'
     build:
       context: .
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     environment:
       ConnectionStrings__LocalConnection: Server=postgres;Database=truckiDb;User ID=trucki;Password=12345;Port=5432
     ports:
