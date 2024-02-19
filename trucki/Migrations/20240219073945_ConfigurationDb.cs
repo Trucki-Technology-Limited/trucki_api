@@ -4,9 +4,9 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace trucki.Migrations.ConfigurationDb
+namespace trucki.Migrations
 {
-    public partial class removeRolesAndPermission : Migration
+    public partial class ConfigurationDb : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

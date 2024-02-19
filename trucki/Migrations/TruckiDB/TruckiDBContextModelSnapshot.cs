@@ -8,7 +8,7 @@ using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
     partial class TruckiDBContextModelSnapshot : ModelSnapshot
@@ -263,6 +263,9 @@ namespace trucki.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<string>("BusinessId")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -287,14 +290,11 @@ namespace trucki.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("BusinessId");
 
-                    b.ToTable("Locations");
+                    b.ToTable("RoutesEnumerable");
                 });
 
             modelBuilder.Entity("trucki.Entities.User", b =>
@@ -431,11 +431,11 @@ namespace trucki.Migrations
 
             modelBuilder.Entity("trucki.Entities.Routes", b =>
                 {
-                    b.HasOne("trucki.Entities.Business", "User")
+                    b.HasOne("trucki.Entities.Business", "Business")
                         .WithMany("Routes")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("BusinessId");
 
-                    b.Navigation("User");
+                    b.Navigation("Business");
                 });
 
             modelBuilder.Entity("trucki.Entities.Business", b =>

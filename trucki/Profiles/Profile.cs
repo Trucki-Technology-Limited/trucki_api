@@ -9,6 +9,8 @@ public class Profiles : Profile
     public Profiles()
     {
         CreateMap<AllBusinessResponseModel, Business>().ReverseMap();
+        CreateMap<BusinessResponseModel, Business>().ReverseMap();
+        CreateMap<RouteResponseModel, Routes>().ReverseMap();
 
     }
 }
