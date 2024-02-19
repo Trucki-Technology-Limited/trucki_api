@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace trucki.Migrations.PersistedGrantDb
 {
-    public partial class removeRolesAndPermission : Migration
+    public partial class PersistedGrantDb : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

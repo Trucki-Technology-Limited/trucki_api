@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_PASSWORD: 12345
       POSTGRES_USER: trucki
-      POSTGRES_DB: trucki_DB
+      POSTGRES_DB: truckiDb
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -16,7 +16,7 @@ services:
     depends_on:
       - postgres
     environment:
-      ConnectionStrings__LocalConnection: Server=postgres;Database=trucki_DB;User ID=trucki;Password=12345;Port=5432
+      ConnectionStrings__LocalConnection: Server=postgres;Database=truckiDb;User ID=trucki;Password=12345;Port=5432
     ports:
       - "8080:80"
 

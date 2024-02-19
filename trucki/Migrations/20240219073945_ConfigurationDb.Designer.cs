@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace trucki.Migrations.ConfigurationDb
+namespace trucki.Migrations
 {
     [DbContext(typeof(ConfigurationDbContext))]
-    [Migration("20240216111713_removeRolesAndPermission")]
-    partial class removeRolesAndPermission
+    [Migration("20240219073945_ConfigurationDb")]
+    partial class ConfigurationDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

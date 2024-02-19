@@ -12,7 +12,6 @@
 
         public bool IsActive { get; set; }
         
-        public Business? User { get; set; }
-
+        public Business? Business { get; set; }
     }
 }

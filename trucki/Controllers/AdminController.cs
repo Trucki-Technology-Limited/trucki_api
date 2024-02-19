@@ -24,10 +24,22 @@ namespace trucki.Controllers
             return StatusCode(result.StatusCode, result);
         }
         [HttpGet("GetAllBusiness")]
-        public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetUserCards()
+        public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
         {
-            var profile = await _adminService.GetAllBusiness();
-            return StatusCode(profile.StatusCode, profile);
+            var business = await _adminService.GetAllBusiness();
+            return StatusCode(business.StatusCode, business);
+        }
+        [HttpPost("AddRouteToBusiness")]
+        public async Task<IActionResult> AddRouteToBusiness([FromBody] AddRouteToBusinessRequestModel model)
+        {
+            var result = await _adminService.AddRouteToBusiness(model);
+            return StatusCode(result.StatusCode, result);
+        }
+        [HttpGet("GetBusinessById")]
+        public async Task<ActionResult<ApiResponseModel<BusinessResponseModel>>> GetBusinessById(string businessId)
+        {
+            var business = await _adminService.GetBusinessById(businessId);
+            return StatusCode(business.StatusCode, business);
         }
     }
 }

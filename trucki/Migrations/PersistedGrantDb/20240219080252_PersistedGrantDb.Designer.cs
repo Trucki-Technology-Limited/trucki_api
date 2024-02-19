@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace trucki.Migrations.PersistedGrantDb
 {
     [DbContext(typeof(PersistedGrantDbContext))]
-    [Migration("20240216111721_removeRolesAndPermission")]
-    partial class removeRolesAndPermission
+    [Migration("20240219080252_PersistedGrantDb")]
+    partial class PersistedGrantDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
