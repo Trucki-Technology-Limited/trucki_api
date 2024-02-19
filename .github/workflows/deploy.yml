@@ -39,8 +39,8 @@ jobs:
             
             cd trucki
             
-            # Stop and remove existing containers
-            docker compose down
+            docker build -t trucki -f Dockerfile trucki
             
-            docker compose up -d
-
+            docker stop trucki-container || true
+            docker rm trucki-container || true
+            docker run -d -p 8080:80 --name trucki-container trucki:latest
