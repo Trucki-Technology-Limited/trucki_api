@@ -6,6 +6,7 @@ namespace trucki.Entities
     {
         public string Name { get; set; }
 
+        // this is suppose to string not int
         public string Phone { get; set; }
 
         [EmailAddress]
