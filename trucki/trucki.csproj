@@ -8,6 +8,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Implementations\**" />
+	  <Compile Remove="Mapper\**" />
+	  <Content Remove="Implementations\**" />
+	  <Content Remove="Mapper\**" />
+	  <EmbeddedResource Remove="Implementations\**" />
+	  <EmbeddedResource Remove="Mapper\**" />
+	  <None Remove="Implementations\**" />
+	  <None Remove="Mapper\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="13.0.1" />
 		<PackageReference Include="Duende.IdentityServer" Version="6.0.0" />
 		<PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="6.0.0" />
@@ -31,9 +42,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="DTOs\" />
-	  <Folder Include="Mapper\" />
-	  <Folder Include="Implementations\" />
+	  <Folder Include="Common\" />
+	  <Folder Include="Shared\" />
 	</ItemGroup>
 
 </Project>
