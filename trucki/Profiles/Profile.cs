@@ -1,4 +1,5 @@
 using AutoMapper;
+using trucki.DTOs;
 using trucki.Entities;
 using trucki.Models.ResponseModels;
 
@@ -11,6 +12,9 @@ public class Profiles : Profile
         CreateMap<AllBusinessResponseModel, Business>().ReverseMap();
         CreateMap<BusinessResponseModel, Business>().ReverseMap();
         CreateMap<RouteResponseModel, Routes>().ReverseMap();
+        CreateMap<DriverResponse, Driver>().ReverseMap();
+        CreateMap<DriversResponse, Driver>().ReverseMap();
+
 
     }
 }
