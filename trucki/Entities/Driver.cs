@@ -6,8 +6,7 @@ namespace trucki.Entities
     {
         public string Name { get; set; }
 
-        [MaxLength(11)]
-        public int Phone { get; set; }
+        public string Phone { get; set; }
 
         [EmailAddress]
         public string EmailAddress { get; set; }
