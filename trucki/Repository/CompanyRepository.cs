@@ -12,7 +12,7 @@ namespace trucki.Repository
 
         public void CreateTruckiCompanies(Company company) => Create(company);
         public void UpdateTruckiCompanies(Company company) => Update(company);
-        public async Task SaveAsync() => await SaveAsync();
+        public async Task SaveAsync() => await SaveChangesAsync();
     }
 }
     

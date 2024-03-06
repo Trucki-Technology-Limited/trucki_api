@@ -5,10 +5,10 @@ namespace trucki.Entities
     public class Manager : BaseClass
 
     {
-        public string Name { get; set; }
+        public string? ManagerName { get; set; }
 
        // [MaxLength(11)]
-        public string Phone { get; set; }
+        public string PhoneNumber { get; set; }
 
         [EmailAddress]
         public string EmailAddress { get; set; }
