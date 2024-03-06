@@ -1,5 +1,12 @@
-﻿namespace trucki.Repository
+﻿using Microsoft.EntityFrameworkCore;
+using trucki.DatabaseContext;
+using trucki.DTOs;
+using trucki.Entities;
+using trucki.Interfaces.IRepository;
+
+namespace trucki.Repository
 {
+    public class DriverRepository : RepositoryBase<Driver>, IDriverRepository
     {
         public DriverRepository(TruckiDBContext repositoryContext) : base(repositoryContext)
         { }
