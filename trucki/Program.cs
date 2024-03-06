@@ -10,17 +10,19 @@ builder.Services.AddDbConfiguration(config);
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
 builder.Services.AddDependencyInjection();
-
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());    
+builder.Services.ConfigureDatabaseContext(config);
 
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 var app = builder.Build();
-var connectionString = config.GetConnectionString("LocalConnection");
+/*var connectionString = config.GetConnectionString("LocalConnection");
 SeedData.EnsureSeedData(connectionString).Wait();
-// using (var scope = app.Services.CreateScope())
+*/// using (var scope = app.Services.CreateScope())
 // {
 //     var context = scope.ServiceProvider.GetRequiredService<TruckiDBContext>();
 //     context.Database.Migrate();

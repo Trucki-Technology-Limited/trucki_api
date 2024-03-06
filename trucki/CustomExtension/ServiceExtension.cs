@@ -1,4 +1,6 @@
-﻿using trucki.Interfaces.IRepository;
+﻿using Microsoft.EntityFrameworkCore;
+using trucki.DatabaseContext;
+using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Repository;
 using trucki.Services;
@@ -25,5 +27,8 @@ namespace trucki.CustomExtension
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IAdminService, AdminService>();
         }
+
+        public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>
+          services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection")));
     }
 }
