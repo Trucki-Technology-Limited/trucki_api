@@ -26,6 +26,10 @@ namespace trucki.CustomExtension
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddScoped<ICompanyServices, CompanyServices>();  
+            services.AddScoped<IDriverRepository, DriverRepository>();
+            services.AddScoped<IDriverService, DriverService>();    
         }
 
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>

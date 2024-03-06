@@ -9,8 +9,7 @@ var config = builder.Configuration;
 builder.Services.AddDbConfiguration(config);
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
-builder.Services.AddDependencyInjection();
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());    
+builder.Services.AddDependencyInjection();  
 builder.Services.ConfigureDatabaseContext(config);
 
 
