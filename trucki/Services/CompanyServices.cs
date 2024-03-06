@@ -19,7 +19,7 @@ namespace trucki.Services
 
         public async Task<GenericResponse<string>> CreateTruckiComapnyAsync(CreateCompanyDto createCompany)
         {
-            //var company = _mapper.Map<Company>(createCompany);
+            // var company = _mapper.Map<Company>(createCompany);
 
             var company = new Company
             {
@@ -27,6 +27,7 @@ namespace trucki.Services
                 Address = createCompany.Address,
                 EmailAddress = createCompany.EmailAddress,
                 PhoneNumber = createCompany.PhoneNumber,
+                ManageName = createCompany.ManagerName,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
@@ -60,6 +61,7 @@ namespace trucki.Services
             {
                 Name = createCompany.Name,
                 Address = createCompany.Address,
+                ManageName = createCompany.ManagerName,
                 EmailAddress = createCompany.EmailAddress,
                 PhoneNumber = createCompany.PhoneNumber,
                 CreatedAt = DateTime.Now,
