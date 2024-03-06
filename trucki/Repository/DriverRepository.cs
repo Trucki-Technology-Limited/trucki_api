@@ -3,7 +3,6 @@ using trucki.DatabaseContext;
 using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
-using trucki.Repository;
 
 namespace trucki.Repository
 {

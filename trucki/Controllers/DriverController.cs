@@ -10,7 +10,7 @@ namespace trucki.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class DriverController : ControllerBase
     {
         private readonly IDriverService _driverService; 
@@ -35,7 +35,7 @@ namespace trucki.Controllers
         }
 
 
-        [HttpPost("UpdateTruckiDriver")]
+        [HttpPut("UpdateTruckiDriver")]
         [ProducesResponseType(typeof(GenericResponse<string>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> UpdateTruckiDriver([FromBody] CreateDriverDto request)
         {
