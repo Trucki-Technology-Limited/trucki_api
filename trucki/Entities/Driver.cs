@@ -6,6 +6,7 @@ namespace trucki.Entities
     {
         public string Name { get; set; }
 
+        // this is suppose to string not int
         [MaxLength(11)]
         public int Phone { get; set; }
 
