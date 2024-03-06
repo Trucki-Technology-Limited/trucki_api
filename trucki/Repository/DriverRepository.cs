@@ -23,7 +23,7 @@ namespace trucki.Repository
 
         public async Task<Driver> FetchDriverById(string driverId, bool trackChanges) => await FindByCondition(x => x.Id.ToLower().Equals(driverId.ToLower()), trackChanges).FirstOrDefaultAsync();
 
-        public async Task SaveAsync() => await SaveAsync();
+        public async Task SaveAsync() => await SaveChangesAsync();
     }
 }
 

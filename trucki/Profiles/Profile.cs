@@ -15,7 +15,8 @@ public class Profiles : Profile
         CreateMap<DriverResponse, Driver>().ReverseMap();
         CreateMap<DriversResponse, Driver>().ReverseMap();
         CreateMap<Driver, CreateDriverDto>().ReverseMap();
-        CreateMap<Company, CreateCompanyDto>().ReverseMap();
+        //CreateMap<Company, CreateCompanyDto>().ReverseMap();
+        CreateMap<CreateCompanyDto, Company>().ReverseMap();
 
     }
 }

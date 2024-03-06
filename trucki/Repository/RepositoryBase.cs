@@ -25,6 +25,6 @@ namespace trucki.Repository
             return !trackChanges ? TruckiContext.Set<T>().AsNoTracking() : TruckiContext.Set<T>();
         }
 
-        public async Task SaveAsync() => await TruckiContext.SaveChangesAsync();
+        public async Task SaveChangesAsync() => await TruckiContext.SaveChangesAsync();
     }
 }

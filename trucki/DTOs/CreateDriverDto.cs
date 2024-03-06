@@ -16,8 +16,8 @@ namespace trucki.DTOs
 
         public string? Company { get; set; }
 
-        public byte[]? DriversLicence { get; set; }
+       public string? DriversLicence { get; set; }
 
-        public byte[]? PassportFile { get; set; }
+       public string? PassportFile { get; set; }
     }
 }
