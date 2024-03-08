@@ -16,7 +16,7 @@ namespace trucki.Entities
         //public string Company { get; set; }
 
         // Foreign key
-        public string CompanyId { get; set; }
+        public string? CompanyId { get; set; }
         // Navigation property
         public Company Company { get; set; }
 
