@@ -6,5 +6,8 @@ namespace trucki.Interfaces.IServices
     {
         Task<GenericResponse<string>> CreateTruckiComapnyAsync(CreateCompanyDto createCompany);
         Task<GenericResponse<string>> UpdateTruckiComapnyAsync(CreateCompanyDto createCompany);
+        Task<GenericResponse<IEnumerable<CompanyResponseDto>>> FetchAllTruckiDriversAsync(CompanyParameter companyParameter);
+        Task<GenericResponse<CompanyResponseDto>> FetchTruckiDriverAsync(string companyId);
+
     }
 }

@@ -4,6 +4,8 @@
     {
         public string Name { get; set; }
 
+        public string? BusinessId { get; set; }
+
         public string FromRoute { get; set; }
 
         public string ToRoute { get; set; }
