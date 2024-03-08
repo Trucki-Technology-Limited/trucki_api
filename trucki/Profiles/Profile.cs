@@ -19,5 +19,6 @@ public class Profiles : Profile
         CreateMap<CreateCompanyDto, Company>().ReverseMap();
         CreateMap<CreateBusinessDto, Business>().ReverseMap();
         CreateMap<ManagerResponse, Manager>().ReverseMap();
+        CreateMap<CreateManagerDto, Manager>().ReverseMap();
     }
 }

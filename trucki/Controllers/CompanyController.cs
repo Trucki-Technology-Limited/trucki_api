@@ -2,7 +2,6 @@
 using System.Net;
 using trucki.DTOs;
 using trucki.Interfaces.IServices;
-using trucki.Services;
 
 namespace trucki.Controllers
 {
@@ -18,6 +17,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateNewCompany")]
+        [ProducesResponseType(typeof(GenericResponse<string>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> CreateNewCompany([FromBody] CreateCompanyDto model)
         {
             var result = await _companyService.CreateTruckiComapnyAsync(model);
@@ -29,6 +29,7 @@ namespace trucki.Controllers
         }
 
         [HttpPut("UpdateNewCompany")]
+        [ProducesResponseType(typeof(GenericResponse<string>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> UpdateNewCompany([FromBody] CreateCompanyDto model)
         {
             var result = await _companyService.UpdateTruckiComapnyAsync(model);
