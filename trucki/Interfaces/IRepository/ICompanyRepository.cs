@@ -1,4 +1,5 @@
-﻿using trucki.Entities;
+﻿using trucki.DTOs;
+using trucki.Entities;
 
 namespace trucki.Interfaces.IRepository
 {
@@ -6,6 +7,8 @@ namespace trucki.Interfaces.IRepository
     {
        void CreateTruckiCompanies(Company company);
        void UpdateTruckiCompanies(Company company);
+       Task<IEnumerable<Company>> FetchAllTruckiCompanies(CompanyParameter companyParameter);
+       Task<Company> FetchComapnyById(string managerId, bool trackChanges);
        Task SaveAsync();
     }
 }

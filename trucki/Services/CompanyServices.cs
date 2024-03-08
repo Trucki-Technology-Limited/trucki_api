@@ -11,26 +11,17 @@ namespace trucki.Services
 
         private readonly IMapper _mapper;
         private readonly ICompanyRepository _companyRepository; 
-        public CompanyServices(ICompanyRepository companyRepository)
+        public CompanyServices(ICompanyRepository companyRepository, IMapper mapper)
         {
             _companyRepository = companyRepository;
+            _mapper = mapper;
             
         }
 
         public async Task<GenericResponse<string>> CreateTruckiComapnyAsync(CreateCompanyDto createCompany)
         {
-            // var company = _mapper.Map<Company>(createCompany);
+            var company = _mapper.Map<Company>(createCompany);
 
-            var company = new Company
-            {
-                Name = createCompany.Name,
-                Address = createCompany.Address,
-                EmailAddress = createCompany.EmailAddress,
-                PhoneNumber = createCompany.PhoneNumber,
-                ManageName = createCompany.ManagerName,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
             if (company == null)
             {
                 return new GenericResponse<string>
@@ -56,20 +47,9 @@ namespace trucki.Services
 
         public async Task<GenericResponse<string>> UpdateTruckiComapnyAsync(CreateCompanyDto createCompany)
         {
-           //Create a  Company put manager Id and Manager create 
 
-
-            //var company = _mapper.Map<Company>(createCompany);
-            var company = new Company
-            {
-                Name = createCompany.Name,
-                Address = createCompany.Address,
-                ManageName = createCompany.ManagerName,
-                EmailAddress = createCompany.EmailAddress,
-                PhoneNumber = createCompany.PhoneNumber,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
+            var company = _mapper.Map<Company>(createCompany);
+    
             if (company == null)
             {
                 return new GenericResponse<string>
@@ -89,6 +69,60 @@ namespace trucki.Services
                 ResponseMessage = "Company updated successfully",
                 IsSuccessful = true,
                 Data = "Company updated successfully"
+            };
+
+        }
+
+        public async Task<GenericResponse<CompanyResponseDto>> FetchTruckiDriverAsync(string companyId)
+        {
+            var company = await _companyRepository.FetchComapnyById(companyId, false);
+
+            var companyResponse = _mapper.Map<CompanyResponseDto>(company);
+
+            if (company == null)
+            {
+                return new GenericResponse<CompanyResponseDto>
+                {
+                    ResponseCode = "01",
+                    ResponseMessage = "Driver was not found",
+                    IsSuccessful = false,
+                    Data = null
+                };
+            }
+
+            return new GenericResponse<CompanyResponseDto>
+            {
+                ResponseCode = "00",
+                ResponseMessage = "Driver Gotten successfully",
+                IsSuccessful = true,
+                Data = companyResponse
+            };
+
+        }
+
+        public async Task<GenericResponse<IEnumerable<CompanyResponseDto>>> FetchAllTruckiDriversAsync(CompanyParameter companyParameter)
+        {
+            var companies = await _companyRepository.FetchAllTruckiCompanies(companyParameter);
+
+            var companyResponse = _mapper.Map<IEnumerable<CompanyResponseDto>>(companies);
+
+            if (companies == null)
+            {
+                return new GenericResponse<IEnumerable<CompanyResponseDto>>
+                {
+                    ResponseCode = "01",
+                    ResponseMessage = "Drivers was not found",
+                    IsSuccessful = false,
+                    Data = null
+                };
+            }
+
+            return new GenericResponse<IEnumerable<CompanyResponseDto>>
+            {
+                ResponseCode = "00",
+                ResponseMessage = "All Drivers Gotten successfully",
+                IsSuccessful = true,
+                Data = companyResponse
             };
 
         }
