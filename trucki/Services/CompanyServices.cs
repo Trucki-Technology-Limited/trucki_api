@@ -56,6 +56,9 @@ namespace trucki.Services
 
         public async Task<GenericResponse<string>> UpdateTruckiComapnyAsync(CreateCompanyDto createCompany)
         {
+           //Create a  Company put manager Id and Manager create 
+
+
             //var company = _mapper.Map<Company>(createCompany);
             var company = new Company
             {

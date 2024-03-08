@@ -9,6 +9,6 @@ namespace trucki.DTOs
         public string Ntons { get; set; }
         public string Address { get; set; }
         public bool isActive { get; set; }
-        public List<Routes>? Routes { get; set; }
+       // public List<Routes>? Routes { get; set; }
     }
 }
