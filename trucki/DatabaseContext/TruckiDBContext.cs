@@ -14,7 +14,7 @@ namespace trucki.DatabaseContext
 
         }
 
-       /* protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Manager>()
                 .HasOne(m => m.Company)
@@ -23,7 +23,7 @@ namespace trucki.DatabaseContext
                 .OnDelete(DeleteBehavior.Cascade); // Ensure cascading delete
 
             // Other configurations...
-        }*/
+        }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
         public DbSet<Business> Businesses { get; set; }
