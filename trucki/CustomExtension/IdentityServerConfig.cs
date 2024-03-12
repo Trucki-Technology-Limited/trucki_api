@@ -49,7 +49,8 @@ public static class IdentityServerConfig
                 options.SaveToken = true;
                 options.RequireHttpsMetadata = false;
             });
-            serviceDescriptors.AddAuthorization(options =>
+
+        serviceDescriptors.AddAuthorization(options =>
             {
                 options.AddPolicy("AdminPolicy", policy => policy.RequireRole("admin"));
                 options.AddPolicy("ManagerPolicy", policy => policy.RequireRole("manager"));
