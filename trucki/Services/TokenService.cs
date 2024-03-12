@@ -23,7 +23,7 @@ public class TokenService : ITokenService
             _httpClient = new HttpClient();
             _discoveryDocument = _httpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
             {
-                Address = _config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value,
+                Address = _config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl1").Value,
 
                 Policy =
             {

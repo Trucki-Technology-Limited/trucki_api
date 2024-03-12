@@ -22,6 +22,8 @@ namespace trucki.DatabaseContext
                 .HasForeignKey(m => m.CompanyId)
                 .OnDelete(DeleteBehavior.Cascade); // Ensure cascading delete
 
+            base.OnModelCreating(modelBuilder);
+
             // Other configurations...
         }
         public DbSet<Driver> Drivers { get; set; }

@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.Eventing.Reader;
 using System.Net;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Transactions;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
@@ -119,6 +120,11 @@ public class AuthService : IAuthService
     public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
     {
 
+        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+        
+        if (!(Regex.IsMatch(registrationRequest.Email, emailPattern)))
+            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid email address format", StatusCodes.Status400BadRequest);
+
         var ExistingUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
 
         var user = new User
@@ -133,7 +139,7 @@ public class AuthService : IAuthService
             IsActive = true,
             IsPasswordChanged = false,
             PhoneNumber = "",
-            Role = _configuration.GetSection("UserRole")["User"],
+            Role = _configuration.GetSection("UserRole")["Users"],
             UserName = registrationRequest.Email
 
         };
@@ -153,7 +159,9 @@ public class AuthService : IAuthService
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, user.Role);
-                    // Add the Permission Coming in as a claim for the sponsor..
+
+
+                    // Add the Permission Coming in as a claim for the Users..
                     var userPermission = new List<Claim>();
                     foreach (var permission in registrationRequest.Permissions)
                     {
