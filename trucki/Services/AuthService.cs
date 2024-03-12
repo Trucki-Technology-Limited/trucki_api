@@ -1,5 +1,6 @@
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.Eventing.Reader;
 using System.Net;
 using System.Security.Claims;
 using System.Transactions;
@@ -130,35 +131,17 @@ public class AuthService : IAuthService
             EmailConfirmed = true,
             Id = Guid.NewGuid().ToString(),
             IsActive = true,
+            IsPasswordChanged = false,
             PhoneNumber = "",
-            Role = registrationRequest.Role,
+            Role = _configuration.GetSection("UserRole")["User"],
             UserName = registrationRequest.Email
 
         };
 
         if (ExistingUser != null)
         {
-            var roles = await _userManager.GetRolesAsync(ExistingUser);
-            if (roles.Contains(user.Role))
-                return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User already has {user.Role} role", StatusCodes.Status400BadRequest);
-
-
-
-            await _context.SaveChangesAsync();
-            await _userManager.AddToRoleAsync(ExistingUser, "admin");
-            // Add the Permission Coming in as a claim for the sponsor..
-            var userPermission = new List<Claim>();
-            foreach (var permission in registrationRequest.Permissions)
-            {
-                var claim = new Claim("Permission", permission);
-                userPermission.Add(claim);
-            }
-            await _userManager.AddClaimsAsync(user, userPermission);
-
-            return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User created successfully", new CreatTruckiUserResponseDto
-            {
-                Id = ExistingUser.Id,
-            }, 201);
+                return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exist", StatusCodes.Status400BadRequest);
+  
         }
         if (ExistingUser == null)
         {
@@ -169,7 +152,7 @@ public class AuthService : IAuthService
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, "Sponsor");
+                    await _userManager.AddToRoleAsync(user, user.Role);
                     // Add the Permission Coming in as a claim for the sponsor..
                     var userPermission = new List<Claim>();
                     foreach (var permission in registrationRequest.Permissions)
@@ -189,15 +172,9 @@ public class AuthService : IAuthService
             var currentUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
             var tokenResponse = await _tokenService.GetToken(currentUser.UserName, registrationRequest.Password);
 
-            var newResponse = new CreatTruckiUserResponseDto { Id = currentUser.Id, AccessToken = tokenResponse.AccessToken };
+            var newResponse = new CreatTruckiUserResponseDto { Id = currentUser.Id, Token = tokenResponse.AccessToken };
 
             newResponse.Role = await _userManager.GetRolesAsync(currentUser);
-            if (currentUser.Religion == null)
-            {
-                currentUser.Religion = string.Empty;
-            }
-
-
 
             return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User created successfully", newResponse, StatusCodes.Status201Created);
 
@@ -206,6 +183,6 @@ public class AuthService : IAuthService
 
 
 
-        return Response<CreatTruckiUserResponseDto>.Fail("user not created", 500);
+        return ApiResponseModel<CreatTruckiUserResponseDto>.Fail("user not created", 500);
     }
 }
