@@ -39,7 +39,7 @@ jobs:
             
             cd trucki
             
-            docker build -t trucki -f Dockerfile trucki
+            docker build -t trucki -f trucki/Dockerfile trucki
             
             docker stop trucki-container || true
             docker rm trucki-container || true
