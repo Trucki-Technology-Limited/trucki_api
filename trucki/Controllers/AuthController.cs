@@ -1,9 +1,11 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.HttpSys;
 using trucki.DTOs;
+using trucki.Entities;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
@@ -25,10 +27,6 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequestModel request)
     {
-        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-        if (!(Regex.IsMatch(request.email, emailPattern)))
-            return StatusCode(400, "Invalid email address format");
-
         var result = await _authService.Login(request);
         return StatusCode(result.StatusCode, result);
     }
@@ -45,10 +43,21 @@ public class AuthController : ControllerBase
     [HttpPost]
     [Route("Refresh-token")]
     [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
-    public async Task<IActionResult> RefreshToken(string refreshToken)
+    public async Task<IActionResult> RefreshToken(RefreshTokenResponseDto refreshToken)
     {
 
-        var result = await _authService.RefreshToken(refreshToken);
+        var result = await _authService.RefreshToken(refreshToken.RefreshToken);
+        return StatusCode(result.StatusCode, result);
+    }
+
+
+    [HttpPost]
+    [Route("ConfirmEmail")]
+    [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string email)
+    {
+
+        var result = await _authService.VerifyUser(email);
         return StatusCode(result.StatusCode, result);
     }
 }

@@ -6,5 +6,5 @@ namespace trucki.Interfaces.IServices;
 public interface ITokenService
 {
     Task<TokenResponse> GetToken(string username, string password);
-    Task<TokenResponse> RefreshTokenAsync(RefreshTokenDto refreshToken);
+    Task<TokenResponse> RefreshTokenAsync(string refreshToken);
 }
