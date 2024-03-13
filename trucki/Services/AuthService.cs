@@ -77,13 +77,6 @@ public class AuthService : IAuthService
             LastLoginDate = DateTime.Now 
         };
 
-   /*     var responseDto = new LoginResponseModel
-            {
-                Id = user.Id,
-                RefreshToken = tokenResponse.RefreshToken,
-                Token = tokenResponse.AccessToken,
-                UserName = $"{user.firstName} {user.lastName}",
-            };*/
 
             return new ApiResponseModel<LoginResponseModel> { IsSuccessful = true, Message = "Success", StatusCode = 200, Data = responseDto };
         }
@@ -239,7 +232,7 @@ public class AuthService : IAuthService
         {
             foreach (var role in userRoles)
             {
-                if (role.Contains(registrationRequest.Role))
+                if (role.ToLower().Contains(registrationRequest.Role.ToLower()))
                 {
                     user = new User
                     {
@@ -292,6 +285,28 @@ public class AuthService : IAuthService
         };
 
         return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User(s) created successfully", newResponse, StatusCodes.Status201Created);
+    }
+
+    public async Task<ApiResponseModel<RefreshTokenResponseDto>> RefreshToken(string refreshToken)
+    {
+        try
+        {
+            var token = await _tokenService.RefreshTokenAsync(refreshToken);
+
+            var result = new ApiResponseModel<RefreshTokenResponseDto>
+            {
+                Data = new RefreshTokenResponseDto
+                {
+                    AccessToken = token.AccessToken,
+                    RefreshToken = token.RefreshToken
+                }
+            };
+            return ApiResponseModel<RefreshTokenResponseDto>.Success("Token refreshed successfully", result.Data, StatusCodes.Status201Created);
+        }
+        catch (Exception)
+        {
+            return ApiResponseModel<RefreshTokenResponseDto>.Fail("Token was not refreshed", StatusCodes.Status404NotFound);
+        }
     }
 
 }
