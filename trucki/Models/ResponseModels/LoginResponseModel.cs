@@ -12,6 +12,7 @@ public class LoginResponseModel
     public bool isPasswordChanged { get; set; }
     public bool isEmailConfirmed { get; set; }
     public bool isPhoneNumberConfirmed { get; set; }
+    public DateTime? LastLoginDate { get; set; }
 }
 
 

@@ -20,8 +20,8 @@
         public IEnumerable<string> Role { get; set; }
         public string EmailAddress { get; set; }
         public List<string> Permissions { get; set; }
-        public bool? isPasswordChanged { get; set; }
-        public bool? isEmailConfirmed { get; set; }
-        public bool? isPhoneNumberConfirmed { get; set; }
+        public bool? IsPasswordChanged { get; set; }
+        public bool? IsEmailConfirmed { get; set; }
+        public bool? IsPhoneNumberConfirmed { get; set; }
     }       
 }
