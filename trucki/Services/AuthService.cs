@@ -71,9 +71,10 @@ public class AuthService : IAuthService
             RefreshToken = tokenResponse.RefreshToken,
             Permissions = adminPermission,
             EmailAddress = user.Email,
-            //isPasswordChanged = user.IsPassWordChanged,
+            isPasswordChanged = user.IsPasswordChanged,
             isEmailConfirmed = user.EmailConfirmed,
-            isPhoneNumberConfirmed = user.PhoneNumberConfirmed
+            isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
+            LastLoginDate = DateTime.Now 
         };
 
    /*     var responseDto = new LoginResponseModel
@@ -117,7 +118,7 @@ public class AuthService : IAuthService
 
         }
 
-    public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
+    /*public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
     {
 
         string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
@@ -156,6 +157,7 @@ public class AuthService : IAuthService
 
                 var result = await _userManager.CreateAsync(user, registrationRequest.Password);
 
+
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, user.Role);
@@ -192,5 +194,104 @@ public class AuthService : IAuthService
 
 
         return ApiResponseModel<CreatTruckiUserResponseDto>.Fail("user not created", 500);
+    }*/
+
+    public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
+    {
+        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+        if (!Regex.IsMatch(registrationRequest.Email, emailPattern))
+            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid email address format", StatusCodes.Status400BadRequest);
+
+        var existingUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
+
+        if (existingUser != null)
+        {
+            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exists", StatusCodes.Status400BadRequest);
+        }
+        var user = new User
+        {
+            Email = registrationRequest.Email,
+            firstName = registrationRequest.Name,
+            lastName = "",
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now,
+            EmailConfirmed = true,
+            Id = Guid.NewGuid().ToString(),
+            IsActive = true,
+            IsPasswordChanged = false,
+            PhoneNumber = "",
+            Role = _configuration.GetSection("UserRole")["Users"],
+            UserName = registrationRequest.Email
+
+        };
+
+        var userRoles = user.Role.Split(',').ToList();
+
+        if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
+        {
+            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role(s) provided", StatusCodes.Status400BadRequest);
+        }
+
+        var userPermissions = registrationRequest.Permissions.Select(permission => new Claim("Permission", permission)).ToList();
+
+        using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            foreach (var role in userRoles)
+            {
+                if (role.Contains(registrationRequest.Role))
+                {
+                    user = new User
+                    {
+                        Email = registrationRequest.Email,
+                        firstName = registrationRequest.Name,
+                        lastName = "",
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
+                        EmailConfirmed = true,
+                        Id = Guid.NewGuid().ToString(),
+                        IsActive = true,
+                        IsPasswordChanged = false,
+                        PhoneNumber = "",
+                        Role = role,
+                        UserName = registrationRequest.Email
+                    };
+
+                    var result = await _userManager.CreateAsync(user, registrationRequest.Password);
+
+
+                    if (result.Succeeded)
+                    {
+                        await _userManager.AddToRoleAsync(user, user.Role);
+                        await _userManager.AddClaimsAsync(user, userPermissions);
+
+                        var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                        var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
+                    }
+                    else
+                    {
+                        // Rollback transaction if user creation failed
+                        transaction.Dispose();
+                        return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Failed to create user with role {role}", StatusCodes.Status500InternalServerError);
+                    }
+                }
+                
+            }
+
+            transaction.Complete();
+        }
+
+        var currentUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
+        //var tokenResponse = await _tokenService.GetToken(currentUser.UserName, registrationRequest.Password);
+
+        var newResponse = new CreatTruckiUserResponseDto
+        {
+            Id = currentUser.Id,
+            EmailAddress = currentUser.Email,
+            Permissions = registrationRequest.Permissions
+        };
+
+        return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User(s) created successfully", newResponse, StatusCodes.Status201Created);
     }
+
 }

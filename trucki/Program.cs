@@ -64,13 +64,13 @@ builder.Services.AddSwaggerGen(options =>
 
 
 var app = builder.Build();
-/*var connectionString = config.GetConnectionString("LocalConnection");
+var connectionString = config.GetConnectionString("LocalConnection");
 SeedData.EnsureSeedData(connectionString).Wait();
-*/// using (var scope = app.Services.CreateScope())
-// {
-//     var context = scope.ServiceProvider.GetRequiredService<TruckiDBContext>();
-//     context.Database.Migrate();
-// }
+ using (var scope = app.Services.CreateScope())
+ {
+     var context = scope.ServiceProvider.GetRequiredService<TruckiDBContext>();
+    context.Database.Migrate();
+ }
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
