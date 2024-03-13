@@ -336,21 +336,9 @@ public class AuthService : IAuthService
                 };
 
             }
-/*
-            if (user.EmailConfirmed == true)
-            {
-               // _logger.LogInformation($"Customer with email {email} has been verified already");
-                return new ApiResponseModel<string>
-                {
-                    IsSuccessful = false,
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Message = "Customer's email has been verified already"
-                };
 
-            }*/
-
-            user.EmailConfirmed = true;
-            await _userManager.UpdateAsync(user);
+            //user.EmailConfirmed = true;
+            //await _userManager.UpdateAsync(user);
             //_logger.LogInformation($"Customer with email {email} verified successfully");
 
             var callBackUrlToLogin = $"{_configuration.GetSection("ExternalAPIs")["VerifiedLoginUrl"]}";
