@@ -8,4 +8,5 @@ public interface IAuthService
 {
     Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request);
     Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest);
+    Task<ApiResponseModel<RefreshTokenResponseDto>> RefreshToken(string refreshToken);
 }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.HttpSys;
 using trucki.DTOs;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
@@ -20,7 +21,6 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-   // [Authorize]
     [HttpPost("Login")]
     [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequestModel request)
@@ -39,6 +39,16 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> RegisterTruckiAsync([FromBody] CreatTruckiUserDto request)
     {
         var result = await _authService.RegisterTruckiAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost]
+    [Route("Refresh-token")]
+    [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
+    public async Task<IActionResult> RefreshToken(string refreshToken)
+    {
+
+        var result = await _authService.RefreshToken(refreshToken);
         return StatusCode(result.StatusCode, result);
     }
 }
