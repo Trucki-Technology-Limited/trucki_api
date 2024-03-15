@@ -15,7 +15,7 @@ namespace trucki.CustomExtension
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000","https://localhost:3000", "http://157.245.4.44") // Replace with your HTML file's origin
+                    builder.WithOrigins("http://localhost:3000","https://trucki-web.vercel.app/v1", "http://157.245.4.44") // Replace with your HTML file's origin
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
