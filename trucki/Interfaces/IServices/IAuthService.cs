@@ -10,4 +10,5 @@ public interface IAuthService
     Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest);
     Task<ApiResponseModel<RefreshTokenResponseDto>> RefreshToken(string refreshToken);
     Task<ApiResponseModel<string>> VerifyUser(string email);
+    Task<ApiResponseModel<string>> ForgotPassword(string email);
 }

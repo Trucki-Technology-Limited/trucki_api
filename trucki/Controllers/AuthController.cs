@@ -50,7 +50,7 @@ public class AuthController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
-
+    [AllowAnonymous]
     [HttpPost]
     [Route("ConfirmEmail")]
     [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
@@ -58,6 +58,17 @@ public class AuthController : ControllerBase
     {
 
         var result = await _authService.VerifyUser(email);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [AllowAnonymous]
+    [HttpPost]
+    [Route("ForgotPassword")]
+    [ProducesResponseType(typeof(ApiResponseModel<string>), (int)HttpStatusCode.Created)]
+    public async Task<IActionResult> ForgotPassword([FromQuery] string email)
+    {
+
+        var result = await _authService.ForgotPassword(email);
         return StatusCode(result.StatusCode, result);
     }
 }

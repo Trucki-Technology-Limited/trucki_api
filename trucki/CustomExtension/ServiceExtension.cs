@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Mailjet.Client;
+using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Repository;
 using trucki.Services;
+using trucki.Shared;
 
 namespace trucki.CustomExtension
 {
@@ -34,6 +36,8 @@ namespace trucki.CustomExtension
             services.AddScoped<IBusinessService, BusinessService>();
             services.AddScoped<IManagerService, ManagerService>();
             services.AddScoped<IManagerRepository, ManagerRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IMailjetClient, MailjetClient>();
         }
 
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>

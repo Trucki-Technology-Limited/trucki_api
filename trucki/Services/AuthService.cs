@@ -5,15 +5,18 @@ using System.Net;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Transactions;
+using System.Web;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using trucki.DatabaseContext;
 using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
+using trucki.Shared;
 
 namespace trucki.Services;
 
@@ -24,15 +27,16 @@ public class AuthService : IAuthService
     private readonly TruckiDBContext _context;
     private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
-
+    private readonly INotificationService _notification;
     public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper,
-        ITokenService tokenService, IConfiguration configuration)
+        ITokenService tokenService, IConfiguration configuration, INotificationService notification)
     {
         _userManager = userManager;
         _mapper = mapper;
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _tokenService = tokenService;
         _configuration = configuration;
+        _notification = notification;
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
@@ -118,84 +122,6 @@ public class AuthService : IAuthService
         return response;
 
     }
-
-    /*public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
-    {
-
-        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-        
-        if (!(Regex.IsMatch(registrationRequest.Email, emailPattern)))
-            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid email address format", StatusCodes.Status400BadRequest);
-
-        var ExistingUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
-
-        var user = new User
-        {
-            Email = registrationRequest.Email,
-            firstName = registrationRequest.Name,
-            lastName = "",
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now,
-            EmailConfirmed = true,
-            Id = Guid.NewGuid().ToString(),
-            IsActive = true,
-            IsPasswordChanged = false,
-            PhoneNumber = "",
-            Role = _configuration.GetSection("UserRole")["Users"],
-            UserName = registrationRequest.Email
-
-        };
-
-        if (ExistingUser != null)
-        {
-                return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exist", StatusCodes.Status400BadRequest);
-  
-        }
-        if (ExistingUser == null)
-        {
-            using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
-            {
-
-                var result = await _userManager.CreateAsync(user, registrationRequest.Password);
-
-
-                if (result.Succeeded)
-                {
-                    await _userManager.AddToRoleAsync(user, user.Role);
-
-
-                    // Add the Permission Coming in as a claim for the Users..
-                    var userPermission = new List<Claim>();
-                    foreach (var permission in registrationRequest.Permissions)
-                    {
-                        var claim = new Claim("Permission", permission);
-                        userPermission.Add(claim);
-                    }
-                    await _userManager.AddClaimsAsync(user, userPermission);
-
-                    var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-                    var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
-                }
-                transaction.Complete();
-            }
-
-            var currentUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
-            var tokenResponse = await _tokenService.GetToken(currentUser.UserName, registrationRequest.Password);
-
-            var newResponse = new CreatTruckiUserResponseDto { Id = currentUser.Id, Token = tokenResponse.AccessToken };
-
-            newResponse.Role = await _userManager.GetRolesAsync(currentUser);
-
-            return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User created successfully", newResponse, StatusCodes.Status201Created);
-
-
-        }
-
-
-
-        return ApiResponseModel<CreatTruckiUserResponseDto>.Fail("user not created", 500);
-    }*/
 
     public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
     {
@@ -347,7 +273,7 @@ public class AuthService : IAuthService
             {
                 IsSuccessful = true,
                 StatusCode = StatusCodes.Status200OK,
-                Message = "Customer's email has been verified already",
+                Message = "User's email has been verified",
                 Data = callBackUrlToLogin
             };
         }
@@ -364,117 +290,97 @@ public class AuthService : IAuthService
         }
     }
 
-    /* public async Task<GenericResponse<string>> ForgotPassword(string email)
-     {
-         try
-         {
-             var userId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
-             if (customer == null)
-             {
-                 _logger.LogInformation($"Customer with email {email} not found");
-                 return new GenericResponse<string>
-                 {
-                     IsSuccessful = false,
-                     ResponseCode = "01",
-                     ResponseMessage = "Customer not found"
-                 };
-
-             }
-
-             if (!Util.IsValidEmailAddress(email))
-                 return new GenericResponse<string>
-                 {
-                     ResponseCode = "02",
-                     IsSuccessful = false,
-                     ResponseMessage = "Enter a valid email address"
-                 };
-
-             var hashedPassword = Util.ComputeSha256Hash(customer.Password);
-
-             var sendOTPRequest = new SendOtp2Dto
-             {
-                 Email = email,
-                 Password = hashedPassword,
-                 PhoneNumber = customer.PhoneNumber,
-
-             };
+    public async Task<ApiResponseModel<string>> ForgotPassword(string email)
+    {
+        try
+        {
+            var user = await _userManager.FindByEmailAsync(email);
 
 
-             using var scope = _serviceProvider.CreateScope();
-             var _serviceManager = scope.ServiceProvider.GetRequiredService<IOTPService>();
-             var otpResponse = await _serviceManager.SendOTPToUser(sendOTPRequest);
+            if (user == null)
+            {
+                //_logger.LogInformation($"Customer with email {email} not found");
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = $"Customer with email {email} not found"
+                };
 
-             if (otpResponse.ResponseCode == "00")
-             {
+            }
 
-                 _logger.LogInformation($"User Id [{customer.CustomerId}]. OTP was sent successfully, Kindly validate to Complete the Password Change");
+            //user.EmailConfirmed = true;
+            //await _userManager.UpdateAsync(user);
+            //_logger.LogInformation($"Customer with email {email} verified successfully");
 
-                 return new GenericResponse<string>
-                 {
-                     ResponseCode = "00",
-                     ResponseMessage = "OTP was sent successfully, Kindly validate to Complete the Password Change",
-                     IsSuccessful = true,
-                     Data = sendOTPRequest.PhoneNumber
-                 };
+           
+            
 
+            var callBackUrlToChangePassword = $"{_configuration.GetSection("ExternalAPIs")["ChangePasswordUrl"]}";
 
-             }
+            if (callBackUrlToChangePassword != null)
+            {
 
-             return new GenericResponse<string>
-             {
-                 ResponseCode = "03",
-                 ResponseMessage = "OTP was not sent",
-                 IsSuccessful = false,
-                 Data = null
-             };
-             var callBackUrlPasswordReset = $"{_configuration.GetSection("ExternalAPIs")["resetPasswordUrl"]}";
+                var mailRequest = new MailRequest
+                {
+                    ToEmail = email,
+                    TemplateName = GetEmailTemplate("template.html"),
+                    Subject = "User Password Changed",
+                    Message = "Kindly click  on the link below to Change Password to your account," + " " + "Register date:" + " " + DateTime.Now.ToLongDateString() + "<br/>" +
+                              $"{callBackUrlToChangePassword}" + "<br/>" +
+                             "Best Regards," + "<br/>" +
+                             "Trucki."
 
-             if (callBackUrlPasswordReset != null)
-             {
-
-                 var mailRequest = new MailRequestDto
-                 {
-                     FirstName = customer.FirstName,
-                     RecipientEmail = customer.Email,
-                     Subject = "Customer Forgot Password Reset Link",
-                     Message = "Kindly click  on the link below to reset your password," + " " + "Reset date:" + " " + DateTime.Now.ToLongDateString() + "<br/>" +
-                               $"{callBackUrlPasswordReset}" + "<br/>" +
-                              "If you did not initiate this, please change your password and contact our Customer Centre on 01-7000555 or send an email to help@saf.ng" + "<br/>" +
-                              "Why send this mail? We take security very seriously and we want to keep you in the loop of activities on your account.",
-
-                 };
-
-                 var resetPassword = await _notification.SendVerifyMail(mailRequest);
-                 if (resetPassword.ResponseCode == "00")
-                     _logger.LogInformation($"mail sent to reset password with customer id {customer.CustomerId} successfully");
-                 else _logger.LogInformation($"unable to send mail to new to reset customer's  password due to {resetPassword.ResponseMessage}");
-             }
+                };
 
 
-             _logger.LogInformation($"Customer Password Reset was successful {customer.CustomerId}");
-             return new GenericResponse<string>
-             {
-                 IsSuccessful = true,
-                 ResponseCode = "00",
-                 ResponseMessage = "Customer  forgot password reset was successful, an email have been sent to change the password",
-                 Data = null
+                var changeUserPasswordEmail = await _notification.SendEmailAsync(mailRequest);
+                if (changeUserPasswordEmail == true)
+                {
+                    return new ApiResponseModel<string>
+                    {
+                        IsSuccessful = true,
+                        StatusCode = StatusCodes.Status200OK,
+                        Message = "user's email has been sent for a Password Changed",
+                        Data = changeUserPasswordEmail.ToString()
+                    };
+                }
+                else
+                {
+                    Console.WriteLine($"mail sent to newly created user with user id {user.Id} successfully & {JsonConvert.SerializeObject(changeUserPasswordEmail)}");
+                }
+                  //_logger.LogInformation($"mail sent to newly created vendor with vendor id {vendorEntity.VendorId} successfully");
+                //else _logger.LogInformation($"unable to send mail to new to newly created vendor due to {verifyCustomerAccount.ResponseMessage}");
+            }
 
-             };
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = "user's email was not sent for a Password Changed",
+                Data = null
+            };
+        }
+        catch (Exception ex)
+        {
+            // _logger.LogError($"error occured while verifying the Customer {email}. Errpr message:{ex.Message}");
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = $"error occured while Changing Password for the user {email}",
+                Data = null
+            };
+        }
 
+    }
 
-
-         }
-         catch (Exception ex)
-         {
-             _logger.LogError($"something went wrong while resetting customer's password {ex.Message}");
-             return new GenericResponse<string>
-             {
-                 IsSuccessful = false,
-                 ResponseCode = "99",
-                 ResponseMessage = "something went wrong while  processing customer's email for forgot password"
-             };
-         }
-
-     }*/
+    private string GetEmailTemplate(string templateName)
+    {
+        var baseDir = Directory.GetCurrentDirectory();
+        string folderName = "/Email/";
+        var path = Path.Combine(baseDir + folderName, templateName);
+        return File.ReadAllText(path);
+    }
 
 }
