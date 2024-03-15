@@ -24,10 +24,8 @@ namespace trucki.Shared
             {
                 var response = false;
                 //var body = mailRequest.TemplateName;
-                var mailTemplate = mailRequest.TemplateName.Replace("{Firstname}", mailRequest.FirstName)
-                                   .Replace("{Message}", mailRequest.Message);
-                var body = File.ReadAllText(mailTemplate);
-               
+                var body = mailRequest.TemplateName.Replace("{Firstname}", mailRequest.FirstName)
+                                    .Replace("{Message}", mailRequest.Message);
 
                 var message = new JObject
                 {
@@ -55,8 +53,6 @@ namespace trucki.Shared
 
                 MailjetRequest request = new MailjetRequest { Resource = SendV31.Resource }
                     .Property(Send.Messages, new JArray { message });
-
-                
 
                 MailjetResponse mailjetResponse = await _client.PostAsync(request);
                 if (mailjetResponse.IsSuccessStatusCode)
