@@ -71,4 +71,15 @@ public class AuthController : ControllerBase
         var result = await _authService.ForgotPassword(email);
         return StatusCode(result.StatusCode, result);
     }
+
+    [AllowAnonymous]
+    [HttpPost]
+    [Route("ChangePassword")]
+    [ProducesResponseType(typeof(ApiResponseModel<string>), (int)HttpStatusCode.Created)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto request)
+    {
+
+        var result = await _authService.ChangePassword(request);
+        return StatusCode(result.StatusCode, result);
+    }
 }

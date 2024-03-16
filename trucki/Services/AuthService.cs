@@ -1,14 +1,12 @@
 
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Eventing.Reader;
 using System.Net;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using System.Web;
 using AutoMapper;
+//using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using trucki.DatabaseContext;
 using trucki.DTOs;
@@ -17,6 +15,7 @@ using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 using trucki.Shared;
+using trucki.Utility;
 
 namespace trucki.Services;
 
@@ -377,6 +376,71 @@ public class AuthService : IAuthService
         }
 
     }
+
+
+    public async Task<ApiResponseModel<string>> ChangePassword(ChangePasswordDto request)
+    {
+        try
+        {
+            //_logger.LogInformation($"Inside ChangePassword method");
+
+            var userDetails = await _userManager.FindByIdAsync(request.userId);
+
+            var IsPasswordRegularExpression = Util.ValidUserRegistrationPassword(request.NewPassword);
+            if (IsPasswordRegularExpression != "passed")
+            {
+                //_logger.LogInformation($"Password must contain UpperCase, characters and number");
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = IsPasswordRegularExpression
+                };
+            }
+
+            if (userDetails == null)
+            {
+                //_logger.LogInformation($"User email doesn't exist {request.Email}. Vendor does not exist");
+
+                return new ApiResponseModel<string> 
+                { 
+                    IsSuccessful = false, 
+                    StatusCode = StatusCodes.Status404NotFound, 
+                    Message = "Please check your user details and try again" 
+                };
+            }
+            var result = await _userManager.ChangePasswordAsync(userDetails, request.OldPassword, request.NewPassword);
+            if (result.Succeeded)
+            {
+                //_logger.LogInformation($"User email [{request.Email}]. Password Succesfully Changed");
+                return new ApiResponseModel<string>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Password changed successfuly",
+                    IsSuccessful = true
+                };
+            }
+            return new ApiResponseModel<string>
+            {
+                Message = "Ensure that your old password is correct",
+                IsSuccessful = false,
+                StatusCode = StatusCodes.Status404NotFound
+            };
+
+        }
+
+        catch (Exception ex)
+        {
+            //_logger.LogInformation($"Error occurred for User   [{request.Email}] while changing password, Error Message:{ex.Message}");
+            return new ApiResponseModel<string>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "Error occured while trying to change vendor password"
+            };
+        }
+
+    }
+
 
     private string GetEmailTemplate(string templateName)
     {

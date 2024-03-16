@@ -11,4 +11,5 @@ public interface IAuthService
     Task<ApiResponseModel<RefreshTokenResponseDto>> RefreshToken(string refreshToken);
     Task<ApiResponseModel<string>> VerifyUser(string email);
     Task<ApiResponseModel<string>> ForgotPassword(string email);
+    Task<ApiResponseModel<string>> ChangePassword(ChangePasswordDto request);
 }
