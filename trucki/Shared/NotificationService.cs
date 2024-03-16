@@ -32,7 +32,7 @@ namespace trucki.Shared
                         "From", new JObject
                         {
                             {"Email", "sheyeogunsanmi@gmail.com"},
-                            {"Name", "UserTrucki"}
+                            {"Name", "User Password Change"}
                         }
                     },
                     {
