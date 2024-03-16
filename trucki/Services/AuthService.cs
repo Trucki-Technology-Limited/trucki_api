@@ -318,6 +318,8 @@ public class AuthService : IAuthService
 
             var callBackUrlToChangePassword = $"{_configuration.GetSection("ExternalAPIs")["ChangePasswordUrl"]}";
 
+            string encodePasswordChangeUrl = HttpUtility.UrlEncode(callBackUrlToChangePassword);
+
             if (callBackUrlToChangePassword != null)
             {
 
@@ -327,9 +329,9 @@ public class AuthService : IAuthService
                     FirstName = user.firstName,
                     TemplateName = GetEmailTemplate("template.html"),
                     Subject = "User Password Changed",
-                    Message = "Kindly click  on the link below to Change Password to your account," + " " + "Register date:" + " " + DateTime.Now.ToLongDateString() + "<br/>" +
-                              $"{callBackUrlToChangePassword}" + "<br/>" +
-                             "Best Regards," + "<br/>" +
+                    Message = "Kindly click on the link below to Change Password for your account, registered on " + DateTime.Now.ToLongDateString() + ":<br/>" +
+                              $"<a href=\"{encodePasswordChangeUrl}\">{encodePasswordChangeUrl}</a><br/><br/>" +
+                             "Best Regards,<br/>" +
                              "Trucki."
 
                 };
@@ -343,7 +345,7 @@ public class AuthService : IAuthService
                         IsSuccessful = true,
                         StatusCode = StatusCodes.Status200OK,
                         Message = "user's email has been sent for a Password Changed",
-                        Data = changeUserPasswordEmail.ToString()
+                        Data = encodePasswordChangeUrl.ToString()
                     };
                 }
                 else
