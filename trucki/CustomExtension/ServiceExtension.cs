@@ -40,7 +40,7 @@ namespace trucki.CustomExtension
         }
 
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>
-          services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection")));
+          services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection1")));
 
         public static void ConfigureMailJet(this IServiceCollection services, IConfiguration configuration) =>
           services.AddHttpClient<IMailjetClient, MailjetClient>(client =>

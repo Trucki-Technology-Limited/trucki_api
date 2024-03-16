@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using System.Transactions;
 using System.Web;
 using AutoMapper;
-//using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 using trucki.DatabaseContext;
@@ -15,7 +14,9 @@ using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 using trucki.Shared;
+using trucki.Shared.Request;
 using trucki.Utility;
+using static Duende.IdentityServer.Models.IdentityResources;
 
 namespace trucki.Services;
 
@@ -248,7 +249,7 @@ public class AuthService : IAuthService
         try
         {
             var user = await _userManager.FindByEmailAsync(email);
-           
+
 
             if (user == null)
             {
@@ -256,7 +257,7 @@ public class AuthService : IAuthService
                 return new ApiResponseModel<string>
                 {
                     IsSuccessful = false,
-                    StatusCode = StatusCodes.Status404NotFound ,
+                    StatusCode = StatusCodes.Status404NotFound,
                     Message = $"Customer with email {email} not found"
                 };
 
@@ -278,7 +279,7 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-           // _logger.LogError($"error occured while verifying the Customer {email}. Errpr message:{ex.Message}");
+            // _logger.LogError($"error occured while verifying the Customer {email}. Errpr message:{ex.Message}");
             return new ApiResponseModel<string>
             {
                 IsSuccessful = false,
@@ -312,8 +313,8 @@ public class AuthService : IAuthService
             //await _userManager.UpdateAsync(user);
             //_logger.LogInformation($"Customer with email {email} verified successfully");
 
-           
-            
+
+
 
             var callBackUrlToChangePassword = $"{_configuration.GetSection("ExternalAPIs")["ChangePasswordUrl"]}";
 
@@ -351,7 +352,7 @@ public class AuthService : IAuthService
                 {
                     Console.WriteLine($"mail sent to newly created user with user id {user.Id} successfully & {JsonConvert.SerializeObject(changeUserPasswordEmail)}");
                 }
-                  //_logger.LogInformation($"mail sent to newly created vendor with vendor id {vendorEntity.VendorId} successfully");
+                //_logger.LogInformation($"mail sent to newly created vendor with vendor id {vendorEntity.VendorId} successfully");
                 //else _logger.LogInformation($"unable to send mail to new to newly created vendor due to {verifyCustomerAccount.ResponseMessage}");
             }
 
@@ -402,11 +403,11 @@ public class AuthService : IAuthService
             {
                 //_logger.LogInformation($"User email doesn't exist {request.Email}. Vendor does not exist");
 
-                return new ApiResponseModel<string> 
-                { 
-                    IsSuccessful = false, 
-                    StatusCode = StatusCodes.Status404NotFound, 
-                    Message = "Please check your user details and try again" 
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Please check your user details and try again"
                 };
             }
             var result = await _userManager.ChangePasswordAsync(userDetails, request.OldPassword, request.NewPassword);
@@ -435,12 +436,96 @@ public class AuthService : IAuthService
             return new ApiResponseModel<string>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "Error occured while trying to change vendor password"
+                Message = "Error occured while trying to change user password"
             };
         }
 
     }
 
+
+    public async Task<ApiResponseModel<string>> ResetPassword(ResetPasswordDto request)
+    {
+        try
+        {
+            //_logger.LogInformation($"Inside ResetPassword method");
+
+            var userDetails = await _userManager.FindByIdAsync(request.UserId);
+
+            var IsPasswordRegularExpression = Util.ValidUserRegistrationPassword(request.NewPassword);
+            if (IsPasswordRegularExpression != "passed")
+            {
+                //_logger.LogInformation($"Password must contain UpperCase, characters and number");
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = IsPasswordRegularExpression
+                };
+            }
+
+            if (userDetails == null)
+            {
+                //_logger.LogInformation($"User email doesn't exist {request.Email}. Vendor does not exist");
+
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Please check your user details and try again"
+                };
+            }
+
+            var tokenResponse = await GenerateResetTokenAsync(request.Email);
+            request.Token = tokenResponse;
+            var purpose = UserManager<User>.ResetPasswordTokenPurpose;
+            var tokenProvider = _userManager.Options.Tokens.PasswordResetTokenProvider;
+
+            var isValidToken = await _userManager.VerifyUserTokenAsync(userDetails, tokenProvider, purpose, tokenResponse);
+            if (isValidToken)
+            {
+                _mapper.Map<User>(request);
+                var result = await _userManager.ResetPasswordAsync(userDetails, tokenResponse, request.NewPassword);
+                return new ApiResponseModel<string>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Password Reset was successfuly",
+                    IsSuccessful = true
+                };
+            }
+
+            return new ApiResponseModel<string>
+            {
+                Message = "password reset failed",
+                IsSuccessful = false,
+                StatusCode = StatusCodes.Status404NotFound
+            };
+
+        }
+
+        catch (Exception ex)
+        {
+            //_logger.LogInformation($"Error occurred for User   [{request.Email}] while changing password, Error Message:{ex.Message}");
+            return new ApiResponseModel<string>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "Error occured while trying to reset password"
+            };
+        }
+
+    }
+
+    private async Task<string> GenerateResetTokenAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            // Handle user not found
+            return null;
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        return token;
+    }
 
     private string GetEmailTemplate(string templateName)
     {
