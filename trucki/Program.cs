@@ -14,6 +14,7 @@ builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
 builder.Services.AddDependencyInjection();  
 builder.Services.ConfigureDatabaseContext(config);
+builder.Services.ConfigureMailJet(config);
 
 
 builder.Services.AddControllers();

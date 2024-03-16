@@ -37,10 +37,16 @@ namespace trucki.CustomExtension
             services.AddScoped<IManagerService, ManagerService>();
             services.AddScoped<IManagerRepository, ManagerRepository>();
             services.AddScoped<INotificationService, NotificationService>();
-            services.AddScoped<IMailjetClient, MailjetClient>();
         }
 
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>
           services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection")));
+
+        public static void ConfigureMailJet(this IServiceCollection services, IConfiguration configuration) =>
+          services.AddHttpClient<IMailjetClient, MailjetClient>(client =>
+          {
+              client.UseBasicAuthentication(configuration.GetSection("MailJetKeys")["ApiKey"], configuration.GetSection("MailJetKeys")["ApiSecret"]);
+          });
+
     }
 }

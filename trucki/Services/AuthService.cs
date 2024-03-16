@@ -324,6 +324,7 @@ public class AuthService : IAuthService
                 var mailRequest = new MailRequest
                 {
                     ToEmail = email,
+                    FirstName = user.firstName,
                     TemplateName = GetEmailTemplate("template.html"),
                     Subject = "User Password Changed",
                     Message = "Kindly click  on the link below to Change Password to your account," + " " + "Register date:" + " " + DateTime.Now.ToLongDateString() + "<br/>" +
