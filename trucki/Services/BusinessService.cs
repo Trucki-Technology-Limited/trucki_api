@@ -108,6 +108,7 @@ namespace trucki.Services
 
             var businessResponse = _mapper.Map<IEnumerable<BusinessResponse>>(business);
 
+
             if  (business == null)
             {
                 return new GenericResponse<IEnumerable<BusinessResponse>>

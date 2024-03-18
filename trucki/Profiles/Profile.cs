@@ -21,5 +21,8 @@ public class Profiles : Profile
         CreateMap<ManagerResponse, Manager>().ReverseMap();
         CreateMap<CreateManagerDto, Manager>().ReverseMap();
         CreateMap<User, ResetPasswordDto>().ReverseMap();
+        CreateMap<RoutesResponse, BusinessResponse>().ReverseMap();
+        CreateMap<Business, BusinessResponse>().ReverseMap();
+
     }
 }
