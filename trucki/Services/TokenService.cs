@@ -23,7 +23,7 @@ public class TokenService : ITokenService
             _httpClient = new HttpClient();
             _discoveryDocument = _httpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
             {
-                Address = _config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value,
+                Address = _config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl1").Value,
 
                 Policy =
             {
@@ -48,7 +48,7 @@ public class TokenService : ITokenService
             var req = new PasswordTokenRequest
             {
 
-                Address = $"{_config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value}/connect/token",
+                Address = $"{_config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl1").Value}/connect/token",
                 ClientId = "m2m",
                 ClientSecret = "ClientSecret1",
                 ClientCredentialStyle = ClientCredentialStyle.PostBody,
@@ -96,4 +96,4 @@ public class TokenService : ITokenService
 
             return tokenResponse;
         }
-    }
+}

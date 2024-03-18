@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Mailjet.Client;
+using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Repository;
 using trucki.Services;
+using trucki.Shared;
 
 namespace trucki.CustomExtension
 {
@@ -34,9 +36,17 @@ namespace trucki.CustomExtension
             services.AddScoped<IBusinessService, BusinessService>();
             services.AddScoped<IManagerService, ManagerService>();
             services.AddScoped<IManagerRepository, ManagerRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
         }
 
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>
-          services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection")));
+          services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection1")));
+
+        public static void ConfigureMailJet(this IServiceCollection services, IConfiguration configuration) =>
+          services.AddHttpClient<IMailjetClient, MailjetClient>(client =>
+          {
+              client.UseBasicAuthentication(configuration.GetSection("MailJetKeys")["ApiKey"], configuration.GetSection("MailJetKeys")["ApiSecret"]);
+          });
+
     }
 }

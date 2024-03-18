@@ -14,6 +14,7 @@ builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
 builder.Services.AddDependencyInjection();  
 builder.Services.ConfigureDatabaseContext(config);
+builder.Services.ConfigureMailJet(config);
 
 
 builder.Services.AddControllers();
@@ -26,7 +27,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Version = "v1",
         Title = "Trucki  API",
-        Description = "This is an e-commerce application for various kind transportation",
+        Description = "This is an e-commerce application for various kinds of transportation",
     });
     /*// using System.Reflection;
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
