@@ -170,59 +170,54 @@ public class AuthService : IAuthService
         }
 
 
-        var roles = _configuration.GetSection("UserRole")["Users"];
+       /* var roles = _configuration.GetSection("UserRole")["Users"];
         var userRoles = roles.Split(',').ToList();
 
         if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
         {
             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role(s) provided", StatusCodes.Status400BadRequest);
-        }
+        }*/
 
         var userPermissions = registrationRequest.Permissions.Select(permission => new Claim("Permission", permission)).ToList();
 
         using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
-            foreach (var role in userRoles)
-            {
-                if (role.ToLower().Contains(registrationRequest.Role.ToLower()))
+
+
+                var user = new User
                 {
-                    var user = new User
-                    {
-                        Email = registrationRequest.Email,
-                        firstName = registrationRequest.FirstName,
-                        lastName = registrationRequest.LastName,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now,
-                        EmailConfirmed = true,
-                        Id = Guid.NewGuid().ToString(),
-                        IsActive = true,
-                        IsPasswordChanged = false,
-                        PhoneNumber = registrationRequest.PhoneNumber,
-                        Role = _configuration.GetSection("UserRole")["Users"],
-                        UserName = registrationRequest.Email
+                    Email = registrationRequest.Email,
+                    firstName = registrationRequest.FirstName,
+                    lastName = registrationRequest.LastName,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    EmailConfirmed = true,
+                    Id = Guid.NewGuid().ToString(),
+                    IsActive = true,
+                    IsPasswordChanged = false,
+                    PhoneNumber = registrationRequest.PhoneNumber,
+                    Role = _configuration.GetSection("UserRole")["Users"],
+                    UserName = registrationRequest.Email
 
-                    };
+                };
 
-                    var result = await _userManager.CreateAsync(user, registrationRequest.Password);
+                var result = await _userManager.CreateAsync(user, registrationRequest.Password);
 
 
-                    if (result.Succeeded)
-                    {
-                        await _userManager.AddToRoleAsync(user, user.Role);
-                        await _userManager.AddClaimsAsync(user, userPermissions);
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(user, user.Role);
+                    await _userManager.AddClaimsAsync(user, userPermissions);
 
-                        var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
-                    }
-                    else
-                    {
-                        // Rollback transaction if user creation failed
-                        transaction.Dispose();
-                        return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Failed to create user with role {role}", StatusCodes.Status500InternalServerError);
-                    }
+                    var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
                 }
-
-            }
+                else
+                {
+                    // Rollback transaction if user creation failed
+                    transaction.Dispose();
+                    return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Failed to create user with role", StatusCodes.Status500InternalServerError);
+                }
 
             transaction.Complete();
         }

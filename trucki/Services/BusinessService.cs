@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using System.Security.Claims;
 using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
@@ -10,10 +11,13 @@ namespace trucki.Services
     {
         private readonly IBusinessRepository _businessRepository;
         private readonly IMapper _mapper;
-        public BusinessService(IBusinessRepository businessRepository, IMapper mapper)
+        private readonly IHttpContextAccessor _httpContext;
+        public BusinessService(IBusinessRepository businessRepository, IMapper mapper, IHttpContextAccessor httpContext)
         {
             _businessRepository = businessRepository;
             _mapper = mapper;
+            _httpContext = httpContext;
+
         }
 
         public async Task<GenericResponse<string>> CreateTruckiBusinessAsync(CreateBusinessDto createBusiness)
@@ -44,8 +48,10 @@ namespace trucki.Services
 
         public async Task<GenericResponse<string>> UpdateTruckiBusinessAsync(CreateBusinessDto createBusiness)
         {
-            var driver = await _businessRepository.FetchBusinessById(createBusiness.Id, false);
-            if (driver == null)
+            var userId = _httpContext.HttpContext.User.Claims.Where(c => c.Type == "Id").First().Value;
+
+            var business = await _businessRepository.FetchBusinessById(userId, false);
+            if  (business == null)
             {
                 return new GenericResponse<string>
                 {
@@ -55,7 +61,7 @@ namespace trucki.Services
                     Data = null
                 };
             }
-            _businessRepository.UpdateTruckiBusiness(driver);
+            _businessRepository.UpdateTruckiBusiness(business);
             await _businessRepository.SaveAsync();
 
             return new GenericResponse<string>
@@ -69,13 +75,13 @@ namespace trucki.Services
         }
 
 
-        public async Task<GenericResponse<BusinessResponse>> FetchTruckiBusinessAsync(string driverId)
+        public async Task<GenericResponse<BusinessResponse>> FetchTruckiBusinessAsync(string businessId)
         {
-            var driver = await _businessRepository.FetchBusinessById(driverId, false);
+            var business = await _businessRepository.FetchBusinessById(businessId, false);
 
-            var driverResponse = _mapper.Map<BusinessResponse>(driver);
+            var businessResponse = _mapper.Map<BusinessResponse>(business);
 
-            if (driver == null)
+            if  (business == null)
             {
                 return new GenericResponse<BusinessResponse>
                 {
@@ -91,18 +97,18 @@ namespace trucki.Services
                 ResponseCode = "00",
                 ResponseMessage = "Business Gotten successfully",
                 IsSuccessful = true,
-                Data = driverResponse
+                Data = businessResponse
             };
 
         }
 
-        public async Task<GenericResponse<IEnumerable<BusinessResponse>>> FetchAllTruckiBusinessesAsync(BusinessParameter driverParameter)
+        public async Task<GenericResponse<IEnumerable<BusinessResponse>>> FetchAllTruckiBusinessesAsync(BusinessParameter businessParameter)
         {
-            var driver = await _businessRepository.FetchAllTruckiBusinesses(driverParameter);
+            var business = await _businessRepository.FetchAllTruckiBusinesses(businessParameter);
 
-            var driverResponse = _mapper.Map<IEnumerable<BusinessResponse>>(driver);
+            var businessResponse = _mapper.Map<IEnumerable<BusinessResponse>>(business);
 
-            if (driver == null)
+            if  (business == null)
             {
                 return new GenericResponse<IEnumerable<BusinessResponse>>
                 {
@@ -116,9 +122,9 @@ namespace trucki.Services
             return new GenericResponse<IEnumerable<BusinessResponse>>
             {
                 ResponseCode = "00",
-                ResponseMessage = "All Businesss Deleted successfully",
+                ResponseMessage = "All Businessses Gotten successfully",
                 IsSuccessful = true,
-                Data = driverResponse
+                Data = businessResponse
             };
 
         }
