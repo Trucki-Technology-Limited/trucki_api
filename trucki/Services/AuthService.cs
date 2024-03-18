@@ -6,6 +6,7 @@ using System.Transactions;
 using System.Web;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using trucki.DatabaseContext;
 using trucki.DTOs;
@@ -23,13 +24,14 @@ namespace trucki.Services;
 public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly ITokenService _tokenService;
     private readonly TruckiDBContext _context;
     private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
     private readonly INotificationService _notification;
     public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper,
-        ITokenService tokenService, IConfiguration configuration, INotificationService notification)
+        ITokenService tokenService, IConfiguration configuration, INotificationService notification, RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
         _mapper = mapper;
@@ -37,6 +39,7 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _configuration = configuration;
         _notification = notification;
+        _roleManager = roleManager;
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
@@ -59,7 +62,8 @@ public class AuthService : IAuthService
             return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, StatusCode = 500, Message = "Unknown error getting access token" };
         }
 
-
+        //var roles = _roleManager.Roles.ToList(); 
+        
         // var user = await _userManager.FindByEmailAsync(loginRequest.Email);
 
         // var tokenResponse = await _tokenService.GetToken(user.UserName, loginRequest.Password);
@@ -136,24 +140,38 @@ public class AuthService : IAuthService
         {
             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exists", StatusCodes.Status400BadRequest);
         }
-        var user = new User
+        /* var user = new User
+         {
+             Email = registrationRequest.Email,
+             firstName = registrationRequest.FirstName,
+             lastName = registrationRequest.LastName,
+             CreatedAt = DateTime.Now,
+             UpdatedAt = DateTime.Now,
+             EmailConfirmed = true,
+             Id = Guid.NewGuid().ToString(),
+             IsActive = true,
+             IsPasswordChanged = false,
+             PhoneNumber = registrationRequest.PhoneNumber,
+             Role = _configuration.GetSection("UserRole")["Users"],
+             UserName = registrationRequest.Email
+
+         };*/
+
+        string[] roleNames = {"User", "Manager", "Transporter", "Cargo Owner", "Driver" };
+        IdentityResult roleResult;
+
+        foreach (var roleName in roleNames)
         {
-            Email = registrationRequest.Email,
-            firstName = registrationRequest.Name,
-            lastName = "",
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now,
-            EmailConfirmed = true,
-            Id = Guid.NewGuid().ToString(),
-            IsActive = true,
-            IsPasswordChanged = false,
-            PhoneNumber = "",
-            Role = _configuration.GetSection("UserRole")["Users"],
-            UserName = registrationRequest.Email
+            var roleExist = await _roleManager.RoleExistsAsync(roleName);
+            if (!roleExist)
+            {
+                roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
+            }
+        }
 
-        };
 
-        var userRoles = user.Role.Split(',').ToList();
+        var roles = _configuration.GetSection("UserRole")["Users"];
+        var userRoles = roles.Split(',').ToList();
 
         if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
         {
@@ -168,20 +186,21 @@ public class AuthService : IAuthService
             {
                 if (role.ToLower().Contains(registrationRequest.Role.ToLower()))
                 {
-                    user = new User
+                    var user = new User
                     {
                         Email = registrationRequest.Email,
-                        firstName = registrationRequest.Name,
-                        lastName = "",
+                        firstName = registrationRequest.FirstName,
+                        lastName = registrationRequest.LastName,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now,
                         EmailConfirmed = true,
                         Id = Guid.NewGuid().ToString(),
                         IsActive = true,
                         IsPasswordChanged = false,
-                        PhoneNumber = "",
-                        Role = role,
+                        PhoneNumber = registrationRequest.PhoneNumber,
+                        Role = _configuration.GetSection("UserRole")["Users"],
                         UserName = registrationRequest.Email
+
                     };
 
                     var result = await _userManager.CreateAsync(user, registrationRequest.Password);
