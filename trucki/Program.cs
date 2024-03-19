@@ -9,12 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
 // Add services to the container.
-builder.Services.AddDbConfiguration(config);
+//builder.Services.AddDbConfiguration(config);
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
 builder.Services.AddDependencyInjection();  
 builder.Services.ConfigureDatabaseContext(config);
 builder.Services.ConfigureMailJet(config);
+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 
 builder.Services.AddControllers();

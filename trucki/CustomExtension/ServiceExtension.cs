@@ -1,5 +1,8 @@
 ﻿using Mailjet.Client;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using trucki.DatabaseContext;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
@@ -17,7 +20,7 @@ namespace trucki.CustomExtension
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000","https://trucki-web.vercel.app/v1", "http://157.245.4.44") // Replace with your HTML file's origin
+                    builder.WithOrigins("http://localhost:3000", "https://trucki-web.vercel.app/v1", "http://157.245.4.44") // Replace with your HTML file's origin
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
@@ -29,7 +32,7 @@ namespace trucki.CustomExtension
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<ICompanyRepository, CompanyRepository>();
-            services.AddScoped<ICompanyServices, CompanyServices>();  
+            services.AddScoped<ICompanyServices, CompanyServices>();
             services.AddScoped<IDriverRepository, DriverRepository>();
             services.AddScoped<IDriverService, DriverService>();
             services.AddScoped<IBusinessRepository, BusinessRepository>();
@@ -41,6 +44,7 @@ namespace trucki.CustomExtension
 
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>
           services.AddDbContext<TruckiDBContext>(opts => opts.UseNpgsql(configuration.GetConnectionString("LocalConnection1")));
+
 
         public static void ConfigureMailJet(this IServiceCollection services, IConfiguration configuration) =>
           services.AddHttpClient<IMailjetClient, MailjetClient>(client =>

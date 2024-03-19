@@ -1,8 +1,14 @@
 using IdentityModel.Client;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IServices;
-
+using trucki.Models.RequestModel;
+using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
@@ -67,11 +73,93 @@ public class TokenService : ITokenService
             }
             return tokenResponse;
         }
-        
-        
 
 
-        public async Task<TokenResponse> RefreshTokenAsync(string refreshToken)
+    public string GenerateRefreshToken(ref ApiResponseModel<LoginResponseModel> loginResponse)
+    {
+        var jwtKey = _config["jwt:key"];
+        var jwtAudience = _config["jwt:audience"];
+        var jwtTokenExpire = _config["jwt:expireMin"];
+
+        DateTime issuedAt = DateTime.Now;
+
+        //set the time when it expires
+        var mins = int.TryParse(jwtTokenExpire, out int expiresMin) ? expiresMin : 0;
+        DateTime expires = DateTime.Now.AddMinutes(expiresMin);
+
+
+        //create a identity and add claims to the user which we want to log in
+        var claims = new Claim[]
+        {
+
+                new Claim(ClaimTypes.NameIdentifier,loginResponse.Data.Id ?? ""),
+                new Claim(ClaimTypes.Name, loginResponse.Data.FirstName +" "+ loginResponse.Data.LastName ?? ""),
+                new Claim(ClaimTypes.GivenName,loginResponse.Data.FirstName ?? ""),
+                new Claim(ClaimTypes.Surname,loginResponse.Data.LastName ?? ""),
+                new Claim(ClaimTypes.MobilePhone,loginResponse.Data.PhoneNumber ?? ""),
+                new Claim(ClaimTypes.Email,loginResponse.Data.EmailAddress ?? ""),
+        };
+
+        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+
+        var token = new JwtSecurityToken(
+            issuer: jwtAudience,
+            audience: jwtAudience,
+            claims: claims,
+            notBefore: DateTime.Now,
+            expires: expires,
+            signingCredentials: new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256)
+        );
+
+        var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return jwtToken;
+    }
+
+    public string GenerateToken(ref ApiResponseModel<LoginResponseModel> loginResponse)
+    {
+        var jwtKey = _config["jwt:key"];
+        var jwtAudience = _config["jwt:audience"];
+        var jwtTokenExpire = _config["jwt:expireMin"];
+
+        DateTime issuedAt = DateTime.Now;
+
+        //set the time when it expires
+        var mins = int.TryParse(jwtTokenExpire, out int expiresMin) ? expiresMin : 0;
+        DateTime expires = DateTime.Now.AddMinutes(expiresMin);
+
+
+        //create a identity and add claims to the user which we want to log in
+        var claims = new Claim[]
+        {
+
+                new Claim(ClaimTypes.NameIdentifier,loginResponse.Data.Id ?? ""),
+                new Claim(ClaimTypes.Name, loginResponse.Data.FirstName +" "+ loginResponse.Data.LastName ?? ""),
+                new Claim(ClaimTypes.GivenName,loginResponse.Data.FirstName ?? ""),
+                new Claim(ClaimTypes.Surname,loginResponse.Data.LastName ?? ""),
+                new Claim(ClaimTypes.MobilePhone,loginResponse.Data.PhoneNumber ?? ""),
+                new Claim(ClaimTypes.Email,loginResponse.Data.EmailAddress ?? ""),
+        };
+
+        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+
+        var token = new JwtSecurityToken(
+            issuer: jwtAudience,
+            audience: jwtAudience,
+            claims: claims,
+            notBefore: DateTime.Now,
+            expires: expires,
+            signingCredentials: new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256)
+        );
+
+        var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return jwtToken;
+    }
+
+
+
+    public async Task<TokenResponse> RefreshTokenAsync(string refreshToken)
         {
 
             var tokenResponse = await _httpClient.RequestRefreshTokenAsync(new RefreshTokenRequest
