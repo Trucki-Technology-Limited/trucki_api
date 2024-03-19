@@ -12,7 +12,7 @@ namespace trucki.DTOs
 
         public string EmailAddress { get; set; }
 
-        public string CompanyId { get; set; }
         public ManagerType ManagerType { get; set; }
     }
+
 }

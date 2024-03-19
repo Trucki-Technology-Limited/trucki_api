@@ -46,7 +46,7 @@ namespace trucki.Services
 
         public async Task<GenericResponse<string>> UpdateTruckiDriverAsync(CreateDriverDto createDriver)
         {
-            var driver = await _driver.FetchDriverById(createDriver.Id, false);
+            var driver = new Driver(); //await _driver.FetchDriverById(createDriver.Id, false);
             if (driver == null)
             {
                 return new GenericResponse<string>

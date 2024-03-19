@@ -11,7 +11,7 @@ namespace trucki.DTOs
         public string PhoneNumber { get; set; }
         public string EmailAddress { get; set; }
         public string? ManageName { get; set; }
-        public ICollection<ManagerResponse> Managers { get; set; } 
+       // public ICollection<ManagerResponse> Managers { get; set; } 
 
     }
 

@@ -10,13 +10,11 @@ namespace trucki.Services
     public class ManagerService : IManagerService
     {
         private readonly IManagerRepository _managerRepository;
-        private readonly ICompanyRepository _companyRepository;
         private readonly IMapper _mapper;
         public ManagerService(IManagerRepository managerRepository, IMapper mapper, ICompanyRepository companyRepository)
         {
             _managerRepository = managerRepository;
             _mapper = mapper;
-            _companyRepository = companyRepository;
         }
 
         public async Task<GenericResponse<string>> CreateTruckiManagerAsync(CreateManagerDto createManager)
@@ -105,11 +103,11 @@ namespace trucki.Services
 
         public async Task<GenericResponse<IEnumerable<ManagerResponseDto>>> FetchAllTruckiManagersAsync(ManagerParameter managerParameter)
         {
-            var companies = await _managerRepository.FetchTruckiManagers(managerParameter);
+            var managers = await _managerRepository.FetchTruckiManagers(managerParameter);
 
-            var managerResponse = _mapper.Map<IEnumerable<ManagerResponseDto>>(companies);
+            var managerResponse = _mapper.Map<IEnumerable<ManagerResponseDto>>(managers);
 
-            if (companies == null)
+            if (managers == null)
             {
                 return new GenericResponse<IEnumerable<ManagerResponseDto>>
                 {

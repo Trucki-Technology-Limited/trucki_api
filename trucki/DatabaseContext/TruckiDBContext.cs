@@ -23,10 +23,13 @@ namespace trucki.DatabaseContext
                 .OnDelete(DeleteBehavior.Cascade); // Ensure cascading delete*/
 
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<IdentityUserLogin<string>>().HasKey(l => l.UserId);
+
 
             // Other configurations...
         }
         public DbSet<Driver> Drivers { get; set; }
+        public DbSet<Company> Companies { get; set; }
         public DbSet<Manager> Managers { get; set; }
         public DbSet<Business> Businesses { get; set; }
         public DbSet<Routes> RoutesEnumerable { get; set; }
