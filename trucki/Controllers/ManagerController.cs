@@ -56,9 +56,9 @@ namespace trucki.Controllers
 
         [HttpGet("FetchTruckiManagerById")]
         [ProducesResponseType(typeof(GenericResponse<IEnumerable<ManagerResponseDto>>), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> FetchTruckiManagerById([FromQuery] string companyId)
+        public async Task<IActionResult> FetchTruckiManagerById([FromQuery] string managerId)
         {
-            var result = await _managerService.FetchTruckiManagerAsync(companyId);
+            var result = await _managerService.FetchTruckiManagerAsync(managerId);
             if (result == null)
             {
                 return NotFound();

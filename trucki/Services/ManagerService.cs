@@ -3,6 +3,7 @@ using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
+using trucki.Repository;
 
 namespace trucki.Services
 {
@@ -10,11 +11,10 @@ namespace trucki.Services
     {
         private readonly IManagerRepository _managerRepository;
         private readonly IMapper _mapper;
-        public ManagerService(IManagerRepository managerRepository, IMapper mapper)
+        public ManagerService(IManagerRepository managerRepository, IMapper mapper, ICompanyRepository companyRepository)
         {
             _managerRepository = managerRepository;
             _mapper = mapper;
-            
         }
 
         public async Task<GenericResponse<string>> CreateTruckiManagerAsync(CreateManagerDto createManager)
@@ -32,7 +32,7 @@ namespace trucki.Services
                     Data = null
                 };
             }
-           // manager.CompanyId = "";
+
             _managerRepository.CreateTruckiManager(manager);
             await _managerRepository.SaveAsync();
 
@@ -103,11 +103,11 @@ namespace trucki.Services
 
         public async Task<GenericResponse<IEnumerable<ManagerResponseDto>>> FetchAllTruckiManagersAsync(ManagerParameter managerParameter)
         {
-            var companies = await _managerRepository.FetchTruckiManagers(managerParameter);
+            var managers = await _managerRepository.FetchTruckiManagers(managerParameter);
 
-            var managerResponse = _mapper.Map<IEnumerable<ManagerResponseDto>>(companies);
+            var managerResponse = _mapper.Map<IEnumerable<ManagerResponseDto>>(managers);
 
-            if (companies == null)
+            if (managers == null)
             {
                 return new GenericResponse<IEnumerable<ManagerResponseDto>>
                 {

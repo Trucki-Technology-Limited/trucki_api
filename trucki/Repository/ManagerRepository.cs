@@ -17,14 +17,11 @@ namespace trucki.Repository
 
         public async Task<IEnumerable<Manager>> FetchTruckiManagers(ManagerParameter managerParameter) => await FindAll(false)
         .OrderByDescending(e => e.CreatedAt)
-        .Include(e => e.Company)
         .Skip((managerParameter.PageNumber - 1) * managerParameter.PageSize)
         .Take(managerParameter.PageSize)
         .ToListAsync();
 
-        public async Task<Manager> FetchManagerById(string managerId, bool trackChanges) => await FindByCondition(x => x.Id.ToLower().Equals(managerId.ToLower()), trackChanges)
-            .Include(x => x.Company)
-            .FirstOrDefaultAsync();
+        public async Task<Manager> FetchManagerById(string managerId, bool trackChanges) => await FindByCondition(x => x.Id.ToLower().Equals(managerId.ToLower()), trackChanges).FirstOrDefaultAsync();
 
         public async Task SaveAsync() => await SaveChangesAsync();
     }

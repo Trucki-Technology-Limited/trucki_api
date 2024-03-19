@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
@@ -11,9 +12,10 @@ using trucki.DatabaseContext;
 namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240319093948_UpdateManager")]
+    partial class UpdateManager
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,19 +102,22 @@ namespace trucki.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProviderDisplayName")
                         .HasColumnType("text");
 
                     b.Property<string>("ProviderKey")
                         .HasColumnType("text");
 
-                    b.HasKey("UserId");
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
@@ -182,41 +187,6 @@ namespace trucki.Migrations
                     b.ToTable("Businesses");
                 });
 
-            modelBuilder.Entity("trucki.Entities.Company", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("EmailAddress")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ManageName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Companies");
-                });
-
             modelBuilder.Entity("trucki.Entities.Driver", b =>
                 {
                     b.Property<string>("Id")
@@ -224,9 +194,6 @@ namespace trucki.Migrations
 
                     b.Property<string>("Company")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyId")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -254,8 +221,6 @@ namespace trucki.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
 
                     b.ToTable("Drivers");
                 });
@@ -470,13 +435,6 @@ namespace trucki.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("trucki.Entities.Driver", b =>
-                {
-                    b.HasOne("trucki.Entities.Company", null)
-                        .WithMany("Drivers")
-                        .HasForeignKey("CompanyId");
-                });
-
             modelBuilder.Entity("trucki.Entities.Routes", b =>
                 {
                     b.HasOne("trucki.Entities.Business", "Business")
@@ -489,11 +447,6 @@ namespace trucki.Migrations
             modelBuilder.Entity("trucki.Entities.Business", b =>
                 {
                     b.Navigation("Routes");
-                });
-
-            modelBuilder.Entity("trucki.Entities.Company", b =>
-                {
-                    b.Navigation("Drivers");
                 });
 #pragma warning restore 612, 618
         }

@@ -16,6 +16,8 @@ builder.Services.AddDependencyInjection();
 builder.Services.ConfigureDatabaseContext(config);
 builder.Services.ConfigureMailJet(config);
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -65,13 +67,13 @@ builder.Services.AddSwaggerGen(options =>
 
 
 var app = builder.Build();
-var connectionString = config.GetConnectionString("LocalConnection");
+/*var connectionString = config.GetConnectionString("LocalConnection");
 SeedData.EnsureSeedData(connectionString).Wait();
  using (var scope = app.Services.CreateScope())
  {
      var context = scope.ServiceProvider.GetRequiredService<TruckiDBContext>();
     context.Database.Migrate();
- }
+ }*/
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

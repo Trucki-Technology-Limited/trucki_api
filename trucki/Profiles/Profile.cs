@@ -17,12 +17,14 @@ public class Profiles : Profile
         CreateMap<Driver, CreateDriverDto>().ReverseMap();
         CreateMap<Company, CompanyResponseDto>().ReverseMap();
         CreateMap<CreateCompanyDto, Company>().ReverseMap();
-        CreateMap<CreateBusinessDto, Business>().ReverseMap();
-        CreateMap<ManagerResponse, Manager>().ReverseMap();
+        CreateMap<Manager, ManagerResponseDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
+            .ReverseMap();
         CreateMap<CreateManagerDto, Manager>().ReverseMap();
         CreateMap<User, ResetPasswordDto>().ReverseMap();
         CreateMap<RoutesResponse, BusinessResponse>().ReverseMap();
         CreateMap<Business, BusinessResponse>().ReverseMap();
+        CreateMap<Business, CreateBusinessDto>().ReverseMap();
 
     }
 }

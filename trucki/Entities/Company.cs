@@ -10,6 +10,6 @@
 
         // Navigation properties
         public ICollection<Driver> Drivers { get; set; } = new List<Driver>();
-        public ICollection<Manager> Managers { get; set; } = new List<Manager>();
+      //  public ICollection<Manager> Managers { get; set; } = new List<Manager>();
     }
 }
