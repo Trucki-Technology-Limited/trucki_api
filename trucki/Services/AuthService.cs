@@ -14,22 +14,21 @@ using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 using trucki.Shared;
-using trucki.Shared.Request;
 using trucki.Utility;
-using static Duende.IdentityServer.Models.IdentityResources;
 
 namespace trucki.Services;
 
 public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly ITokenService _tokenService;
     private readonly TruckiDBContext _context;
     private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
     private readonly INotificationService _notification;
     public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper,
-        ITokenService tokenService, IConfiguration configuration, INotificationService notification)
+        ITokenService tokenService, IConfiguration configuration, INotificationService notification, RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
         _mapper = mapper;
@@ -37,6 +36,7 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _configuration = configuration;
         _notification = notification;
+        _roleManager = roleManager;
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
@@ -59,6 +59,7 @@ public class AuthService : IAuthService
             return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, StatusCode = 500, Message = "Unknown error getting access token" };
         }
 
+        //var roles = _roleManager.Roles.ToList(); 
 
         // var user = await _userManager.FindByEmailAsync(loginRequest.Email);
 
@@ -136,73 +137,82 @@ public class AuthService : IAuthService
         {
             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exists", StatusCodes.Status400BadRequest);
         }
-        var user = new User
-        {
-            Email = registrationRequest.Email,
-            firstName = registrationRequest.Name,
-            lastName = "",
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now,
-            EmailConfirmed = true,
-            Id = Guid.NewGuid().ToString(),
-            IsActive = true,
-            IsPasswordChanged = false,
-            PhoneNumber = "",
-            Role = _configuration.GetSection("UserRole")["Users"],
-            UserName = registrationRequest.Email
+        /* var user = new User
+         {
+             Email = registrationRequest.Email,
+             firstName = registrationRequest.FirstName,
+             lastName = registrationRequest.LastName,
+             CreatedAt = DateTime.Now,
+             UpdatedAt = DateTime.Now,
+             EmailConfirmed = true,
+             Id = Guid.NewGuid().ToString(),
+             IsActive = true,
+             IsPasswordChanged = false,
+             PhoneNumber = registrationRequest.PhoneNumber,
+             Role = _configuration.GetSection("UserRole")["Users"],
+             UserName = registrationRequest.Email
 
-        };
+         };*/
 
-        var userRoles = user.Role.Split(',').ToList();
+        string[] roleNames = { "User", "Manager", "Transporter", "Cargo Owner", "Driver" };
 
-        if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
-        {
-            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role(s) provided", StatusCodes.Status400BadRequest);
-        }
+
+
+        /* var roles = _configuration.GetSection("UserRole")["Users"];
+         var userRoles = roles.Split(',').ToList();
+
+         if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
+         {
+             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role(s) provided", StatusCodes.Status400BadRequest);
+         }*/
 
         var userPermissions = registrationRequest.Permissions.Select(permission => new Claim("Permission", permission)).ToList();
 
         using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
-            foreach (var role in userRoles)
+
+
+            var user = new User
             {
-                if (role.ToLower().Contains(registrationRequest.Role.ToLower()))
+                Email = registrationRequest.Email,
+                firstName = registrationRequest.FirstName,
+                lastName = registrationRequest.LastName,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+                EmailConfirmed = true,
+                Id = Guid.NewGuid().ToString(),
+                IsActive = true,
+                IsPasswordChanged = false,
+                PhoneNumber = registrationRequest.PhoneNumber,
+                Role = registrationRequest.Role,
+                UserName = registrationRequest.Email
+
+            };
+
+            var result = await _userManager.CreateAsync(user, registrationRequest.Password);
+            IdentityResult roleResult;
+
+            if (result.Succeeded)
+            {
+                foreach (var roleName in roleNames)
                 {
-                    user = new User
+                    var roleExist = await _roleManager.RoleExistsAsync(roleName);
+                    if (!roleExist)
                     {
-                        Email = registrationRequest.Email,
-                        firstName = registrationRequest.Name,
-                        lastName = "",
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now,
-                        EmailConfirmed = true,
-                        Id = Guid.NewGuid().ToString(),
-                        IsActive = true,
-                        IsPasswordChanged = false,
-                        PhoneNumber = "",
-                        Role = role,
-                        UserName = registrationRequest.Email
-                    };
-
-                    var result = await _userManager.CreateAsync(user, registrationRequest.Password);
-
-
-                    if (result.Succeeded)
-                    {
-                        await _userManager.AddToRoleAsync(user, user.Role);
-                        await _userManager.AddClaimsAsync(user, userPermissions);
-
-                        var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
-                    }
-                    else
-                    {
-                        // Rollback transaction if user creation failed
-                        transaction.Dispose();
-                        return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Failed to create user with role {role}", StatusCodes.Status500InternalServerError);
+                        roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
                     }
                 }
+                await _userManager.AddToRoleAsync(user, registrationRequest.Role);
+                await _userManager.AddClaimsAsync(user, userPermissions);
 
+                var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
+            }
+            else
+            {
+                // Rollback transaction if user creation failed
+                transaction.Dispose();
+                return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Failed to create user with role", StatusCodes.Status500InternalServerError);
             }
 
             transaction.Complete();
@@ -210,6 +220,7 @@ public class AuthService : IAuthService
 
         var currentUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
         //var tokenResponse = await _tokenService.GetToken(currentUser.UserName, registrationRequest.Password);
+
 
         var newResponse = new CreatTruckiUserResponseDto
         {

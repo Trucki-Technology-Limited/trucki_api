@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using trucki.DTOs;
 using trucki.Interfaces.IServices;
@@ -71,7 +72,7 @@ namespace trucki.Controllers
 
         [HttpGet("FetchAllTruckiBusinesses")]
         [ProducesResponseType(typeof(GenericResponse<IEnumerable<BusinessResponse>>), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> FetchAllTruckiBusinesses(BusinessParameter businessParameter)
+        public async Task<IActionResult> FetchAllTruckiBusinesses([FromQuery] BusinessParameter businessParameter)
         {
             var result = await _businessService.FetchAllTruckiBusinessesAsync(businessParameter);
             if (result == null)
