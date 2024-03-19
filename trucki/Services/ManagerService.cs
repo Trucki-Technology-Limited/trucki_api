@@ -3,18 +3,20 @@ using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
+using trucki.Repository;
 
 namespace trucki.Services
 {
     public class ManagerService : IManagerService
     {
         private readonly IManagerRepository _managerRepository;
+        private readonly ICompanyRepository _companyRepository;
         private readonly IMapper _mapper;
-        public ManagerService(IManagerRepository managerRepository, IMapper mapper)
+        public ManagerService(IManagerRepository managerRepository, IMapper mapper, ICompanyRepository companyRepository)
         {
             _managerRepository = managerRepository;
             _mapper = mapper;
-            
+            _companyRepository = companyRepository;
         }
 
         public async Task<GenericResponse<string>> CreateTruckiManagerAsync(CreateManagerDto createManager)
@@ -32,7 +34,7 @@ namespace trucki.Services
                     Data = null
                 };
             }
-           // manager.CompanyId = "";
+
             _managerRepository.CreateTruckiManager(manager);
             await _managerRepository.SaveAsync();
 
