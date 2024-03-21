@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using trucki.DatabaseContext;
+using trucki.Enums;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Repository;
@@ -17,16 +18,26 @@ namespace trucki.CustomExtension
     {
         public static void AddDependencyInjection(this IServiceCollection services)
         {
+            /* services.AddCors(options =>
+             {
+                 options.AddDefaultPolicy(builder =>
+                 {
+                     builder.WithOrigins("http://localhost:3000", "https://trucki-web.vercel.app/v1", "http://157.245.4.44") // Replace with your HTML file's origin
+                         .AllowAnyHeader()
+                         .AllowAnyMethod()
+                         .AllowCredentials();
+                 });
+             });*/
+
             services.AddCors(options =>
             {
-                options.AddDefaultPolicy(builder =>
-                {
-                    builder.WithOrigins("http://localhost:3000", "https://trucki-web.vercel.app/v1", "http://157.245.4.44") // Replace with your HTML file's origin
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
-                });
+                options.AddPolicy("CorsPolicy", builder =>
+                  builder.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .WithExposedHeaders("X-Pagination"));
             });
+
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
@@ -55,9 +66,26 @@ namespace trucki.CustomExtension
 
         public static void ConfigureAuthorization(this IServiceCollection services) =>
 
-            services.AddAuthorization(options => options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+         /*services.AddAuthorization(options => options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+         .RequireAuthenticatedUser()
+         .Build());
+*/
+        services.AddAuthorization(options =>
+        {
+            options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
             .RequireAuthenticatedUser()
-            .Build());
+            .Build();
+            options.AddPolicy("RequireAdminOnly", policy => policy.RequireRole(UserRoles.Admin.ToString()));
+            options.AddPolicy("RequireMangersOnly", policy =>
+            {
+                policy.RequireRole(UserRoles.OperationManager.ToString(), UserRoles.FinancialManager.ToString());
+            });
+            options.AddPolicy("RequireManagerOnly", policy => policy.RequireRole(UserRoles.OperationManager.ToString()));
+            options.AddPolicy("RequireDriverOnly", policy => policy.RequireRole(UserRoles.Driver.ToString()));
+            options.AddPolicy("RequireCargoOnerOnly", policy => policy.RequireRole(UserRoles.CargoOwner.ToString()));
+            options.AddPolicy("RequiredTransporterOnly", policy => policy.RequireRole(UserRoles.Transporter.ToString()));
+            options.AddPolicy("RequiredHrOnly", policy => policy.RequireRole(UserRoles.HR.ToString()));
+        });
 
         public static void ConfigureAuthentication(this IServiceCollection services, IConfiguration configuration) =>
          services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

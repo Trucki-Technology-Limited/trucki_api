@@ -77,9 +77,9 @@ public class TokenService : ITokenService
 
     public string GenerateRefreshToken(ref ApiResponseModel<LoginResponseModel> loginResponse)
     {
-        var jwtKey = _config["jwt:key"];
-        var jwtAudience = _config["jwt:audience"];
-        var jwtTokenExpire = _config["jwt:expireMin"];
+        var jwtKey = _config["JwtSettings:key"];
+        var jwtAudience = _config["JwtSettings:audience"];
+        var jwtTokenExpire = _config["JwtSettings:expireMin"];
 
         DateTime issuedAt = DateTime.Now;
 
@@ -118,9 +118,9 @@ public class TokenService : ITokenService
 
     public string GenerateToken(ref ApiResponseModel<LoginResponseModel> loginResponse)
     {
-        var jwtKey = _config["jwt:key"];
-        var jwtAudience = _config["jwt:audience"];
-        var jwtTokenExpire = _config["jwt:expireMin"];
+        var jwtKey = _config["JwtSettings:key"];
+        var jwtAudience = _config["JwtSettings:audience"];
+        var jwtTokenExpire = _config["JwtSettings:expireMin"];
 
         DateTime issuedAt = DateTime.Now;
 

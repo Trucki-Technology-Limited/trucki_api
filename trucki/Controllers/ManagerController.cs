@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using trucki.DTOs;
 using trucki.Interfaces.IServices;
+using trucki.Models.ResponseModels;
 
 namespace trucki.Controllers
 {
@@ -19,7 +20,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateNewManager")]
-        [ProducesResponseType(typeof(GenericResponse<string>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel<string>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> CreateNewManager([FromBody] CreateManagerDto model)
         {
             var result = await _managerService.CreateTruckiManagerAsync(model);
@@ -31,8 +32,8 @@ namespace trucki.Controllers
         }
 
         [HttpPut("UpdateNewManager")]
-        [ProducesResponseType(typeof(GenericResponse<string>), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> UpdateNewManager([FromBody] CreateManagerDto model)
+        [ProducesResponseType(typeof(ApiResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateNewManager([FromBody] UpdateManagerDto model)
         {
             var result = await _managerService.UpdateTruckiManagerAsync(model);
             if (result == null)
@@ -44,7 +45,7 @@ namespace trucki.Controllers
 
 
         [HttpGet("FetchAllTruckiManagers")]
-        [ProducesResponseType(typeof(GenericResponse<IEnumerable<ManagerResponseDto>>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<ManagerResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> FetchAllTruckiManagers([FromQuery] ManagerParameter companyParameter)
         {
             var result = await _managerService.FetchAllTruckiManagersAsync(companyParameter);
@@ -57,7 +58,7 @@ namespace trucki.Controllers
 
 
         [HttpGet("FetchTruckiManagerById")]
-        [ProducesResponseType(typeof(GenericResponse<IEnumerable<ManagerResponseDto>>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel<ManagerResponseDto>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> FetchTruckiManagerById([FromQuery] string managerId)
         {
             var result = await _managerService.FetchTruckiManagerAsync(managerId);

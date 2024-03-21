@@ -1,9 +1,7 @@
 using System.Net;
-using System.Text.RegularExpressions;
-using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.HttpSys;
+using Microsoft.AspNetCore.Identity;
 using trucki.DTOs;
 using trucki.Entities;
 using trucki.Interfaces.IServices;
@@ -14,21 +12,41 @@ namespace trucki.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-
-    public AuthController(IAuthService authService)
+    private readonly ITokenService _tokenService;
+    private readonly UserManager<User> _userManager;
+    public AuthController(IAuthService authService, ITokenService tokenService, UserManager<User> userManager)
     {
         _authService = authService;
+        _tokenService = tokenService;
+        _userManager = userManager;
     }
 
+    [AllowAnonymous]
     [HttpPost("Login")]
     [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequestModel request)
     {
-        var result = await _authService.Login(request);
-        return StatusCode(result.StatusCode, result);
+        var userLogin = await _authService.Login(request);
+        if (userLogin.IsSuccessful && userLogin.Data != null)
+        {
+            var token = _tokenService.GenerateToken(ref userLogin);
+            var refreshToken = _tokenService.GenerateRefreshToken(ref userLogin);
+
+            var loggedInUser = await _userManager.FindByEmailAsync(userLogin.Data.EmailAddress);
+            userLogin.Data.Token = token;
+            userLogin.Data.RefreshToken = refreshToken;
+            userLogin.Data.TokenGenerationTime = DateTime.UtcNow.ToString();
+            userLogin.Data.LastLoginDate = DateTime.UtcNow;
+            await _userManager.UpdateAsync(loggedInUser);
+
+            return StatusCode(userLogin.StatusCode, userLogin);
+        }
+
+        return StatusCode(userLogin.StatusCode, userLogin);
     }
 
     [AllowAnonymous]
@@ -43,11 +61,17 @@ public class AuthController : ControllerBase
     [HttpPost]
     [Route("Refresh-token")]
     [ProducesResponseType(typeof(ApiResponseModel<CreatTruckiUserResponseDto>), (int)HttpStatusCode.Created)]
-    public async Task<IActionResult> RefreshToken(RefreshTokenResponseDto refreshToken)
+    public async Task<IActionResult> RefreshToken(RefreshTokenDto refreshToken)
     {
+        var refreshtokenresponse = await _authService.GenerateRefreshToken(refreshToken);
 
-        var result = await _authService.RefreshToken(refreshToken.RefreshToken);
-        return StatusCode(result.StatusCode, result);
+        if (refreshtokenresponse.IsSuccessful && refreshtokenresponse != null)
+        {
+
+            return StatusCode(refreshtokenresponse.StatusCode, refreshtokenresponse);
+        }
+
+        return StatusCode(refreshtokenresponse.StatusCode, refreshtokenresponse);
     }
 
     [AllowAnonymous]

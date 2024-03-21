@@ -8,6 +8,7 @@ public class LoginResponseModel
     public string? LastName { get; set; }
     public string Token { get; set; }
     public string RefreshToken { get; set; }
+    public string TokenGenerationTime { get; set; }
     public IEnumerable<string> Role { get; set; }
     public string EmailAddress { get; set; }
     public List<string> Permissions { get; set; }
