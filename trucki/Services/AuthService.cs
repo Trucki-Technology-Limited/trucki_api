@@ -1,6 +1,5 @@
 
 using System.Net;
-using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using System.Web;
@@ -10,6 +9,7 @@ using Newtonsoft.Json;
 using trucki.DatabaseContext;
 using trucki.DTOs;
 using trucki.Entities;
+using trucki.Enums;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
@@ -40,6 +40,7 @@ public class AuthService : IAuthService
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
+        var loginResponse = new ApiResponseModel<LoginResponseModel>();
 
         string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
 
@@ -53,45 +54,32 @@ public class AuthService : IAuthService
         }
 
         var user = await _userManager.FindByEmailAsync(request.email);
-        var tokenResponse = await _tokenService.GetToken(user.UserName, request.password);
-        if (tokenResponse.IsError)
-        {
-            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, StatusCode = 500, Message = "Unknown error getting access token" };
-        }
-
-        //var roles = _roleManager.Roles.ToList(); 
-
-        // var user = await _userManager.FindByEmailAsync(loginRequest.Email);
-
-        // var tokenResponse = await _tokenService.GetToken(user.UserName, loginRequest.Password);
         var role = await _userManager.GetRolesAsync(user);
 
-        //Get the user permissions if any is avaialable
-        List<Claim> getUserClaims = (List<Claim>)await _userManager.GetClaimsAsync(user);
-        List<string> adminPermission = new();
-        foreach (var userClaim in getUserClaims)
+
+        var responseDto = new ApiResponseModel<LoginResponseModel>
         {
-            adminPermission.Add(userClaim.Value);
-        }
-        var responseDto = new LoginResponseModel()
-        {
-            Id = user.Id,
-            UserName = $"{user.firstName} {user.lastName}",
-            Token = tokenResponse.AccessToken,
-            Role = role,
-            RefreshToken = tokenResponse.RefreshToken,
-            Permissions = adminPermission,
-            EmailAddress = user.Email,
-            isPasswordChanged = user.IsPasswordChanged,
-            isEmailConfirmed = user.EmailConfirmed,
-            isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
-            LastLoginDate = DateTime.Now
+            Data = new LoginResponseModel
+            {
+
+                Id = user.Id,
+                UserName = user.UserName,
+                Token = "",
+                Role = role,
+                FirstName = user.firstName,
+                LastName = user.lastName,
+                RefreshToken = "",
+                EmailAddress = user.Email,
+                //isPasswordChanged = user.IsPasswordChanged,
+                isEmailConfirmed = user.EmailConfirmed,
+                isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
+                LastLoginDate = DateTime.Now
+            }
+
         };
 
-        await _userManager.UpdateAsync(user);
+        return ApiResponseModel<LoginResponseModel>.Success("User created successfully", responseDto.Data, StatusCodes.Status201Created);
 
-
-        return new ApiResponseModel<LoginResponseModel> { IsSuccessful = true, Message = "Success", StatusCode = 200, Data = responseDto };
     }
 
     private async Task<ApiResponseModel<bool>> ValidateUser(LoginRequestModel loginRequest)
@@ -137,41 +125,15 @@ public class AuthService : IAuthService
         {
             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exists", StatusCodes.Status400BadRequest);
         }
-        /* var user = new User
-         {
-             Email = registrationRequest.Email,
-             firstName = registrationRequest.FirstName,
-             lastName = registrationRequest.LastName,
-             CreatedAt = DateTime.Now,
-             UpdatedAt = DateTime.Now,
-             EmailConfirmed = true,
-             Id = Guid.NewGuid().ToString(),
-             IsActive = true,
-             IsPasswordChanged = false,
-             PhoneNumber = registrationRequest.PhoneNumber,
-             Role = _configuration.GetSection("UserRole")["Users"],
-             UserName = registrationRequest.Email
 
-         };*/
-
-        string[] roleNames = { "User", "Manager", "Transporter", "Cargo Owner", "Driver" };
-
-
-
-        /* var roles = _configuration.GetSection("UserRole")["Users"];
-         var userRoles = roles.Split(',').ToList();
-
-         if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
-         {
-             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role(s) provided", StatusCodes.Status400BadRequest);
-         }*/
-
-        var userPermissions = registrationRequest.Permissions.Select(permission => new Claim("Permission", permission)).ToList();
+        // Check if the role in the request is a valid enum value
+        if (!Enum.TryParse<UserRoles>(registrationRequest.Role, out var userRole))
+        {
+            return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role provided", StatusCodes.Status400BadRequest);
+        }
 
         using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
-
-
             var user = new User
             {
                 Email = registrationRequest.Email,
@@ -182,11 +144,9 @@ public class AuthService : IAuthService
                 EmailConfirmed = true,
                 Id = Guid.NewGuid().ToString(),
                 IsActive = true,
-                IsPasswordChanged = false,
                 PhoneNumber = registrationRequest.PhoneNumber,
-                Role = registrationRequest.Role,
+                Role = userRole.ToString(), // Assign the parsed enum value as a string
                 UserName = registrationRequest.Email
-
             };
 
             var result = await _userManager.CreateAsync(user, registrationRequest.Password);
@@ -194,16 +154,14 @@ public class AuthService : IAuthService
 
             if (result.Succeeded)
             {
-                foreach (var roleName in roleNames)
+                // Check if the role exists in the role manager, create it if not
+                var roleExist = await _roleManager.RoleExistsAsync(userRole.ToString());
+                if (!roleExist)
                 {
-                    var roleExist = await _roleManager.RoleExistsAsync(roleName);
-                    if (!roleExist)
-                    {
-                        roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
-                    }
+                    await _roleManager.CreateAsync(new IdentityRole(userRole.ToString()));
                 }
-                await _userManager.AddToRoleAsync(user, registrationRequest.Role);
-                await _userManager.AddClaimsAsync(user, userPermissions);
+
+                await _userManager.AddToRoleAsync(user, userRole.ToString());
 
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
@@ -219,19 +177,79 @@ public class AuthService : IAuthService
         }
 
         var currentUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
-        //var tokenResponse = await _tokenService.GetToken(currentUser.UserName, registrationRequest.Password);
-
 
         var newResponse = new CreatTruckiUserResponseDto
         {
             Id = currentUser.Id,
-            EmailAddress = currentUser.Email,
-            Permissions = registrationRequest.Permissions
+            EmailAddress = currentUser.Email
         };
 
         return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User(s) created successfully", newResponse, StatusCodes.Status201Created);
     }
 
+    /// <summary>
+    /// Generate Refresh Token for JWT
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<ApiResponseModel<RefreshTokenResponseDto>> GenerateRefreshToken(RefreshTokenDto request)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+            {
+                return ApiResponseModel<RefreshTokenResponseDto>.Fail("User is not logged in or does not exists", StatusCodes.Status404NotFound);
+            }
+
+            /* if (user. != request.RefreshToken)
+             {
+                 return ApiResponseModel<RefreshTokenResponseDto>.Fail("Refresh token not valid", StatusCodes.Status404NotFound);
+             }*/
+
+            var loginResponse = new ApiResponseModel<LoginResponseModel>
+            {
+                Data = new LoginResponseModel
+                {
+
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Token = "",
+                    Role = { },
+                    FirstName = user.firstName,
+                    LastName = user.lastName,
+                    RefreshToken = "",
+                    EmailAddress = user.Email,
+                    // isPasswordChanged = user.IsPasswordChanged,
+                    isEmailConfirmed = user.EmailConfirmed,
+                    isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
+                    LastLoginDate = DateTime.Now
+                }
+
+            };
+
+            var result = new ApiResponseModel<RefreshTokenResponseDto>
+            {
+                Data = new RefreshTokenResponseDto
+                {
+                    AccessToken = _tokenService.GenerateToken(ref loginResponse),
+                    RefreshToken = _tokenService.GenerateRefreshToken(ref loginResponse),
+                    EmailAddress = user.Email
+                }
+            };
+            return ApiResponseModel<RefreshTokenResponseDto>.Success("Token refreshed successfully", result.Data, StatusCodes.Status201Created);
+        }
+        catch (Exception)
+        {
+            return ApiResponseModel<RefreshTokenResponseDto>.Fail("Token was not refreshed", StatusCodes.Status404NotFound);
+        }
+    }
+
+    /// <summary>
+    /// Refresh Token Using Identity Server
+    /// </summary>
+    /// <param name="refreshToken"></param>
+    /// <returns></returns>
     public async Task<ApiResponseModel<RefreshTokenResponseDto>> RefreshToken(string refreshToken)
     {
         try
@@ -531,7 +549,7 @@ public class AuthService : IAuthService
         if (user == null)
         {
             // Handle user not found
-            return null;
+            return "User is not found";
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -547,3 +565,188 @@ public class AuthService : IAuthService
     }
 
 }
+
+
+
+/* public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
+    {
+
+        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+        if (!(Regex.IsMatch(request.email, emailPattern)))
+            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, Message = "Invalid email address format", StatusCode = 400 };
+
+        var validityResult = await ValidateUser(request);
+        if (!validityResult.IsSuccessful)
+        {
+            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, Message = validityResult.Message, StatusCode = 400 };
+        }
+
+        var user = await _userManager.FindByEmailAsync(request.email);
+        *//* var tokenResponse = await _tokenService.GenerateToken(user.UserName, request.password);
+         if (tokenResponse.IsError)
+         {
+             return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, StatusCode = 500, Message = "Unknown error getting access token" };
+         }*//*
+
+        //var roles = _roleManager.Roles.ToList(); 
+
+        // var user = await _userManager.FindByEmailAsync(loginRequest.Email);
+
+        // var tokenResponse = await _tokenService.GetToken(user.UserName, loginRequest.Password);
+        var role = await _userManager.GetRolesAsync(user);
+
+        //Get the user permissions if any is avaialable
+        *//* List<Claim> getUserClaims = (List<Claim>)await _userManager.GetClaimsAsync(user);
+         List<string> adminPermission = new();
+         foreach (var userClaim in getUserClaims)
+         {
+             adminPermission.Add(userClaim.Value);
+         }*/
+/* var responseDto = new LoginResponseModel()
+ {
+     Id = user.Id,
+     UserName = $"{user.firstName} {user.lastName}",
+     Token = tokenResponse.AccessToken,
+     Role = role,
+     RefreshToken = tokenResponse.RefreshToken,
+     Permissions = adminPermission,
+     EmailAddress = user.Email,
+     isPasswordChanged = user.IsPasswordChanged,
+     isEmailConfirmed = user.EmailConfirmed,
+     isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
+     LastLoginDate = DateTime.Now
+ };
+
+ await _userManager.UpdateAsync(user);*//*
+
+
+return new ApiResponseModel<LoginResponseModel> { IsSuccessful = true, Message = "Success", StatusCode = 200, Data = responseDto };
+}
+*/
+
+/* private async Task<List<Claim>> GetClaims(LoginRequestModel loginRequest)
+ {
+     var loggedInUser = await _userManager.FindByEmailAsync(loginRequest.email);
+     var claims = new List<Claim>
+      {
+          new Claim(ClaimTypes.Name, loggedInUser)
+      };
+     var roles = await _userManager.GetRolesAsync(loggedInUser);
+     foreach (var role in roles)
+     {
+         claims.Add(new Claim(ClaimTypes.Role, role));
+     }
+     return claims;
+ }*/
+
+/// <summary>
+/// Registrations for User
+/// </summary>
+/// <param name="registrationRequest"></param>
+/// <returns></returns>
+/* public async Task<ApiResponseModel<CreatTruckiUserResponseDto>> RegisterTruckiAsync(CreatTruckiUserDto registrationRequest)
+ {
+     string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+     if (!Regex.IsMatch(registrationRequest.Email, emailPattern))
+         return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid email address format", StatusCodes.Status400BadRequest);
+
+     var existingUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
+
+     if (existingUser != null)
+     {
+         return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"User account already exists", StatusCodes.Status400BadRequest);
+     }
+     *//* var user = new User
+      {
+          Email = registrationRequest.Email,
+          firstName = registrationRequest.FirstName,
+          lastName = registrationRequest.LastName,
+          CreatedAt = DateTime.Now,
+          UpdatedAt = DateTime.Now,
+          EmailConfirmed = true,
+          Id = Guid.NewGuid().ToString(),
+          IsActive = true,
+          IsPasswordChanged = false,
+          PhoneNumber = registrationRequest.PhoneNumber,
+          Role = _configuration.GetSection("UserRole")["Users"],
+          UserName = registrationRequest.Email
+
+      };*//*
+
+    // string[] roleNames = { "User", "Transporter", "Cargo Owner", "Driver" };
+
+
+
+     *//* var roles = _configuration.GetSection("UserRole")["Users"];
+      var userRoles = roles.Split(',').ToList();
+
+      if (userRoles.Any(role => !_configuration.GetSection("UserRole").GetChildren().Any(x => x.Value.Split(',').Contains(role))))
+      {
+          return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Invalid user role(s) provided", StatusCodes.Status400BadRequest);
+      }*//*
+
+     // var userPermissions = registrationRequest.Permissions.Select(permission => new Claim("Permission", permission)).ToList();
+
+     using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+     {
+
+
+         var user = new User
+         {
+             Email = registrationRequest.Email,
+             firstName = registrationRequest.FirstName,
+             lastName = registrationRequest.LastName,
+             CreatedAt = DateTime.Now,
+             UpdatedAt = DateTime.Now,
+             EmailConfirmed = true,
+             Id = Guid.NewGuid().ToString(),
+             IsActive = true,
+             //IsPasswordChanged = false,
+             PhoneNumber = registrationRequest.PhoneNumber,
+             Role = registrationRequest.Role,
+             UserName = registrationRequest.Email
+
+         };
+
+         var result = await _userManager.CreateAsync(user, registrationRequest.Password);
+         IdentityResult roleResult;
+
+         if (result.Succeeded)
+         {
+             if(registrationRequest.Role.Contains(UserRoles.))
+                 var roleExist = await _roleManager.RoleExistsAsync(registrationRequest.Role);
+                 if (!roleExist)
+                 {
+                     roleResult = await _roleManager.CreateAsync(new IdentityRole(registrationRequest.Role));
+                 }
+
+             await _userManager.AddToRoleAsync(user, registrationRequest.Role);
+             // await _userManager.AddClaimsAsync(user, roleName);
+
+             var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+             var emailconf = await _userManager.ConfirmEmailAsync(user, emailToken);
+         }
+         else
+         {
+             // Rollback transaction if user creation failed
+             transaction.Dispose();
+             return ApiResponseModel<CreatTruckiUserResponseDto>.Fail($"Failed to create user with role", StatusCodes.Status500InternalServerError);
+         }
+
+         transaction.Complete();
+     }
+
+     var currentUser = await _userManager.FindByEmailAsync(registrationRequest.Email);
+     //var tokenResponse = await _tokenService.GetToken(currentUser.UserName, registrationRequest.Password);
+
+
+     var newResponse = new CreatTruckiUserResponseDto
+     {
+         Id = currentUser.Id,
+         EmailAddress = currentUser.Email
+     };
+
+     return ApiResponseModel<CreatTruckiUserResponseDto>.Success("User(s) created successfully", newResponse, StatusCodes.Status201Created);
+ }*/

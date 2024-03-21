@@ -1,5 +1,6 @@
 ﻿using Mailjet.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -52,5 +53,27 @@ namespace trucki.CustomExtension
               client.UseBasicAuthentication(configuration.GetSection("MailJetKeys")["ApiKey"], configuration.GetSection("MailJetKeys")["ApiSecret"]);
           });
 
+        public static void ConfigureAuthorization(this IServiceCollection services) =>
+
+            services.AddAuthorization(options => options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+            .RequireAuthenticatedUser()
+            .Build());
+
+        public static void ConfigureAuthentication(this IServiceCollection services, IConfiguration configuration) =>
+         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+         .AddJwtBearer(t =>
+         {
+             t.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+             {
+                 ValidateIssuerSigningKey = true,
+                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:key"])),
+                 ValidateIssuer = true,
+                 ValidIssuer = configuration["JwtSettings:audience"],
+                 ValidAudience = configuration["JwtSettings:audience"],
+                 ValidateAudience = true,
+                 ValidateLifetime = true,
+                 ClockSkew = TimeSpan.FromMinutes(5)
+             };
+         });
     }
 }

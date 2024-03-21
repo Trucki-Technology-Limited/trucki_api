@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using trucki.DTOs;
 using trucki.Interfaces.IServices;
@@ -7,6 +8,7 @@ namespace trucki.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ManagerController : ControllerBase
     {
         private readonly IManagerService _managerService;

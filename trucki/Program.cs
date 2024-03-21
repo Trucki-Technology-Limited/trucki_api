@@ -11,8 +11,10 @@ var config = builder.Configuration;
 // Add services to the container.
 builder.Services.AddDbConfiguration(config);
 builder.Services.AddIdentityConfiguration();
-builder.Services.AddIdentityServerConfig(config);
-builder.Services.AddDependencyInjection();  
+//builder.Services.AddIdentityServerConfig(config);
+builder.Services.AddDependencyInjection();
+builder.Services.ConfigureAuthorization();
+builder.Services.ConfigureAuthentication(config);
 builder.Services.ConfigureDatabaseContext(config);
 builder.Services.ConfigureMailJet(config);
 
@@ -83,7 +85,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-app.UseIdentityServer();
+//app.UseIdentityServer();
 app.UseAuthentication();
 app.UseHttpsRedirection();
 app.MapControllers();
