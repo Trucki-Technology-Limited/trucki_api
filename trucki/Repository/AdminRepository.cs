@@ -8,12 +8,12 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class AdminRepository: IAdminRepository
+public class AdminRepository : IAdminRepository
 {
-    
     private readonly TruckiDBContext _context;
     private readonly IMapper _mapper;
-    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper) 
+
+    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper)
     {
         _context = appDbContext;
         _mapper = mapper;
@@ -38,10 +38,11 @@ public class AdminRepository: IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness()
     {
         var businesses = await _context.Businesses.ToListAsync();
-        
+
         var businessResponseModels = _mapper.Map<List<AllBusinessResponseModel>>(businesses);
 
         return new ApiResponseModel<List<AllBusinessResponseModel>>
@@ -52,6 +53,7 @@ public class AdminRepository: IAdminRepository
             Data = businessResponseModels
         };
     }
+
     public async Task<ApiResponseModel<bool>> AddRouteToBusiness(AddRouteToBusinessRequestModel model)
     {
         // Check if the business with the provided BusinessId exists
@@ -96,6 +98,7 @@ public class AdminRepository: IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<BusinessResponseModel>> GetBusinessById(string id)
     {
         // Retrieve the business by ID including its routes
@@ -124,6 +127,212 @@ public class AdminRepository: IAdminRepository
             Message = "Business retrieved successfully",
             StatusCode = 200,
             Data = businessResponseModel
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> EditBusiness(EditBusinessRequestModel model)
+    {
+        // Retrieve the existing business
+        var business = await _context.Businesses.FindAsync(model.Id);
+
+        if (business == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Business not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Update business properties
+        business.Name = model.Name;
+        business.Ntons = model.Ntons;
+        business.Address = model.Address;
+        business.isActive = model.IsActive;
+
+        // Save changes to the database
+        try
+        {
+            await _context.SaveChangesAsync();
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "Business updated successfully",
+                StatusCode = 200,
+                Data = true
+            };
+        }
+        catch (Exception ex)
+        {
+            // Handle potential errors during database update
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "An error occurred while updating the business",
+                StatusCode = 500,
+                Data = false
+            };
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteBusiness(string id)
+    {
+        // Retrieve the business to be deleted
+        var business = await _context.Businesses
+            .Include(b => b.Routes) // Eagerly load associated routes
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (business == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Business not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // If the business has routes, remove them before deleting the business
+        if (business.Routes?.Any() == true)
+        {
+            _context.RoutesEnumerable.RemoveRange(business.Routes);
+        }
+
+        // Remove the business from the database
+        _context.Businesses.Remove(business);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Business deleted successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> DisableBusiness(string id)
+    {
+        // Retrieve the business
+        var business = await _context.Businesses.FindAsync(id);
+
+        if (business == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Business not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Disable the business by setting isActive to false
+        business.isActive = false;
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Business disabled successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+    
+    public async Task<ApiResponseModel<bool>> EnableBusiness(string id)
+    {
+        // Retrieve the business
+        var business = await _context.Businesses.FindAsync(id);
+
+        if (business == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Business not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Disable the business by setting isActive to false
+        business.isActive = true;
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Business disabled successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> EditRoute(EditRouteRequestModel model)
+    {
+        // Retrieve the route to be edited
+        var route = await _context.RoutesEnumerable.FindAsync(model.Id);
+
+        if (route == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Route not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Update route properties
+        route.Name = model.Name;
+        route.FromRoute = model.FromRoute;
+        route.ToRoute = model.ToRoute;
+        route.Price = model.Price;
+        route.IsActive = model.IsActive;
+
+        // Save changes to the database
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Route updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteRoute(string id)
+    {
+        // Retrieve the route to be deleted
+        var route = await _context.RoutesEnumerable.FindAsync(id);
+
+        if (route == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Route not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Remove the route from the database
+        _context.RoutesEnumerable.Remove(route);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Route deleted successfully",
+            StatusCode = 200,
+            Data = true
         };
     }
 }

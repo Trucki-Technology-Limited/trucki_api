@@ -41,5 +41,42 @@ namespace trucki.Controllers
             var business = await _adminService.GetBusinessById(businessId);
             return StatusCode(business.StatusCode, business);
         }
+        [HttpPost("EditBusiness")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditBusiness([FromBody] EditBusinessRequestModel model)
+        {
+            var response = await _adminService.EditBusiness(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("DeleteBusiness")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DeleteBusiness([FromQuery] string businessId)
+        {
+            var response = await _adminService.DeleteBusiness(businessId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("DisableBusiness")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DisableBusiness([FromQuery] string businessId)
+        {
+            var response = await _adminService.DisableBusiness(businessId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("EnableBusiness")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EnableBusiness([FromQuery] string businessId)
+        {
+            var response = await _adminService.EnableBusiness(businessId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("EditRoute")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditRoute([FromBody] EditRouteRequestModel model)
+        {
+            var response = await _adminService.EditRoute(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("DeleteRoute")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DeleteRoute([FromQuery] string routeId)
+        {
+            var response = await _adminService.DeleteRoute(routeId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

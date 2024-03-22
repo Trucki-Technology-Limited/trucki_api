@@ -1,5 +1,6 @@
 
 using System.Net;
+using System.Text.RegularExpressions;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using trucki.DatabaseContext;
@@ -26,31 +27,51 @@ public class AuthService : IAuthService
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _tokenService = tokenService;
     }
-        public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
+    public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
+    {
+        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+        if (!(Regex.IsMatch(request.email, emailPattern)))
+            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, Message = "Invalid email address format", StatusCode = 400 };
+
+        var validityResult = await ValidateUser(request);
+        if (!validityResult.IsSuccessful)
         {
-            var validityResult = await ValidateUser(request);
-            if (!validityResult.IsSuccessful)
-            {
-                return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, Message = validityResult.Message, StatusCode = 400 };
-            }
-            var user = await _userManager.FindByNameAsync(request.email);
-
-            var tokenResponse = await _tokenService.GetToken(user.UserName, request.password);
-            if (tokenResponse.IsError)
-            {
-                return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, StatusCode = 500, Message = "Unknown error getting access token" };
-            }
-            
-            var responseDto = new LoginResponseModel
-            {
-                Id = user.Id,
-                RefreshToken = tokenResponse.RefreshToken,
-                Token = tokenResponse.AccessToken,
-                UserName = $"{user.firstName} {user.lastName}",
-            };
-
-            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = true, Message = "Success", StatusCode = 200, Data = responseDto };
+            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, Message = validityResult.Message, StatusCode = 400 };
         }
+
+        var user = await _userManager.FindByEmailAsync(request.email);
+        var role = await _userManager.GetRolesAsync(user);
+        
+        var tokenResponse = await _tokenService.GetToken(user.UserName, request.password);
+        if (tokenResponse.IsError)
+        {
+            return new ApiResponseModel<LoginResponseModel> { IsSuccessful = false, StatusCode = 500, Message = "Unknown error getting access token" };
+        }
+        var responseDto = new ApiResponseModel<LoginResponseModel>
+        {
+            Data = new LoginResponseModel
+            {
+
+                Id = user.Id,
+                UserName = user.UserName,
+                Token = tokenResponse.AccessToken,
+                Role = role,
+                FirstName = user.firstName,
+                LastName = user.lastName,
+                RefreshToken = tokenResponse.RefreshToken,
+                EmailAddress = user.Email,
+                //isPasswordChanged = user.IsPasswordChanged,
+                isEmailConfirmed = user.EmailConfirmed,
+                isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
+                LastLoginDate = DateTime.Now
+            }
+
+        };
+
+        return ApiResponseModel<LoginResponseModel>.Success("User created successfully", responseDto.Data, StatusCodes.Status201Created);
+
+    }
 
         private async Task<ApiResponseModel<bool>> ValidateUser(LoginRequestModel loginRequest)
         {

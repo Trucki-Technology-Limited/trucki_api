@@ -58,4 +58,39 @@ public class AdminService: IAdminService
         }
         return new ApiResponseModel<BusinessResponseModel> { IsSuccessful = getBusiness.IsSuccessful, Message = getBusiness.Message, StatusCode = getBusiness.StatusCode };
     }
+
+    public async Task<ApiResponseModel<bool>> EditBusiness(EditBusinessRequestModel model)
+    {
+        var editBusiness = await _adminRepository.EditBusiness(model);
+        return editBusiness;
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteBusiness(string id)
+    {
+        var deleteBusiness = await _adminRepository.DeleteBusiness(id);
+        return deleteBusiness;
+    }
+
+    public async Task<ApiResponseModel<bool>> DisableBusiness(string id)
+    {
+        var disableBusiness = await _adminRepository.DisableBusiness(id);
+        return disableBusiness;
+    }
+    public async Task<ApiResponseModel<bool>> EnableBusiness(string id)
+    {
+        var enableBusiness = await _adminRepository.EnableBusiness(id);
+        return enableBusiness;
+    }
+
+    public async Task<ApiResponseModel<bool>> EditRoute(EditRouteRequestModel model)
+    {
+        var editRoute = await _adminRepository.EditRoute(model);
+        return editRoute;
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteRoute(string id)
+    {
+        var deleteRoute = await _adminRepository.DeleteRoute(id);
+        return deleteRoute;
+    }
 }

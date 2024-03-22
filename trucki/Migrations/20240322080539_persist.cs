@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace trucki.Migrations.PersistedGrantDb
+namespace trucki.Migrations
 {
-    public partial class initialMigration : Migration
+    public partial class persist : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

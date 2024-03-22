@@ -12,8 +12,8 @@ using trucki.DatabaseContext;
 namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
-    [Migration("20240219101654_initialMigration")]
-    partial class initialMigration
+    [Migration("20240322080557_InitialDB")]
+    partial class InitialDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
