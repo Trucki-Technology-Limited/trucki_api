@@ -17,30 +17,35 @@ namespace trucki.Controllers
         {
             _adminService = adminService;
         }
+
         [HttpPost("CreateNewBusiness")]
         public async Task<IActionResult> CreateNewBusiness([FromBody] CreateNewBusinessRequestModel model)
         {
             var result = await _adminService.CreateNewBusiness(model);
             return StatusCode(result.StatusCode, result);
         }
+
         [HttpGet("GetAllBusiness")]
         public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
         {
             var business = await _adminService.GetAllBusiness();
             return StatusCode(business.StatusCode, business);
         }
+
         [HttpPost("AddRouteToBusiness")]
         public async Task<IActionResult> AddRouteToBusiness([FromBody] AddRouteToBusinessRequestModel model)
         {
             var result = await _adminService.AddRouteToBusiness(model);
             return StatusCode(result.StatusCode, result);
         }
+
         [HttpGet("GetBusinessById")]
         public async Task<ActionResult<ApiResponseModel<BusinessResponseModel>>> GetBusinessById(string businessId)
         {
             var business = await _adminService.GetBusinessById(businessId);
             return StatusCode(business.StatusCode, business);
         }
+
         [HttpPost("EditBusiness")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditBusiness([FromBody] EditBusinessRequestModel model)
         {
@@ -54,36 +59,40 @@ namespace trucki.Controllers
             var response = await _adminService.DeleteBusiness(businessId);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("DisableBusiness")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DisableBusiness([FromQuery] string businessId)
         {
             var response = await _adminService.DisableBusiness(businessId);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("EnableBusiness")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EnableBusiness([FromQuery] string businessId)
         {
             var response = await _adminService.EnableBusiness(businessId);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("EditRoute")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditRoute([FromBody] EditRouteRequestModel model)
         {
             var response = await _adminService.EditRoute(model);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("DeleteRoute")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeleteRoute([FromQuery] string routeId)
         {
             var response = await _adminService.DeleteRoute(routeId);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("AddManager")]
         public async Task<ActionResult<ApiResponseModel<bool>>> AddManager([FromBody] AddManagerRequestModel model)
         {
             var response = await _adminService.AddManager(model);
             return StatusCode(response.StatusCode, response);
         }
-        }
-    
+    }
 }
