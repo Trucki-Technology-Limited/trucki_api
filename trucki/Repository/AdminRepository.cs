@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
+using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 
@@ -12,11 +13,13 @@ public class AdminRepository : IAdminRepository
 {
     private readonly TruckiDBContext _context;
     private readonly IMapper _mapper;
+    private readonly IAuthService _authService;
 
-    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper)
+    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper,IAuthService authService)
     {
         _context = appDbContext;
         _mapper = mapper;
+        _authService = authService;
     }
 
     public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
@@ -334,5 +337,60 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
             Data = true
         };
+    }
+    public async Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model)
+    {
+        // **Create manager entity**
+        var newManager = new Manager
+        {
+            Name = model.Name,
+            Phone = model.Phone,
+            EmailAddress = model.EmailAddress,
+            Company = model.Company,
+            ManagerType = model.ManagerType
+        };
+        _context.Managers.Add(newManager);
+        var password = GenerateRandomPassword();
+       var res = await _authService.AddNewUserAsync(newManager.Name, newManager.EmailAddress,
+            newManager.ManagerType == 0 ? "manager" : "finance manager",password);
+       if (res.StatusCode == 201)
+       {
+               // **Save changes to database**
+               await _context.SaveChangesAsync();
+               return new ApiResponseModel<string>
+               {
+                   IsSuccessful = true,
+                   Message = "Manager created successfully",
+                   StatusCode = 201,
+                   Data = password
+               };
+               
+       }
+       return new ApiResponseModel<string>
+       {
+           IsSuccessful = false,
+           Message = "An error occurred while creating the manager",
+           StatusCode = 400, // Bad Request
+       };
+    }
+    public static string GenerateRandomPassword(int length = 6)
+    {
+        // Define character sets for password generation
+        const string lowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
+        const string uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string digits = "0123456789";
+        const string symbols = "!@#$%^&*()-_=+[]{};':\"\\|,<.>/?";
+
+        // Combine all character sets (adjust as needed)
+        string chars = lowercaseLetters + uppercaseLetters + digits + symbols;
+
+        // Create a random number generator
+        var random = new Random();
+
+        // Generate a random password of the specified length
+        var password = new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
+
+        return password;
     }
 }

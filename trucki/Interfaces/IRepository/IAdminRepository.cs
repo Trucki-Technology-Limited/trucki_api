@@ -15,5 +15,5 @@ public interface IAdminRepository
     Task<ApiResponseModel<bool>> EnableBusiness(string id);
     Task<ApiResponseModel<bool>> EditRoute(EditRouteRequestModel model);
     Task<ApiResponseModel<bool>> DeleteRoute(string id);
-
+    Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model);
 }

@@ -102,4 +102,47 @@ public class AuthService : IAuthService
             return response;
 
         }
+        
+        public async Task<ApiResponseModel<bool>> AddNewUserAsync(string name, string email, string role, string password)
+        {
+            var user = new User
+            {
+                UserName = email,
+                NormalizedUserName = email.ToUpper(),
+                Email = email,
+                NormalizedEmail = email.ToUpper(),
+                EmailConfirmed = true,
+                PasswordHash =
+                    new PasswordHasher<User>().HashPassword(null,
+                        password),
+                SecurityStamp = string.Empty,
+                firstName = name,
+                lastName = name,
+                IsActive = true,
+            };
+
+            var result = await _userManager.CreateAsync(user);
+            switch (result.Succeeded)
+            {
+                case true:
+                    await _userManager.AddToRoleAsync(user, role);
+                    break;
+                case false:
+                    // Handle user creation failure
+                    return new ApiResponseModel<bool>
+                    {
+                        IsSuccessful = false,
+                        Message = result.Errors.FirstOrDefault()?.Description ?? "Failed to create user",
+                        StatusCode = 400
+                    };
+            }
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "User created successfully",
+                StatusCode = 201
+            };
+
+        }
 }

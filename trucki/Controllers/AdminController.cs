@@ -78,5 +78,12 @@ namespace trucki.Controllers
             var response = await _adminService.DeleteRoute(routeId);
             return StatusCode(response.StatusCode, response);
         }
-    }
+        [HttpPost("AddManager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> AddManager([FromBody] AddManagerRequestModel model)
+        {
+            var response = await _adminService.AddManager(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        }
+    
 }

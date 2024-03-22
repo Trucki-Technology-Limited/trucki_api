@@ -93,4 +93,9 @@ public class AdminService: IAdminService
         var deleteRoute = await _adminRepository.DeleteRoute(id);
         return deleteRoute;
     }
+    public async Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model)
+    {
+        var res = await _adminRepository.AddManager(model);
+        return res;
+    }
 }
