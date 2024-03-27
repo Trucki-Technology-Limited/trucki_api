@@ -38,7 +38,6 @@ jobs:
             ls -la
             
             docker build -t trucki -f trucki/Dockerfile trucki
-            
             docker stop trucki-container || true
             docker rm trucki-container || true
             docker run -d -p 8080:80 --name trucki-container trucki:latest
