@@ -24,7 +24,6 @@ public class TokenService : ITokenService
             _discoveryDocument = _httpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
             {
                 Address = _config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value,
-
                 Policy =
             {
                 ValidateIssuerName = false,
