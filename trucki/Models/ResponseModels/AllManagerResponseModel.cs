@@ -1,12 +1,15 @@
 using trucki.Entities;
 
-namespace trucki.Models.RequestModel;
+namespace trucki.Models.ResponseModels;
 
-public class AddManagerRequestModel
+public class AllManagerResponseModel
 {
+    public string Id { get; set; }
     public string Name { get; set; }
+    
     public string Phone { get; set; }
+    
     public string EmailAddress { get; set; }
-    public List<string> CompanyId { get; set; }
     public ManagerType ManagerType { get; set; }
+    public bool IsActive { get; set; }
 }

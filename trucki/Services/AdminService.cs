@@ -98,4 +98,32 @@ public class AdminService: IAdminService
         var res = await _adminRepository.AddManager(model);
         return res;
     }
+    public async Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model)
+    {
+        var res = await _adminRepository.AddDriver(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager()
+    {
+        var responseModel = await _adminRepository.GetAllManager();
+        if (responseModel.IsSuccessful)
+        {
+            return new ApiResponseModel<List<AllManagerResponseModel>>
+            {
+                IsSuccessful = responseModel.IsSuccessful, Message = responseModel.Message, StatusCode = responseModel.StatusCode,
+                Data = responseModel.Data
+            };
+        }
+        return new ApiResponseModel<List<AllManagerResponseModel>> { IsSuccessful = responseModel.IsSuccessful, Message = responseModel.Message, StatusCode = responseModel.StatusCode };
+    }
+    public async Task<ApiResponseModel<bool>> DeactivateManager(string managerId)
+    {
+        var res = await _adminRepository.DeactivateManager(managerId);
+        return res;
+    }
+    public async Task<ApiResponseModel<bool>> EditManager(EditManagerRequestModel model)
+    {
+        var res = await _adminRepository.EditManager(model);
+        return res;
+    }
 }

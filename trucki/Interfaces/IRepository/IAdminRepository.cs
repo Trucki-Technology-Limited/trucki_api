@@ -16,4 +16,8 @@ public interface IAdminRepository
     Task<ApiResponseModel<bool>> EditRoute(EditRouteRequestModel model);
     Task<ApiResponseModel<bool>> DeleteRoute(string id);
     Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model);
+    Task<ApiResponseModel<bool>> EditManager(EditManagerRequestModel model);
+    Task<ApiResponseModel<bool>> DeactivateManager(string managerId);
+    Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model);
+    Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager();
 }

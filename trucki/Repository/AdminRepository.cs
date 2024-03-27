@@ -340,38 +340,87 @@ public class AdminRepository : IAdminRepository
     }
     public async Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model)
     {
-        // **Create manager entity**
+        var existingManager = await _context.Managers
+            .FirstOrDefaultAsync(m => m.EmailAddress == model.EmailAddress || m.Phone == model.Phone);
+
+        if (existingManager != null)
+        {
+            if (existingManager.EmailAddress == model.EmailAddress)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Email address already exists",
+                    StatusCode = 400 // Bad Request
+                };
+            }
+            else
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Phone number already exists",
+                    StatusCode = 400 // Bad Request
+                };
+            }
+        }
         var newManager = new Manager
         {
             Name = model.Name,
             Phone = model.Phone,
             EmailAddress = model.EmailAddress,
-            Company = model.Company,
+            Company = new List<Business>(), // Initialize empty company list
             ManagerType = model.ManagerType
         };
+
+        // **Add companies to manager**
+        foreach (var companyId in model.CompanyId)
+        {
+            var business = await _context.Businesses.FindAsync(companyId);
+            if (business != null)
+            {
+                newManager.Company.Add(business);
+            }
+        }
+
         _context.Managers.Add(newManager);
         var password = GenerateRandomPassword();
-       var res = await _authService.AddNewUserAsync(newManager.Name, newManager.EmailAddress,
-            newManager.ManagerType == 0 ? "manager" : "finance manager",password);
-       if (res.StatusCode == 201)
-       {
-               // **Save changes to database**
-               await _context.SaveChangesAsync();
-               return new ApiResponseModel<string>
-               {
-                   IsSuccessful = true,
-                   Message = "Manager created successfully",
-                   StatusCode = 201,
-                   Data = password
-               };
-               
-       }
-       return new ApiResponseModel<string>
-       {
-           IsSuccessful = false,
-           Message = "An error occurred while creating the manager",
-           StatusCode = 400, // Bad Request
-       };
+        var res = await _authService.AddNewUserAsync(newManager.Name, newManager.EmailAddress,
+            newManager.ManagerType == 0 ? "manager" : "finance manager", password);
+        //TODO:: Email password to user
+        if (res.StatusCode == 201)
+        {
+            // **Save changes to database**
+            await _context.SaveChangesAsync();
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = true,
+                Message = "Manager created successfully",
+                StatusCode = 201,
+                Data = password
+            };
+        }
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = false,
+            Message = "An error occurred while creating the manager",
+            StatusCode = 400, // Bad Request
+        };
+    }
+    
+    public async Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager()
+    {
+        var managers = await _context.Managers.ToListAsync();
+
+        var managersResponseModels = _mapper.Map<List<AllManagerResponseModel>>(managers);
+
+        return new ApiResponseModel<List<AllManagerResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Businesses retrieved successfully",
+            StatusCode = 200,
+            Data = managersResponseModels
+        };
     }
     public static string GenerateRandomPassword(int length = 6)
     {
@@ -392,5 +441,116 @@ public class AdminRepository : IAdminRepository
             .Select(s => s[random.Next(s.Length)]).ToArray());
 
         return password;
+    }
+    
+    public async Task<ApiResponseModel<bool>> EditManager(EditManagerRequestModel model)
+    {
+        var manager = await _context.Managers.FindAsync(model.ManagerId);
+        if (manager == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Manager not found",
+                StatusCode = 404 // Not Found
+            };
+        }
+
+        manager.Name = model.Name;
+        manager.Phone = model.Phone;
+        manager.EmailAddress = model.EmailAddress;
+        // Update company list logic can be added here similar to AddManager
+
+        await _context.SaveChangesAsync();
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Manager details updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+    public async Task<ApiResponseModel<bool>> DeactivateManager(string managerId)
+    {
+        var manager = await _context.Managers.FindAsync(managerId);
+        if (manager == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Manager not found",
+                StatusCode = 404 // Not Found
+            };
+        }
+
+        manager.IsActive = false;
+        await _context.SaveChangesAsync();
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Manager deactivated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+    public async Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model)
+    {
+        var existingManager = await _context.Drivers
+            .FirstOrDefaultAsync(m => m.EmailAddress == model.Email || m.Phone == model.Number);
+
+        if (existingManager != null)
+        {
+            if (existingManager.EmailAddress == model.Email)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Email address already exists",
+                    StatusCode = 400 // Bad Request
+                };
+            }
+            else
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Phone number already exists",
+                    StatusCode = 400 // Bad Request
+                };
+            }
+        }
+        var newDriver = new Driver
+        {
+            Name = model.Name,
+            Phone = model.Number,
+            EmailAddress = model.Email,
+            TruckId = model.TruckId,
+            PassportFile = "",
+            DriversLicence = ""
+            
+        };
+        _context.Drivers.Add(newDriver);
+        var password = GenerateRandomPassword();
+        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,
+            "driver", password);
+        //TODO:: Email password to user
+        if (res.StatusCode == 201)
+        {
+            // **Save changes to database**
+            await _context.SaveChangesAsync();
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = true,
+                Message = "Driver created successfully",
+                StatusCode = 201,
+                Data = password
+            };
+        }
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = false,
+            Message = "An error occurred while creating the manager",
+            StatusCode = 400, // Bad Request
+        };
     }
 }

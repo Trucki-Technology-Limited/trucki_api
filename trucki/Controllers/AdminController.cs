@@ -94,5 +94,29 @@ namespace trucki.Controllers
             var response = await _adminService.AddManager(model);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpPost("AddDriver")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromBody] AddDriverRequestModel model)
+        {
+            var response = await _adminService.AddDriver(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetAllManager")]
+        public async Task<ActionResult<ApiResponseModel<AllManagerResponseModel>>> GetAllManager()
+        {
+            var business = await _adminService.GetAllManager();
+            return StatusCode(business.StatusCode, business);
+        }
+        [HttpPost("EditManager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditManagerRequestModel model)
+        {
+            var response = await _adminService.EditManager(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("DeleteManager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DeleteManager([FromQuery] string managerId)
+        {
+            var response = await _adminService.DeactivateManager(managerId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

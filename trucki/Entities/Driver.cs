@@ -5,17 +5,16 @@ namespace trucki.Entities
     public class Driver : BaseClass
     {
         public string Name { get; set; }
-
-        [MaxLength(11)]
-        public int Phone { get; set; }
+        
+        public string Phone { get; set; }
 
         [EmailAddress]
         public string EmailAddress { get; set; }
 
-        public string Company { get; set; }
+        public string TruckId { get; set; }
 
-        public byte[]? DriversLicence { get; set; }
+        public string DriversLicence { get; set; }
 
-        public byte[]? PassportFile { get; set; }
+        public string PassportFile { get; set; }
     }
 }
