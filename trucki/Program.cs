@@ -31,22 +31,18 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
-// Configure the HTTP request pipeline.
-// if (app.Environment.IsDevelopment())
-// {
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
     app.UseSwaggerUI();
-// }
-
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseHttpsRedirection();
-    }
+}
 
 app.UseCors();
 app.UseIdentityServer();
 app.UseAuthentication();
-app.MapControllers();
+app.UseRouting();
 app.UseAuthorization();
-app.Run();
+app.MapControllers();
 
+
+app.Run();
