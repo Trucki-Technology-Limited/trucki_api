@@ -44,7 +44,7 @@ public static class IdentityServerConfig
                 x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer("Bearer", options =>
             {
-                options.Authority = "http://178.62.238.169";
+                options.Authority = discoveryUrl;
                 options.Audience = "trucki";
                 options.SaveToken = true;
                 options.RequireHttpsMetadata = false;
