@@ -123,7 +123,7 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("GetAllTruckOwners")]
+        [HttpGet("GetAllTruckOwners")]
         public async Task<ActionResult<ApiResponseModel<List<TruckOwnerResponseModel>>>> GetAllTruckOwners()
         {
             var response = await _adminService.GetAllTruckOwners();
@@ -145,7 +145,7 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("GetTruckOwnerById")]
+        [HttpGet("GetTruckOwnerById")]
         public async Task<ActionResult<ApiResponseModel<TruckOwnerResponseModel>>> GetTruckOwnerById(
             [FromQuery] string ownerId)
         {
