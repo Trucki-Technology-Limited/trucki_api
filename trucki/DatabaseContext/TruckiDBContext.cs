@@ -22,5 +22,6 @@ namespace trucki.DatabaseContext
         public DbSet<Manager> Managers { get; set; }
         public DbSet<Business> Businesses { get; set; }
         public DbSet<Routes> RoutesEnumerable { get; set; }
+        public DbSet<TruckOwner> TruckOwners { get; set; }
     }
 }

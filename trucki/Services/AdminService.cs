@@ -126,4 +126,34 @@ public class AdminService: IAdminService
         var res = await _adminRepository.EditManager(model);
         return res;
     }
+
+    public async Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model)
+    {
+        var res = await _adminRepository.CreateNewTruckOwner(model);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id)
+    {
+        var res = await _adminRepository.GetTruckOwnerById(id);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model)
+    {
+        var res = await _adminRepository.EditTruckOwner(model);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteTruckOwner(string id)
+    {
+        var res = await _adminRepository.DeleteTruckOwner(id);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners()
+    {
+        var res = await _adminRepository.GetAllTruckOwners();
+        return res;
+    }
 }

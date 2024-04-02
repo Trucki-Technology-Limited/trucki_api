@@ -20,5 +20,10 @@ public interface IAdminService
     Task<ApiResponseModel<bool>> DeactivateManager(string managerId);
     Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model);
     Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager();
+    Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model);
+    Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id);
+    Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model);
+    Task<ApiResponseModel<bool>> DeleteTruckOwner(string id);
+    Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners();
 
 }

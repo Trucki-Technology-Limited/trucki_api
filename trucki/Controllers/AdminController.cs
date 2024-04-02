@@ -94,28 +94,70 @@ namespace trucki.Controllers
             var response = await _adminService.AddManager(model);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("AddDriver")]
         public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromBody] AddDriverRequestModel model)
         {
             var response = await _adminService.AddDriver(model);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpGet("GetAllManager")]
         public async Task<ActionResult<ApiResponseModel<AllManagerResponseModel>>> GetAllManager()
         {
             var business = await _adminService.GetAllManager();
             return StatusCode(business.StatusCode, business);
         }
+
         [HttpPost("EditManager")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditManagerRequestModel model)
         {
             var response = await _adminService.EditManager(model);
             return StatusCode(response.StatusCode, response);
         }
+
         [HttpPost("DeleteManager")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeleteManager([FromQuery] string managerId)
         {
             var response = await _adminService.DeactivateManager(managerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllTruckOwners")]
+        public async Task<ActionResult<ApiResponseModel<List<TruckOwnerResponseModel>>>> GetAllTruckOwners()
+        {
+            var response = await _adminService.GetAllTruckOwners();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("DeleteTruckOwner")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DeleteTruckOwner([FromQuery] string ownerId)
+        {
+            var response = await _adminService.DeleteTruckOwner(ownerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("EditTruckOwner")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditTruckOwner(
+            [FromForm] EditTruckOwnerRequestBody model)
+        {
+            var response = await _adminService.EditTruckOwner(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetTruckOwnerById")]
+        public async Task<ActionResult<ApiResponseModel<TruckOwnerResponseModel>>> GetTruckOwnerById(
+            [FromQuery] string ownerId)
+        {
+            var response = await _adminService.GetTruckOwnerById(ownerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("CreateNewTruckOwner")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> CreateNewTruckOwner(
+            [FromForm] AddTruckOwnerRequestBody model)
+        {
+            var response = await _adminService.CreateNewTruckOwner(model);
             return StatusCode(response.StatusCode, response);
         }
     }

@@ -24,6 +24,7 @@ namespace trucki.CustomExtension
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<IUploadService, UploadService>();
         }
     }
 }
