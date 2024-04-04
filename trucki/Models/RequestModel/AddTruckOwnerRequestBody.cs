@@ -16,5 +16,5 @@ public class EditTruckOwnerRequestBody
     public string? EmailAddress { set; get; }
     public string Phone { set; get; }
     public string Address { set; get; }
-    public IFormFile IdCard  { set; get; }
+    public IFormFile? IdCard  { set; get; }
 }
