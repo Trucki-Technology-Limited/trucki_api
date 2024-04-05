@@ -7,5 +7,6 @@ public class TruckOwner : BaseClass
     public string Phone { set; get; }
     public string Address { set; get; }
     public string IdCardUrl { set; get; }
+    public string ProfilePictureUrl { set; get; }
 }
 
