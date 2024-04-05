@@ -109,6 +109,13 @@ namespace trucki.Controllers
             return StatusCode(business.StatusCode, business);
         }
 
+        [HttpGet("GetManager")]
+        public async Task<ActionResult<ApiResponseModel<AllManagerResponseModel>>> GetManagerById(string id)
+        {
+            var manager = await _adminService.GetManagerById(id);
+            return StatusCode(manager.StatusCode, manager);
+        }
+
         [HttpPost("EditManager")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditManagerRequestModel model)
         {
@@ -158,6 +165,20 @@ namespace trucki.Controllers
             [FromForm] AddTruckOwnerRequestBody model)
         {
             var response = await _adminService.CreateNewTruckOwner(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("GetAllDrivers")]
+        public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDrivers()
+        {
+            var response = await _adminService.GetAllDrivers();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("GetDriverById")]
+        public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriverById(string id)
+        {
+            var response = await _adminService.GetDriverById(id);
             return StatusCode(response.StatusCode, response);
         }
     }

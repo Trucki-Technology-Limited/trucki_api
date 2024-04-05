@@ -116,6 +116,18 @@ public class AdminService: IAdminService
         }
         return new ApiResponseModel<List<AllManagerResponseModel>> { IsSuccessful = responseModel.IsSuccessful, Message = responseModel.Message, StatusCode = responseModel.StatusCode };
     }
+
+    public async Task<ApiResponseModel<AllManagerResponseModel>> GetManagerById(string id)
+    {
+        var responseModel = await _adminRepository.GetManagerById(id);
+        if (responseModel.IsSuccessful)
+        {
+            return new ApiResponseModel<AllManagerResponseModel> { IsSuccessful = responseModel.IsSuccessful, Message = responseModel.Message, StatusCode = responseModel.StatusCode, Data = responseModel.Data };
+        }
+        return new ApiResponseModel<AllManagerResponseModel> { IsSuccessful = responseModel.IsSuccessful, Message = responseModel.Message, StatusCode = responseModel.StatusCode };
+
+    }
+
     public async Task<ApiResponseModel<bool>> DeactivateManager(string managerId)
     {
         var res = await _adminRepository.DeactivateManager(managerId);
@@ -154,6 +166,17 @@ public class AdminService: IAdminService
     public async Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners()
     {
         var res = await _adminRepository.GetAllTruckOwners();
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers()
+    {
+        var res = await _adminRepository.GetAllDrivers();
+        return res;
+    }
+
+    public async Task<ApiResponseModel<AllDriverResponseModel>> GetDriverById(string id)
+    {
+        var res = await _adminRepository.GetDriverById(id);
         return res;
     }
 }

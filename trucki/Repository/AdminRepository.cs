@@ -424,6 +424,26 @@ public class AdminRepository : IAdminRepository
             Data = managersResponseModels
         };
     }
+
+    public async Task<ApiResponseModel<AllManagerResponseModel>> GetManagerById(string id)
+    {
+        var manager = await _context.Managers.Where(x => x.Id == id).Include(b => b.Company).FirstOrDefaultAsync();
+
+        if (manager == null)
+            return new ApiResponseModel<AllManagerResponseModel> { Data = new AllManagerResponseModel { }, IsSuccessful = false, Message = "No manager found", StatusCode = 404 };
+
+        var managerToReturn = _mapper.Map<AllManagerResponseModel>(manager);
+
+
+        return new ApiResponseModel<AllManagerResponseModel>
+        {
+            IsSuccessful = true,
+            Message = "Manager retrieved successfully",
+            StatusCode = 200,
+            Data = managerToReturn
+        };
+    }
+
     public static string GenerateRandomPassword(int length = 6)
     {
         // Define character sets for password generation
@@ -531,6 +551,10 @@ public class AdminRepository : IAdminRepository
             DriversLicence = ""
             
         };
+
+
+
+
         _context.Drivers.Add(newDriver);
         var password = GenerateRandomPassword();
         var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,
@@ -573,7 +597,7 @@ public class AdminRepository : IAdminRepository
             // Save image (locally, to database, or external storage)
             imagePath =await _uploadService.UploadFile(model.IdCard,$"{newOwner.Name}userIdCard");
         }
-
+      
         newOwner.IdCardUrl = imagePath;
         _context.TruckOwners.Add(newOwner);
         await _context.SaveChangesAsync();
@@ -680,5 +704,40 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
             Data = result
         };
+    }
+
+    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers()
+    {
+        var drivers = await _context.Drivers.ToListAsync();
+
+        var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
+
+        return new ApiResponseModel<List<AllDriverResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Businesses retrieved successfully",
+            StatusCode = 200,
+            Data = driverResponseModels
+        };
+    }
+
+    public async Task<ApiResponseModel<AllDriverResponseModel>> GetDriverById(string id)
+    {
+        var driver = await _context.Drivers.Where(x => x.Id == id).FirstOrDefaultAsync();
+
+        if (driver == null)
+            return new ApiResponseModel<AllDriverResponseModel> { Data = new AllDriverResponseModel { }, IsSuccessful = false, Message = "No manager found", StatusCode = 404 };
+
+        var driverToReturn = _mapper.Map<AllDriverResponseModel>(driver);
+
+
+        return new ApiResponseModel<AllDriverResponseModel>
+        {
+            IsSuccessful = true,
+            Message = "Manager retrieved successfully",
+            StatusCode = 200,
+            Data = driverToReturn
+        };
+
     }
 }

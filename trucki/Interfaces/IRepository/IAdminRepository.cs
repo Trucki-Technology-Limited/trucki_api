@@ -20,9 +20,12 @@ public interface IAdminRepository
     Task<ApiResponseModel<bool>> DeactivateManager(string managerId);
     Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model);
     Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager();
+    Task<ApiResponseModel<AllManagerResponseModel>> GetManagerById(string id);
     Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model);
     Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id);
     Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model);
     Task<ApiResponseModel<bool>> DeleteTruckOwner(string id);
     Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners();
+    Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers();
+    Task<ApiResponseModel<AllDriverResponseModel>> GetDriverById(string id);
 }
