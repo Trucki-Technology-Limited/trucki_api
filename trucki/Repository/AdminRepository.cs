@@ -547,12 +547,30 @@ public class AdminRepository : IAdminRepository
             Phone = model.Number,
             EmailAddress = model.Email,
             TruckId = model.TruckId,
-            PassportFile = "",
-            DriversLicence = ""
+            //PassportFile = "",
+            //DriversLicence = ""
             
         };
 
+        var imagePath = "";
+        if (model.IdCard != null && model.IdCard.Length > 0)
+        {
+            // Save Id card 
+            imagePath = await _uploadService.UploadFile(model.IdCard, $"{newDriver.Name}userIdCard");
+        }
 
+        var profilePicPath = "";
+        if(model.Picture != null && model.Picture.Length > 0)
+        {
+            // save profile picture
+            imagePath = await _uploadService.UploadFile(model.Picture, $"{newDriver.Name}userProfilePicture");
+        }
+
+        // Id card
+        newDriver.DriversLicence = imagePath;
+
+        // Profile picture
+        newDriver.PassportFile = profilePicPath;
 
 
         _context.Drivers.Add(newDriver);
@@ -579,6 +597,45 @@ public class AdminRepository : IAdminRepository
             StatusCode = 400, // Bad Request
         };
     }
+
+    public async Task<ApiResponseModel<bool>> EditDriver(EditDriverRequestModel model)
+    {
+        var driver = await _context.Drivers.FindAsync(model.Id);
+
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        driver.Name = model.Name;
+        driver.Phone = model.Number;
+
+        var imagePath = "";
+        if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+        {
+            imagePath = await _uploadService.UploadFile(model.ProfilePicture, $"{driver.Name}userIdCard");
+        }
+
+        driver.PassportFile = imagePath;
+
+        // Save changes to database
+        _context.Drivers.Update(driver);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Driver updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
     public async Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model)
     {
         // Create a new TruckiOwner instance
@@ -597,8 +654,15 @@ public class AdminRepository : IAdminRepository
             // Save image (locally, to database, or external storage)
             imagePath =await _uploadService.UploadFile(model.IdCard,$"{newOwner.Name}userIdCard");
         }
+
+        var profilePicPath = "";
+        if(model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+        {
+            profilePicPath = await _uploadService.UploadFile(model.ProfilePicture, $"{newOwner.Name}userProfilePicture");
+        }
       
         newOwner.IdCardUrl = imagePath;
+        newOwner.ProfilePictureUrl = profilePicPath;
         _context.TruckOwners.Add(newOwner);
         await _context.SaveChangesAsync();
 

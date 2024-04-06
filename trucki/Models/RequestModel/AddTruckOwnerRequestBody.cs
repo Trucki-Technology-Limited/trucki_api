@@ -7,6 +7,7 @@ public class AddTruckOwnerRequestBody
     public string Phone { set; get; }
     public string Address { set; get; }
     public IFormFile IdCard  { set; get; }
+    public IFormFile ProfilePicture { get; set; }
 }
 
 public class EditTruckOwnerRequestBody
