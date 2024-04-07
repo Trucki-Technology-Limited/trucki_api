@@ -184,4 +184,23 @@ public class AdminService: IAdminService
         var res = await _adminRepository.GetDriverById(id);
         return res;
     }
+
+    public async Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords)
+    {
+        var res = await _adminRepository.SearchDrivers(searchWords);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllManagerResponseModel>>> SearchManagers(string searchWords)
+    {
+        var res = await _adminRepository.SearchManagers(searchWords);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllBusinessResponseModel>>> SearchBusinesses(string searchWords)
+    {
+        var res = await _adminRepository.SearchBusinesses(searchWords);
+        return res;
+    }
+
 }

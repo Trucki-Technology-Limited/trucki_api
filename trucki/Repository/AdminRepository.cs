@@ -804,4 +804,110 @@ public class AdminRepository : IAdminRepository
         };
 
     }
+
+    public async Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords)
+    {
+        IQueryable<Driver> query = _context.Drivers;
+
+        if(!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var drivers = await query.ToListAsync();
+
+        if (!drivers.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllDriverResponseModel>>
+            {
+                Data = new List<AllDriverResponseModel> { },
+                IsSuccessful = false,
+                Message = "No driver found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllDriverResponseModel>>(drivers);
+
+        return new ApiResponseModel<IEnumerable<AllDriverResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Drivers successfully retrieved",
+            StatusCode = 200,
+        };
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllManagerResponseModel>>> SearchManagers(string searchWords)
+    {
+        IQueryable<Manager> query = _context.Managers;
+
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var drivers = await query.ToListAsync();
+
+        if (!drivers.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllManagerResponseModel>>
+            {
+                Data = new List<AllManagerResponseModel> { },
+                IsSuccessful = false,
+                Message = "No manager found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllManagerResponseModel>>(drivers);
+
+        return new ApiResponseModel<IEnumerable<AllManagerResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Managers successfully retrieved",
+            StatusCode = 200,
+        };
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllBusinessResponseModel>>> SearchBusinesses(string searchWords)
+    {
+        IQueryable<Business> query = _context.Businesses;
+
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var drivers = await query.ToListAsync();
+
+        if (!drivers.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllBusinessResponseModel>>
+            {
+                Data = new List<AllBusinessResponseModel> { },
+                IsSuccessful = false,
+                Message = "No manager found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllBusinessResponseModel>>(drivers);
+
+        return new ApiResponseModel<IEnumerable<AllBusinessResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Managers successfully retrieved",
+            StatusCode = 200,
+        };
+    }
+
 }
