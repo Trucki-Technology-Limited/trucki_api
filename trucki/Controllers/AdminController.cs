@@ -102,6 +102,13 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("EditDriver")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditDriver([FromForm] EditDriverRequestModel model)
+        {
+            var response = await _adminService.EditDriver(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
         [HttpGet("GetAllManager")]
         public async Task<ActionResult<ApiResponseModel<AllManagerResponseModel>>> GetAllManager()
         {

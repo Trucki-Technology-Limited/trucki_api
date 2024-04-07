@@ -103,6 +103,11 @@ public class AdminService: IAdminService
         var res = await _adminRepository.AddDriver(model);
         return res;
     }
+    public async Task<ApiResponseModel<bool>> EditDriver(EditDriverRequestModel model)
+    {
+        var res = await _adminRepository.EditDriver(model);
+        return res;
+    }
     public async Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager()
     {
         var responseModel = await _adminRepository.GetAllManager();
