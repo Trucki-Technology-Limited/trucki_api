@@ -29,4 +29,7 @@ public interface IAdminRepository
     Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners();
     Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers();
     Task<ApiResponseModel<AllDriverResponseModel>> GetDriverById(string id);
+    Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords);
+    Task<ApiResponseModel<IEnumerable<AllManagerResponseModel>>> SearchManagers(string searchWords);
+    Task<ApiResponseModel<IEnumerable<AllBusinessResponseModel>>> SearchBusinesses(string searchWords);
 }

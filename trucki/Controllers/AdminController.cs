@@ -96,7 +96,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddDriver")]
-        public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromBody] AddDriverRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromForm] AddDriverRequestModel model)
         {
             var response = await _adminService.AddDriver(model);
             return StatusCode(response.StatusCode, response);
@@ -186,6 +186,27 @@ namespace trucki.Controllers
         public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriverById(string id)
         {
             var response = await _adminService.GetDriverById(id);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("SearchDrivers")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllDriverResponseModel>>>> SearchDrivers(string searchWords)
+        {
+            var response = await _adminService.SearchDrivers(searchWords);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("SearchManagers")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchManagers(string searchWords)
+        {
+            var response = await _adminService.SearchManagers(searchWords);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("SearchBusinesses")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchBusinesses(string searchWords)
+        {
+            var response = await _adminService.SearchBusinesses(searchWords);
             return StatusCode(response.StatusCode, response);
         }
     }
