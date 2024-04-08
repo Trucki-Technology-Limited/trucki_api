@@ -779,7 +779,7 @@ public class AdminRepository : IAdminRepository
         return new ApiResponseModel<List<AllDriverResponseModel>>
         {
             IsSuccessful = true,
-            Message = "Businesses retrieved successfully",
+            Message = "Drivers retrieved successfully",
             StatusCode = 200,
             Data = driverResponseModels
         };
@@ -798,7 +798,7 @@ public class AdminRepository : IAdminRepository
         return new ApiResponseModel<AllDriverResponseModel>
         {
             IsSuccessful = true,
-            Message = "Manager retrieved successfully",
+            Message = "Driver retrieved successfully",
             StatusCode = 200,
             Data = driverToReturn
         };
