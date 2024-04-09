@@ -637,6 +637,31 @@ public class AdminRepository : IAdminRepository
         };
     }
 
+    public async Task<ApiResponseModel<bool>> DeactivateDriver(string driverId)
+    {
+        var driver = await _context.Drivers.FindAsync(driverId);
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404 // Not Found
+            };
+        }
+
+        driver.IsActive = false;
+        _context.Drivers.Update(driver);
+        await _context.SaveChangesAsync();
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Driver deactivated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
     public async Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model)
     {
         // Create a new TruckiOwner instance
@@ -1024,4 +1049,172 @@ public class AdminRepository : IAdminRepository
         };
     }
 
+    public async Task<ApiResponseModel<string>> AddNewTruck(AddTruckRequestModel model)
+    {
+        var existingTruck = await _context.Trucks.Where(x => x.PlateNumber == model.PlateNumber).FirstOrDefaultAsync();
+        if(existingTruck != null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Truck already exist",
+                StatusCode = 400
+            };
+        }
+       
+
+        var newTruck = new Truck
+        {
+            CertOfOwnerShip = model.CertOfOwnerShip,
+            PlateNumber = model.PlateNumber,
+            TruckCapacity = model.TruckCapacity,
+            DriverId = model.DriverId,
+            Capacity = model.Capacity,
+            TruckOwnerId = model.TruckOwnerId,
+            TruckType = model.TruckType,
+            TruckLicenseExpiryDate = model.TruckLicenseExpiryDate.ToString(),
+            RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate.ToString(),
+            InsuranceExpiryDate = model.InsuranceExpiryDate.ToString()
+        };
+
+        List<string> documents = new List<string>();
+
+        if (model.Documents != null)
+        {
+            foreach (var document in model.Documents)
+            {
+                documents.Add(await _uploadService.UploadFile(document, $"{newTruck.PlateNumber}"));
+            }
+        }
+
+        newTruck.Documents = documents;
+
+        _context.Trucks.Add(newTruck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = "Truck added successfully",
+            StatusCode = 200,
+            Data = newTruck.Id 
+        };
+
+    }
+
+    public async Task<ApiResponseModel<bool>> EditTruck(EditTruckRequestModel model)
+    {
+        var truck = await _context.Trucks.Where(x => x.Id == model.TruckId).FirstOrDefaultAsync();
+        if(truck == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Truck not found",
+                StatusCode = 404
+            };
+        }
+        truck.CertOfOwnerShip = model.CertOfOwnerShip;
+        truck.PlateNumber = model.PlateNumber;
+        truck.TruckCapacity = model.TruckCapacity;
+        truck.DriverId = model.DriverId;
+        truck.Capacity = model.Capacity;
+        truck.TruckOwnerId = model.TruckOwnerId;
+        truck.TruckType = model.TruckType;
+        truck.TruckLicenseExpiryDate = model.TruckLicenseExpiryDate.ToString();
+        truck.RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate.ToString();
+        truck.InsuranceExpiryDate = model.InsuranceExpiryDate.ToString();
+
+        // Upload documents
+        if (model.Documents != null)
+        {
+            foreach (var document in model.Documents)
+            {
+                var uploadedDocument = await _uploadService.UploadFile(document, $"{truck.PlateNumber}");
+                truck.Documents.Add(uploadedDocument);
+            }
+        }
+
+        // Save changes to the database
+        _context.Trucks.Update(truck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Truck updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
+    public async Task<ApiResponseModel<string>> DeleteTruck(string truckId)
+    {
+        var truck = await _context.Trucks.Where(x => x.Id == truckId).FirstOrDefaultAsync();
+        if(truck == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Truck not found",
+                StatusCode = 404
+            };
+        }
+        _context.Trucks.Remove(truck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = "Succesfully deleted truck",
+            StatusCode = 200
+        };
+    }
+
+    public async Task<ApiResponseModel<AllTruckResponseModel>> GetTruckById(string truckId)
+    {
+        var truck = await _context.Trucks.Where(x => x.Id == truckId).FirstOrDefaultAsync();
+        if(truck == null)
+        {
+            return new ApiResponseModel<AllTruckResponseModel>
+            {
+                IsSuccessful = false,
+                Message = "Truck not found",
+                StatusCode = 404,
+                Data = new AllTruckResponseModel { }
+            };
+        }
+
+        var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
+
+        var truckOwner = await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
+
+        var truckToReturn = new AllTruckResponseModel
+        {
+            TruckId = truck.Id,
+            Documents = truck.Documents,
+            CertOfOwnerShip = truck.CertOfOwnerShip,
+            PlateNumber = truck.PlateNumber,
+            TruckCapacity = truck.TruckCapacity,
+            DriverId = truck.DriverId,
+            DriverName = driver.Name,
+            Capacity = truck.Capacity,
+            TruckOwnerId = truck.TruckOwnerId,
+            TruckOwnerName = truckOwner.Name,
+            TruckType = truck.TruckType,
+            TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
+            RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
+            InsuranceExpiryDate = truck.InsuranceExpiryDate
+        };
+
+        return new ApiResponseModel<AllTruckResponseModel>
+        {
+            IsSuccessful = true,
+            Message = "Truck found",
+            StatusCode = 200,
+            Data = truckToReturn
+        };
+    }
+
+   
 }

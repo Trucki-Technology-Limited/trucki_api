@@ -196,6 +196,14 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("DeactivvateDriver")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DeactivateDriver(string driverId)
+        {
+            var response = await _adminService.DeactivateDriver(driverId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
         [HttpGet("SearchManagers")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchManagers(string searchWords)
         {
@@ -228,6 +236,32 @@ namespace trucki.Controllers
         public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditOfficerRequestModel model)
         {
             var response = await _adminService.EditOfficer(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("AddNewTruck")]
+        public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck(AddTruckRequestModel model)
+        {
+            var response = await _adminService.AddNewTruck(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("EditTruck")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditTruck(EditTruckRequestModel model)
+        {
+            var response = await _adminService.EditTruck(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("DeleteTruck")]
+        public async Task<ActionResult<ApiResponseModel<string>>> DeleteTruck(string truckId)
+        {
+            var response = await _adminService.DeleteTruck(truckId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetTruckById")]
+        public async Task<ActionResult<ApiResponseModel<AllTruckResponseModel>>> GetTruckById(string truckId)
+        {
+            var response = await _adminService.GetTruckById(truckId);
             return StatusCode(response.StatusCode, response);
         }
     }

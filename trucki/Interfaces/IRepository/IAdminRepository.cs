@@ -22,6 +22,7 @@ public interface IAdminRepository
     Task<ApiResponseModel<bool>> EditDriver(EditDriverRequestModel model);
     Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager();
     Task<ApiResponseModel<AllManagerResponseModel>> GetManagerById(string id);
+    Task<ApiResponseModel<bool>> DeactivateDriver(string driverId);
     Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model);
     Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id);
     Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model);
@@ -35,4 +36,8 @@ public interface IAdminRepository
     Task<ApiResponseModel<string>> AddOfficer(AddOfficerRequestModel model);
     Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllFieldOfficers(int page, int size);
     Task<ApiResponseModel<bool>> EditOfficer(EditOfficerRequestModel model);
+    Task<ApiResponseModel<string>> AddNewTruck(AddTruckRequestModel model);
+    Task<ApiResponseModel<bool>> EditTruck(EditTruckRequestModel model);
+    Task<ApiResponseModel<string>> DeleteTruck(string truckId);
+    Task<ApiResponseModel<AllTruckResponseModel>> GetTruckById(string truckId);
 }
