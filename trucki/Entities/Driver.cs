@@ -16,5 +16,6 @@ namespace trucki.Entities
         public string DriversLicence { get; set; }
 
         public string PassportFile { get; set; }
+        public bool IsActive { get; set; } = true;
     }
 }
