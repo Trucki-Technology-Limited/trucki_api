@@ -566,7 +566,7 @@ public class AdminRepository : IAdminRepository
         if(model.Picture != null && model.Picture.Length > 0)
         {
             // save profile picture
-            imagePath = await _uploadService.UploadFile(model.Picture, $"{newDriver.Name}userProfilePicture");
+            profilePicPath = await _uploadService.UploadFile(model.Picture, $"{newDriver.Name}userProfilePicture");
         }
 
 
@@ -974,8 +974,8 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllFieldOfficers(int page, int size)
     {
         var fieldOfficers = await _context.Officers.Where(x => x.OfficerType == OfficerType.FieldOfficer)
-            .Skip(((page - 1) * size))
-            .Take(size)
+            //.Skip(((page - 1) * size))
+            //.Take(size)
             .ToListAsync();
 
         var totalItems =  fieldOfficers.Count();
