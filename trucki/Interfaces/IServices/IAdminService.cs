@@ -32,6 +32,9 @@ public interface IAdminService
     Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords);
     Task<ApiResponseModel<IEnumerable<AllManagerResponseModel>>> SearchManagers(string searchWords);
     Task<ApiResponseModel<IEnumerable<AllBusinessResponseModel>>> SearchBusinesses(string searchWords);
+    Task<ApiResponseModel<string>> AddOfficer(AddOfficerRequestModel model);
+    Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllFieldOfficers(int page, int size);
+    Task<ApiResponseModel<bool>> EditOfficer(EditOfficerRequestModel model);
 
 
 }
