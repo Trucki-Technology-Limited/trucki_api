@@ -202,5 +202,20 @@ public class AdminService: IAdminService
         var res = await _adminRepository.SearchBusinesses(searchWords);
         return res;
     }
+    public async Task<ApiResponseModel<string>> AddOfficer(AddOfficerRequestModel model)
+    {
+        var res = await _adminRepository.AddOfficer(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllFieldOfficers(int page, int size)
+    {
+        var res = await _adminRepository.GetAllFieldOfficers(page, size);
+        return res;
+    }
 
+    public async Task<ApiResponseModel<bool>> EditOfficer(EditOfficerRequestModel model)
+    {
+        var res = await _adminRepository.EditOfficer(model);
+        return res;
+    }
 }

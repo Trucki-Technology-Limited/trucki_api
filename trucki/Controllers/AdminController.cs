@@ -209,5 +209,26 @@ namespace trucki.Controllers
             var response = await _adminService.SearchBusinesses(searchWords);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("CreateNewOfficer")]
+        public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOfficer([FromBody] AddOfficerRequestModel model)
+        {
+            var response = await _adminService.AddOfficer(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("GetAllFieldOfficers")]
+        public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>>> GetAllFieldOfficers(int page, int size)
+        {
+            var response = await _adminService.GetAllFieldOfficers(page, size);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("EditOfficer")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditOfficerRequestModel model)
+        {
+            var response = await _adminService.EditOfficer(model);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
