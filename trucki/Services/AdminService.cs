@@ -245,4 +245,11 @@ public class AdminService: IAdminService
         var res = await _adminRepository.GetTruckById(truckId);
         return res;
     }
+    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruck(string? searchWords)
+    {
+        var res = await _adminRepository.SearchTruck(searchWords);
+        return res;
+    }
+
+
 }
