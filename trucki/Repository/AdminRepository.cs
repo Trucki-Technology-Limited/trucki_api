@@ -1065,16 +1065,16 @@ public class AdminRepository : IAdminRepository
 
         var newTruck = new Truck
         {
-            CertOfOwnerShip = model.CertOfOwnerShip,
+            //CertOfOwnerShip = model.CertOfOwnerShip,
             PlateNumber = model.PlateNumber,
             TruckCapacity = model.TruckCapacity,
             DriverId = model.DriverId,
-            Capacity = model.Capacity,
+            //Capacity = model.Capacity,
             TruckOwnerId = model.TruckOwnerId,
             TruckType = model.TruckType,
-            TruckLicenseExpiryDate = model.TruckLicenseExpiryDate.ToString(),
-            RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate.ToString(),
-            InsuranceExpiryDate = model.InsuranceExpiryDate.ToString()
+            TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
+            RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
+            InsuranceExpiryDate = model.InsuranceExpiryDate
         };
 
         List<string> documents = new List<string>();
@@ -1114,16 +1114,16 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
-        truck.CertOfOwnerShip = model.CertOfOwnerShip;
+        //truck.CertOfOwnerShip = model.CertOfOwnerShip;
         truck.PlateNumber = model.PlateNumber;
         truck.TruckCapacity = model.TruckCapacity;
         truck.DriverId = model.DriverId;
-        truck.Capacity = model.Capacity;
+        //truck.Capacity = model.Capacity;
         truck.TruckOwnerId = model.TruckOwnerId;
         truck.TruckType = model.TruckType;
-        truck.TruckLicenseExpiryDate = model.TruckLicenseExpiryDate.ToString();
-        truck.RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate.ToString();
-        truck.InsuranceExpiryDate = model.InsuranceExpiryDate.ToString();
+        truck.TruckLicenseExpiryDate = model.TruckLicenseExpiryDate;
+        truck.RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate;
+        truck.InsuranceExpiryDate = model.InsuranceExpiryDate;
 
         // Upload documents
         if (model.Documents != null)
@@ -1193,12 +1193,12 @@ public class AdminRepository : IAdminRepository
         {
             TruckId = truck.Id,
             Documents = truck.Documents,
-            CertOfOwnerShip = truck.CertOfOwnerShip,
+            //CertOfOwnerShip = truck.CertOfOwnerShip,
             PlateNumber = truck.PlateNumber,
             TruckCapacity = truck.TruckCapacity,
             DriverId = truck.DriverId,
-            DriverName = driver.Name,
-            Capacity = truck.Capacity,
+            DriverName = driver?.Name,
+            //Capacity = truck.Capacity,
             TruckOwnerId = truck.TruckOwnerId,
             TruckOwnerName = truckOwner.Name,
             TruckType = truck.TruckType,
@@ -1216,5 +1216,40 @@ public class AdminRepository : IAdminRepository
         };
     }
 
-   
+    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruck(string? searchWords)
+    {
+        IQueryable<Truck> query = _context.Trucks;
+
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.PlateNumber.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var trucks = await query.ToListAsync();
+
+        if (!trucks.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+            {
+                Data = new List<AllTruckResponseModel> { },
+                IsSuccessful = false,
+                Message = "No truck found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllTruckResponseModel>>(trucks);
+
+        return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Trucks successfully retrieved",
+            StatusCode = 200,
+        };
+    }
+
+
 }

@@ -240,14 +240,14 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddNewTruck")]
-        public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck(AddTruckRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck([FromForm] AddTruckRequestModel model)
         {
             var response = await _adminService.AddNewTruck(model);
             return StatusCode(response.StatusCode, response);
         }
 
         [HttpPost("EditTruck")]
-        public async Task<ActionResult<ApiResponseModel<bool>>> EditTruck(EditTruckRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditTruck([FromForm]EditTruckRequestModel model)
         {
             var response = await _adminService.EditTruck(model);
             return StatusCode(response.StatusCode, response);
@@ -264,5 +264,12 @@ namespace trucki.Controllers
             var response = await _adminService.GetTruckById(truckId);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("SearchTrucks")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> SearchTruck(string? searchWords)
+        {
+            var response = await _adminService.SearchTruck(searchWords);
+            return StatusCode(response.StatusCode, response);
+        }
+
     }
 }

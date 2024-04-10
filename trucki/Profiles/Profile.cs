@@ -16,5 +16,6 @@ public class Profiles : Profile
         CreateMap<TruckOwnerResponseModel, TruckOwner>().ReverseMap();
         CreateMap<AllDriverResponseModel, Driver>().ReverseMap();
         CreateMap<AllOfficerResponseModel, Officer>().ReverseMap();
+        CreateMap<AllTruckResponseModel, Truck>().ReverseMap();
     }
 }
