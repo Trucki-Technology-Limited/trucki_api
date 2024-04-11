@@ -8,7 +8,7 @@ namespace trucki.Models.RequestModel
         public string PhoneNumber { get; set; }
         public string EmailAddress { get; set; }
         public OfficerType OfficerType { get; set; }
-        public string CompanyId { get; set; }
+        public string? CompanyId { get; set; }
     }
 
     public class EditOfficerRequestModel
@@ -18,6 +18,6 @@ namespace trucki.Models.RequestModel
         public string PhoneNumber { get; set; }
         public string EmailAddress { get; set; }
         public OfficerType OfficerType { get; set; }
-        public string CompanyId { get; set; }
+        public string? CompanyId { get; set; }
     }
 }

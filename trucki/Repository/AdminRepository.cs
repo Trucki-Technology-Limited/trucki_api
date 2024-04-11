@@ -1191,7 +1191,7 @@ public class AdminRepository : IAdminRepository
 
         var truckToReturn = new AllTruckResponseModel
         {
-            TruckId = truck.Id,
+            Id = truck.Id,
             Documents = truck.Documents,
             //CertOfOwnerShip = truck.CertOfOwnerShip,
             PlateNumber = truck.PlateNumber,
@@ -1250,6 +1250,32 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
         };
     }
+    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks()
+    {
+       
 
+        var trucks = await _context.Trucks.ToListAsync();
+
+        if (!trucks.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+            {
+                Data = new List<AllTruckResponseModel> { },
+                IsSuccessful = false,
+                Message = "No truck found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllTruckResponseModel>>(trucks);
+
+        return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Trucks successfully retrieved",
+            StatusCode = 200,
+        };
+    }
 
 }

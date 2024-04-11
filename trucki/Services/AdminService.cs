@@ -251,5 +251,11 @@ public class AdminService: IAdminService
         return res;
     }
 
+    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks()
+    {
+        var res = await _adminRepository.GetAllTrucks();
+        return res;
+    }
+
 
 }

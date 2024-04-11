@@ -41,4 +41,5 @@ public interface IAdminRepository
     Task<ApiResponseModel<string>> DeleteTruck(string truckId);
     Task<ApiResponseModel<AllTruckResponseModel>> GetTruckById(string truckId);
     Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruck(string? searchWords);
+    Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks();
 }

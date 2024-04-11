@@ -4,7 +4,7 @@ namespace trucki.Models.ResponseModels
 {
     public class AllTruckResponseModel
     {
-        public string TruckId { get; set; }
+        public string Id { get; set; }
         public List<string> Documents { get; set; }
         public string CertOfOwnerShip { get; set; }
         public string PlateNumber { get; set; }

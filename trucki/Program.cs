@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using trucki.CustomExtension;
 using trucki.DatabaseContext;
 
@@ -16,7 +17,18 @@ builder.Services.AddDependencyInjection();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+    //options.OperationFilter<SecurityRequirementsOperationFilter>();
+
+});
 
 var app = builder.Build();
 var connectionString = config.GetConnectionString("LocalConnection");
