@@ -13,6 +13,7 @@ public class Truck : BaseClass
     public string TruckLicenseExpiryDate { get; set; }
     public string RoadWorthinessExpiryDate { get; set; }
     public string InsuranceExpiryDate { get; set; }
+    public TruckStatus TruckStatus { get; set; }    
 }
 
 public enum TruckiType
@@ -23,4 +24,11 @@ public enum TruckiType
     Lowbed,
     ContainerizedBody,
     Refrigerator
+}
+
+public enum TruckStatus
+{
+    EnRoute,
+    Available, 
+    OutOfService
 }

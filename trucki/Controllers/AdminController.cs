@@ -289,5 +289,12 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("UpdateTruckStatus")]
+        public async Task<ActionResult<ApiResponseModel<string>>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
+        {
+            var response = await _adminService.UpdateTruckStatus(truckId, model);
+            return StatusCode(response.StatusCode, response);
+        }
+
     }
 }

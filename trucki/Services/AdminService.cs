@@ -5,14 +5,14 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class AdminService: IAdminService
+public class AdminService : IAdminService
 {
     private readonly IAdminRepository _adminRepository;
 
     public AdminService(IAdminRepository adminRepository)
     {
         _adminRepository = adminRepository;
-         
+
     }
     public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
     {
@@ -268,6 +268,13 @@ public class AdminService: IAdminService
         var res = await _adminRepository.AssignDriverToTruck(model);
         return res;
     }
+
+    public async Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
+    {
+        var res = await _adminRepository.UpdateTruckStatus(truckId, model);
+        return res;
+    }
+
 
 
 

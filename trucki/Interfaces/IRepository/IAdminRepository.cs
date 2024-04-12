@@ -44,5 +44,6 @@ public interface IAdminRepository
     Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks();
     Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId);
     Task<ApiResponseModel<bool>> AssignDriverToTruck(AssignDriverToTruckRequestModel model);
+    Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model);
 
 }

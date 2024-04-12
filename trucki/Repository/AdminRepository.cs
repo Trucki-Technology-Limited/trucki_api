@@ -1342,4 +1342,31 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
+    public async Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
+    {
+        var truck = await _context.Trucks.FindAsync(truckId);
+        if(truck == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                StatusCode = 404,
+                Message = "Truck not found"
+            };
+        }
+
+        truck.TruckStatus = model.TruckStatus;
+
+        _context.Trucks.Update(truck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            StatusCode = 200,
+            Message = "Truck status succesfully updated",
+            Data = ""
+        };
+    }
 }
