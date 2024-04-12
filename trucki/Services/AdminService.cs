@@ -257,5 +257,18 @@ public class AdminService: IAdminService
         return res;
     }
 
+    public async Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId)
+    {
+        var res = await _adminRepository.GetTruckDocuments(truckId);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> AssignDriverToTruck(AssignDriverToTruckRequestModel model)
+    {
+        var res = await _adminRepository.AssignDriverToTruck(model);
+        return res;
+    }
+
+
 
 }

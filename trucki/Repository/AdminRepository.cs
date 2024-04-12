@@ -1280,4 +1280,66 @@ public class AdminRepository : IAdminRepository
         };
     }
 
+    public async Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId)
+    {
+        var truck = await _context.Trucks.FindAsync(truckId);
+
+        if(truck  == null)
+        {
+            return new ApiResponseModel<IEnumerable<string>>
+            {
+                StatusCode = 404,
+                IsSuccessful = false,
+                Message = "Truck not found",
+            };
+        }
+
+        var documents = truck.Documents;
+        return new ApiResponseModel<IEnumerable<string>>
+        {
+            Data = documents,
+            StatusCode = 200,
+            IsSuccessful = true,
+            Message = "Documents retrived succesfully"
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> AssignDriverToTruck(AssignDriverToTruckRequestModel model)
+    {
+        var truck = await _context.Trucks.FindAsync(model.TruckId);
+        var driver = await _context.Drivers.FindAsync(model.DriverId);
+
+        if(truck == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                StatusCode = 404,
+                Message = "Truck not found"
+            };
+        }
+        
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                StatusCode = 404,
+                Message = "Driver not found"
+            };
+        }
+
+        truck.DriverId = model.DriverId;
+
+        _context.Trucks.Update(truck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            StatusCode = 200,
+            Message = "Driver assigned to truck successfully",
+            Data = true
+        };
+    }
 }

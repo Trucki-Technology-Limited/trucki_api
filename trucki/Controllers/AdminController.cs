@@ -276,6 +276,18 @@ namespace trucki.Controllers
             var response = await _adminService.GetAllTrucks();
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("GetTruckDocuments")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<string>>>> GetTruckDocuments(string truckId)
+        {
+            var response = await _adminService.GetTruckDocuments(truckId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("AssignDriverToTruck")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> AssignDriverToTruck(AssignDriverToTruckRequestModel model)
+        {
+            var response = await _adminService.AssignDriverToTruck(model);
+            return StatusCode(response.StatusCode, response);
+        }
 
     }
 }
