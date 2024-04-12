@@ -719,6 +719,8 @@ public class AdminRepository : IAdminRepository
         return new ApiResponseModel<TruckOwnerResponseModel>
         {
             IsSuccessful = true,
+            StatusCode = 200,
+            Message = "Success",
             Data = result
         };
     }
