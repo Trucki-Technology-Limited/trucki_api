@@ -1063,7 +1063,19 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 400
             };
         }
-       
+
+        var truckOwner = await _context.TruckOwners.FindAsync(model.TruckOwnerId);
+
+        if (truckOwner == null)
+        {
+            // Handle error - Truck owner not found
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Truck owner not found",
+                StatusCode = 400
+            };
+        }
 
         var newTruck = new Truck
         {
@@ -1073,6 +1085,7 @@ public class AdminRepository : IAdminRepository
             DriverId = model.DriverId,
             //Capacity = model.Capacity,
             TruckOwnerId = model.TruckOwnerId,
+            TruckOwner = truckOwner,
             TruckType = model.TruckType,
             TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
             RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
@@ -1116,12 +1129,25 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+        var truckOwner = await _context.TruckOwners.FindAsync(model.TruckOwnerId);
+
+        if (truckOwner == null)
+        {
+            // Handle error - Truck owner not found
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Truck owner not found",
+                StatusCode = 400
+            };
+        }
         //truck.CertOfOwnerShip = model.CertOfOwnerShip;
         truck.PlateNumber = model.PlateNumber;
         truck.TruckCapacity = model.TruckCapacity;
         truck.DriverId = model.DriverId;
         //truck.Capacity = model.Capacity;
         truck.TruckOwnerId = model.TruckOwnerId;
+        truck.TruckOwner = truckOwner;
         truck.TruckType = model.TruckType;
         truck.TruckLicenseExpiryDate = model.TruckLicenseExpiryDate;
         truck.RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate;
@@ -1270,7 +1296,18 @@ public class AdminRepository : IAdminRepository
         }
 
         var data = _mapper.Map<IEnumerable<AllTruckResponseModel>>(trucks);
-
+        foreach (var truck in data)
+        {
+            if (truck.DriverId != null) {
+                var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
+                truck.DriverName = driver.Name;
+            }
+            if (truck.TruckOwnerId != null) {
+                var truckOwner = await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
+                truck.TruckOwnerName = truckOwner.Name; // Check for null before accessing Name
+            }
+          
+        }
         return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
         {
             Data = data,

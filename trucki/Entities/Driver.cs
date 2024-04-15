@@ -11,7 +11,7 @@ namespace trucki.Entities
         [EmailAddress]
         public string EmailAddress { get; set; }
 
-        public string TruckId { get; set; }
+        public string? TruckId { get; set; }
 
         public string DriversLicence { get; set; }
 

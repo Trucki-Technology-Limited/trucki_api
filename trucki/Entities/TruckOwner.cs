@@ -8,5 +8,6 @@ public class TruckOwner : BaseClass
     public string Address { set; get; }
     public string IdCardUrl { set; get; }
     public string ProfilePictureUrl { set; get; }
+    public List<Truck> trucks { set; get; }
 }
 
