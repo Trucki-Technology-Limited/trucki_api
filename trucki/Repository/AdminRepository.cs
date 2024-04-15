@@ -1,4 +1,5 @@
 using AutoMapper;
+using CloudinaryDotNet.Actions;
 using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Entities;
@@ -1404,6 +1405,91 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
             Message = "Truck status succesfully updated",
             Data = ""
+        };
+    }
+
+    public async Task<ApiResponseModel<AllOfficerResponseModel>> GetOfficerById(string officerId)
+    {
+        var officer = await _context.Officers.FindAsync(officerId);
+
+        if (officer == null)
+        {
+            return new ApiResponseModel<AllOfficerResponseModel>
+            {
+                StatusCode = 404,
+                IsSuccessful = false,
+                Message = "Officer not found",
+            };
+        }
+
+        var officerToReturn = _mapper.Map<AllOfficerResponseModel>(officer);
+
+        //var documents = truck.Documents;
+        return new ApiResponseModel<AllOfficerResponseModel>
+        {
+            Data = officerToReturn,
+            StatusCode = 200,
+            IsSuccessful = true,
+            Message = "Officer retrived successfully"
+        };
+    }
+
+    public async Task<ApiResponseModel<string>> DeleteOfficers(string officerId)
+    {
+        var officer = await _context.Officers.FindAsync(officerId);
+        if (officer == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                StatusCode = 404,
+                IsSuccessful = false,
+                Message = "Officer not found",
+            };
+        }
+
+        _context.Officers.Remove(officer);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            StatusCode = 200,
+            IsSuccessful = true,
+            Message = "Officer deleted successfully",
+        };
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>> SearchOfficer(string? searchWords)
+    {
+        IQueryable<Officer> query = _context.Officers;
+
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.OfficerName.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var officers = await query.ToListAsync();
+
+        if (!officers.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllOfficerResponseModel>>
+            {
+                Data = new List<AllOfficerResponseModel> { },
+                IsSuccessful = false,
+                Message = "No officer found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllOfficerResponseModel>>(officers);
+
+        return new ApiResponseModel<IEnumerable<AllOfficerResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Officers successfully retrieved",
+            StatusCode = 200,
         };
     }
 }
