@@ -1,9 +1,5 @@
-using System.ComponentModel;
-using System.Net.Sockets;
-using System.Xml.Linq;
 using IdentityModel.Client;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using trucki.Entities;
 using trucki.Interfaces.IServices;
 
@@ -46,12 +42,12 @@ public class TokenService : ITokenService
         }
 
         public async Task<TokenResponse> GetToken(string username, string password)
-    {
-            
-        var req = new PasswordTokenRequest
         {
+            
+            var req = new PasswordTokenRequest
+            {
 
-                Address = $"{_config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl2").Value}/connect/token",
+                Address = $"{_config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value}/connect/token",
                 ClientId = "m2m",
                 ClientSecret = "ClientSecret1",
                 ClientCredentialStyle = ClientCredentialStyle.PostBody,
