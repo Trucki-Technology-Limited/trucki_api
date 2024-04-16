@@ -79,18 +79,20 @@ public class AdminRepository : IAdminRepository
         }
 
         // Business exists, proceed to add the route
-        var newRoute = new Routes
-        {
-            Name = model.Name,
-            FromRoute = model.FromRoute,
-            ToRoute = model.ToRoute,
-            Price = model.Price,
-            IsActive = model.IsActive
-        };
+        foreach (var i in model.Routes) {
+            var newRoute = new Routes
+            {
+                Name = i.Name,
+                FromRoute = i.FromRoute,
+                ToRoute = i.ToRoute,
+                Price = i.Price,
+                IsActive = i.IsActive
+            };
 
-        // Add the route to the business
-        business.Routes ??= new List<Routes>();
-        business.Routes.Add(newRoute);
+            // Add the route to the business
+            business.Routes ??= new List<Routes>();
+            business.Routes.Add(newRoute);
+        }
 
         // Save changes to the database
         await _context.SaveChangesAsync();

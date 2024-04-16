@@ -2,6 +2,13 @@ namespace trucki.Models.RequestModel;
 
 public class AddRouteToBusinessRequestModel
 {
+    public List<RouteToBusinessRequestModel> Routes { set; get; }
+    public string BusinessId { get; set; }
+}
+
+
+public class RouteToBusinessRequestModel
+{
     public string Name { get; set; }
 
     public string FromRoute { get; set; }
@@ -11,6 +18,5 @@ public class AddRouteToBusinessRequestModel
     public float Price { get; set; }
 
     public bool IsActive { get; set; }
-        
-    public string BusinessId { get; set; }
+
 }

@@ -31,5 +31,5 @@ public enum TruckStatus
 {
     EnRoute,
     Available, 
-    OutOfService
+    OutOfService,
 }
