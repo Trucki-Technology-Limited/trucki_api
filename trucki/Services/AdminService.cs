@@ -275,7 +275,22 @@ public class AdminService : IAdminService
         return res;
     }
 
+    public async Task<ApiResponseModel<AllOfficerResponseModel>> GetOfficerById(string officerId)
+    {
+        var res = await _adminRepository.GetOfficerById(officerId);
+        return res;
+    }
 
+    public async Task<ApiResponseModel<string>> DeleteOfficers(string officerId)
+    {
+        var res = await _adminRepository.DeleteOfficers(officerId);
+        return res;
+    }
 
+    public async Task<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>> SearchOfficer(string? searchWords)
+    {
+        var res = await _adminRepository.SearchOfficer(searchWords);
+        return res;
+    }
 
 }

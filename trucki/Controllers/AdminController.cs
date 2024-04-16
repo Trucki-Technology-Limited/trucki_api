@@ -296,5 +296,25 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpGet("GetOfficerById")]
+        public async Task<ActionResult<ApiResponseModel<AllOfficerResponseModel>>> GetOfficerById(string officerId)
+        {
+            var response = await _adminService.GetOfficerById(officerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("DeleteOfficer")]
+        public async Task<ActionResult<ApiResponseModel<string>>> DeleteOfficer(string officerId)
+        {
+            var response = await _adminService.DeleteOfficers(officerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("SearchOfficers")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>>> SearchOfficer(string? searchWords)
+        {
+            var response = await _adminService.SearchOfficer(searchWords);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
