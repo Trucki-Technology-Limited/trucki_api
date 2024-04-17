@@ -48,6 +48,11 @@ public interface IAdminService
     Task<ApiResponseModel<AllOfficerResponseModel>> GetOfficerById(string officerId);
     Task<ApiResponseModel<string>> DeleteOfficers(string officerId);
     Task<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>> SearchOfficer(string? searchWords);
+    Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model);
+    Task<ApiResponseModel<string>> EditCustomer(EditCustomerRequestModel model);
+    Task<ApiResponseModel<AllCustomerResponseModel>> GetCustomerById(string customerId);
+    Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers();
+    Task<ApiResponseModel<string>> DeleteCustomer(string customerId);
 
 
 }

@@ -25,5 +25,6 @@ namespace trucki.DatabaseContext
         public DbSet<TruckOwner> TruckOwners { get; set; }
         public DbSet<Officer> Officers { get; set; }
         public DbSet<Truck> Trucks { get; set; }
+        public DbSet<Customer> Customers { get; set; }
     }
 }

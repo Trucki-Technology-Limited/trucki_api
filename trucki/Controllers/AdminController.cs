@@ -316,5 +316,40 @@ namespace trucki.Controllers
             var response = await _adminService.SearchOfficer(searchWords);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("AddNewCustomer")]
+        public async Task<ActionResult<ApiResponseModel<string>>> AddNewCustomer(AddCustomerRequestModel model)
+        {
+            var response = await _adminService.AddNewCustomer(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("EditCustomer")]
+        public async Task<ActionResult<ApiResponseModel<string>>> EditCustomer(EditCustomerRequestModel model)
+        {
+            var response = await _adminService.EditCustomer(model);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("GetCustomerById")]
+        public async Task<ActionResult<ApiResponseModel<AllCustomerResponseModel>>> GetCustomerById(string customerId)
+        {
+            var response = await _adminService.GetCustomerById(customerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("GetAllCustomers")]
+        public async Task<ActionResult<ApiResponseModel<List<AllCustomerResponseModel>>>> GetAllCustomers()
+        {
+            var response = await _adminService.GetAllCustomers();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("RemoveCustomer")]
+        public async Task<ActionResult<ApiResponseModel<string>>> DeleteCustomer(string customerId)
+        {
+            var response = await _adminService.DeleteCustomer(customerId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

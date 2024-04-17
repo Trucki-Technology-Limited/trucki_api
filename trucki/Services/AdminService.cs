@@ -293,4 +293,30 @@ public class AdminService : IAdminService
         return res;
     }
 
+    public async Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model)
+    {
+        var res = await _adminRepository.AddNewCustomer(model);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<string>> EditCustomer(EditCustomerRequestModel model)
+    {
+        var res = await _adminRepository.EditCustomer(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<AllCustomerResponseModel>> GetCustomerById(string customerId)
+    {
+        var res = await _adminRepository.GetCustomerById(customerId);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers()
+    {
+        var res = await _adminRepository.GetAllCustomers();
+        return res;
+    }
+    public async Task<ApiResponseModel<string>> DeleteCustomer(string customerId)
+    {
+        var res = await _adminRepository.DeleteCustomer(customerId);
+        return res;
+    }
 }
