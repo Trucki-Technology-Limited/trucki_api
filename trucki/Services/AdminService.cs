@@ -345,4 +345,9 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetOrdersByStatus(status);
         return res;
     }
+    public async Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData()
+    {
+        var res = await _adminRepository.GetDashBoardData();
+        return res;
+    }
 }

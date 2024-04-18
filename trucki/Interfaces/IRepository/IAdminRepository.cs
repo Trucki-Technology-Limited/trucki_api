@@ -59,4 +59,5 @@ public interface IAdminRepository
     Task<ApiResponseModel<List<AllOrderResponseModel>>> GetAllOrders();
     Task<ApiResponseModel<AllOrderResponseModel>> GetOrderById(string orderId);
     Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrdersByStatus(int status);
+    Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData();
 }

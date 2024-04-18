@@ -383,5 +383,11 @@ namespace trucki.Controllers
             var response = await _adminService.GetOrdersByStatus(status);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("GetDashboardData")]
+        public async Task<ActionResult<ApiResponseModel<DashboardSummaryResponse>>> GetDashboardData()
+        {
+            var response = await _adminService.GetDashBoardData();
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

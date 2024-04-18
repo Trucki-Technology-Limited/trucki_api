@@ -1795,4 +1795,31 @@ public class AdminRepository : IAdminRepository
             Message = $"Orders with status '{status}' retrieved successfully"
         };
     }
+    public async Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData()
+    {
+        int totalBusiness = await _context.Businesses.CountAsync();
+        int totalCustomers = await _context.Customers.CountAsync();
+
+        int totalTrucks = await _context.Trucks.CountAsync();
+
+        int totalActiveTrucks = await _context.Trucks.CountAsync(t => t.TruckStatus == TruckStatus.EnRoute || t.TruckStatus == TruckStatus.Available);
+
+        var dashboardSummary = new DashboardSummaryResponse
+        {
+            TotalBusiness = totalBusiness,
+            TotalCustomers = totalCustomers,
+            TotalTrucks = totalTrucks,
+            TotalActiveTrucks = totalActiveTrucks
+        };
+
+        return new ApiResponseModel<DashboardSummaryResponse>
+        {
+            Data = dashboardSummary,
+            IsSuccessful = true,
+            StatusCode = 200,
+            Message = "Successful"
+    };
+
+    }
+
 }
