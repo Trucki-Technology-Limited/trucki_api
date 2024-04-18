@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using trucki.Entities;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
@@ -318,14 +319,14 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddNewCustomer")]
-        public async Task<ActionResult<ApiResponseModel<string>>> AddNewCustomer(AddCustomerRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<string>>> AddNewCustomer([FromBody] AddCustomerRequestModel model)
         {
             var response = await _adminService.AddNewCustomer(model);
             return StatusCode(response.StatusCode, response);
         }
 
         [HttpPost("EditCustomer")]
-        public async Task<ActionResult<ApiResponseModel<string>>> EditCustomer(EditCustomerRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<string>>> EditCustomer([FromBody] EditCustomerRequestModel model)
         {
             var response = await _adminService.EditCustomer(model);
             return StatusCode(response.StatusCode, response);
@@ -349,6 +350,37 @@ namespace trucki.Controllers
         public async Task<ActionResult<ApiResponseModel<string>>> DeleteCustomer(string customerId)
         {
             var response = await _adminService.DeleteCustomer(customerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("CreateOrder")]
+        public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
+        {
+            var response = await _adminService.CreateNewOrder(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpPost("UpdateOrder")]
+        public async Task<ActionResult<ApiResponseModel<string>>> EditOrder([FromBody] EditOrderRequestModel model)
+        {
+            var response = await _adminService.EditOrder(model);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetAllOrders")]
+        public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetAllOrders()
+        {
+            var response = await _adminService.GetAllOrders();
+            return StatusCode(response.StatusCode, response);   
+        }
+        [HttpGet("GetOrderById")]
+        public async Task<ActionResult<ApiResponseModel<AllOrderResponseModel>>> GetOrderById(string orderId)
+        {
+            var response = await _adminService.GetOrderById(orderId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetOrderByStatus")]
+        public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetOrdersByStatus(int status)
+        {
+            var response = await _adminService.GetOrdersByStatus(status);
             return StatusCode(response.StatusCode, response);
         }
     }

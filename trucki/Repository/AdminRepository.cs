@@ -1644,4 +1644,155 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200
         };
     }
+
+    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
+    {
+        var fieldOfficer = await _context.Officers.FirstOrDefaultAsync(x => x.Id == model.FieldOfficerId);
+        if (fieldOfficer == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Field officer not found",
+                StatusCode = 404
+            };
+        }
+        string startDate = model.StartDate;
+        string endDate = model.EndDate; 
+
+  
+        var order = new Order
+        {
+            TruckNo = model.TruckNo,
+            Quantity = model.Quantity,
+            RouteFrom = model.RouteFrom,
+            RouteTo = model.RouteTo,
+            OrderStatus = model.OrderStatus,    
+            StartDate = DateTime.Parse(startDate),
+            EndDate = DateTime.Parse(endDate),
+            FieldOfficerId = fieldOfficer.Id // Attach the field officer to the order
+        };
+
+        _context.Orders.Add(order);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = "Order created successfully",
+            StatusCode = 200,
+            Data = order.Id 
+        };
+    }
+
+    public async Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model)
+    {
+        // Find the order by ID
+        var order = await _context.Orders.FindAsync(model.OrderId);
+        if (order == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Order not found",
+                StatusCode = 404
+            };
+        }
+        string startDate = model.StartDate;
+        string endDate = model.EndDate;
+
+        order.TruckNo = model.TruckNo;
+        order.Quantity = model.Quantity;
+        order.RouteFrom = model.RouteFrom;
+        order.RouteTo = model.RouteTo;
+        order.OrderStatus = model.OrderStatus;
+        order.StartDate = DateTime.Parse(startDate);
+        order.EndDate = DateTime.Parse(endDate);
+
+  
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = "Order updated successfully",
+            StatusCode = 200,
+            Data = order.Id 
+        };
+    }
+
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetAllOrders()
+    {
+        var orders = await _context.Orders.ToListAsync();
+        if (orders == null || orders.Count == 0)
+        {
+            return new ApiResponseModel<List<AllOrderResponseModel>>
+            {
+                Data = new List<AllOrderResponseModel>(),
+                IsSuccessful = false,
+                StatusCode = 404,
+                Message = "No orders found"
+            };
+        }
+
+        var ordersToReturn = _mapper.Map<List<AllOrderResponseModel>>(orders);
+
+        return new ApiResponseModel<List<AllOrderResponseModel>>
+        {
+            Data = ordersToReturn,
+            IsSuccessful = true,
+            StatusCode = 200,
+            Message = "Orders retrieved successfully"
+        };
+    }
+
+    public async Task<ApiResponseModel<AllOrderResponseModel>> GetOrderById(string orderId)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null)
+        {
+            return new ApiResponseModel<AllOrderResponseModel>
+            {
+                Data = null,
+                IsSuccessful = false,
+                StatusCode = 404,
+                Message = "Order not found"
+            };
+        }
+
+        var orderToReturn = _mapper.Map<AllOrderResponseModel>(order);
+
+        return new ApiResponseModel<AllOrderResponseModel>
+        {
+            Data = orderToReturn,
+            IsSuccessful = true,
+            StatusCode = 200,
+            Message = "Order retrieved successfully"
+        };
+    }
+
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrdersByStatus(int status)
+    {
+        var orders = await _context.Orders.Where(o => (int)o.OrderStatus == status).ToListAsync();
+        if (orders == null || orders.Count == 0)
+        {
+            return new ApiResponseModel<List<AllOrderResponseModel>>
+            {
+                Data = new List<AllOrderResponseModel>(),
+                IsSuccessful = false,
+                StatusCode = 404,
+                Message = $"No orders found with status '{status}'"
+            };
+        }
+
+        var ordersToReturn = _mapper.Map<List<AllOrderResponseModel>>(orders);
+
+        return new ApiResponseModel<List<AllOrderResponseModel>>
+        {
+            Data = ordersToReturn,
+            IsSuccessful = true,
+            StatusCode = 200,
+            Message = $"Orders with status '{status}' retrieved successfully"
+        };
+    }
 }

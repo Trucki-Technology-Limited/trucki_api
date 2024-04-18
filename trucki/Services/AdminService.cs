@@ -1,3 +1,4 @@
+using trucki.Entities;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
@@ -317,6 +318,31 @@ public class AdminService : IAdminService
     public async Task<ApiResponseModel<string>> DeleteCustomer(string customerId)
     {
         var res = await _adminRepository.DeleteCustomer(customerId);
+        return res;
+    }
+    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
+    {
+        var res = await _adminRepository.CreateNewOrder(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model)
+    {
+        var res = await _adminRepository.EditOrder(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetAllOrders()
+    {
+        var res = await _adminRepository.GetAllOrders();
+        return res;
+    }
+    public async Task<ApiResponseModel<AllOrderResponseModel>> GetOrderById(string orderId)
+    {
+        var res = await _adminRepository.GetOrderById(orderId);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrdersByStatus(int status)
+    {
+        var res = await _adminRepository.GetOrdersByStatus(status);
         return res;
     }
 }

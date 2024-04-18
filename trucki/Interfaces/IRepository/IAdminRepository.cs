@@ -1,3 +1,4 @@
+using trucki.Entities;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 
@@ -53,4 +54,9 @@ public interface IAdminRepository
     Task<ApiResponseModel<AllCustomerResponseModel>> GetCustomerById(string customerId);
     Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers();
     Task<ApiResponseModel<string>> DeleteCustomer(string customerId);
+    Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model);
+    Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model);
+    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetAllOrders();
+    Task<ApiResponseModel<AllOrderResponseModel>> GetOrderById(string orderId);
+    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrdersByStatus(int status);
 }
