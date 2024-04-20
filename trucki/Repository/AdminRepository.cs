@@ -1832,7 +1832,7 @@ public class AdminRepository : IAdminRepository
             StartDate = order.StartDate.ToString(),
             EndDate = order.EndDate.ToString(),
             Price = order.Price,
-            Driver = order.Truck?.Driver.Name ?? "" 
+            Driver = order.Truck?.DriverId ?? ""
         };
 
         return new ApiResponseModel<OrderResponseModel>
@@ -1932,6 +1932,41 @@ public class AdminRepository : IAdminRepository
             Data = data,
             IsSuccessful = true,
             Message = "Truck Owner successfully retrieved",
+            StatusCode = 200,
+        };
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords)
+    {
+        IQueryable<Customer> query = _context.Customers;
+
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.CustomerName.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var customers = await query.ToListAsync();
+
+        if (!customers.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllCustomerResponseModel>>
+            {
+                Data = new List<AllCustomerResponseModel> { },
+                IsSuccessful = false,
+                Message = "No Customer found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllCustomerResponseModel>>(customers);
+
+        return new ApiResponseModel<IEnumerable<AllCustomerResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Customers successfully retrieved",
             StatusCode = 200,
         };
     }

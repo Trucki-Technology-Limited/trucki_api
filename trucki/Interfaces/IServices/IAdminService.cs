@@ -62,5 +62,6 @@ public interface IAdminService
     Task<string> GetManagerIdAsync(string? userId);
     Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData();
     Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
+    Task<ApiResponseModel<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords);
 
 }

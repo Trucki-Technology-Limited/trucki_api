@@ -362,4 +362,9 @@ public class AdminService : IAdminService
         var res = await _adminRepository.SearchTruckOwners(searchWords);
         return res;
     }
+    public async Task<ApiResponseModel<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords)
+    {
+        var res = await _adminRepository.SearchCustomers(searchWords);
+        return res;
+    }
 }
