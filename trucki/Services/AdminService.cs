@@ -350,7 +350,7 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetDashBoardData();
         return res;
     }
-    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruckOwners(string searchWords)
+    public async Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         var res = await _adminRepository.SearchTruckOwners(searchWords);
         return res;

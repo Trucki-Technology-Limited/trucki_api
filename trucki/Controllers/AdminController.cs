@@ -390,7 +390,7 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("SearchTruckOwners")]
-        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> SearchTruckOwners(string searchWords)
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>>> SearchTruckOwners(string searchWords)
         {
             var response = await _adminService.SearchTruckOwners(searchWords);
             return StatusCode(response.StatusCode, response);
