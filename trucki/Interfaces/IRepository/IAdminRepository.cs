@@ -54,11 +54,12 @@ public interface IAdminRepository
     Task<ApiResponseModel<AllCustomerResponseModel>> GetCustomerById(string customerId);
     Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers();
     Task<ApiResponseModel<string>> DeleteCustomer(string customerId);
-    Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model);
+    Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model, string managerId);
     Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model);
-    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetAllOrders();
-    Task<ApiResponseModel<AllOrderResponseModel>> GetOrderById(string orderId);
-    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrdersByStatus(int status);
+    Task<ApiResponseModel<string>> AssignTruckToOrder(AssignTruckRequestModel model);
+    Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders();
+    Task<ApiResponseModel<OrderResponseModel>> GetOrderById(string orderId);
+    Task<string> GetManagerIdAsync(string? userId);
     Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData();
     Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
 }
