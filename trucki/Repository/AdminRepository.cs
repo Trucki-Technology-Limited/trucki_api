@@ -1821,5 +1821,39 @@ public class AdminRepository : IAdminRepository
     };
 
     }
+    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruckOwners(string searchWords)
+    {
+        IQueryable<TruckOwner> query = _context.TruckOwners;
+
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        {
+            query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
+        }
+
+        var totalItems = await query.CountAsync();
+
+        var owners = await query.ToListAsync();
+
+        if (!owners.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+            {
+                Data = new List<AllTruckResponseModel> { },
+                IsSuccessful = false,
+                Message = "No Truck Owner found",
+                StatusCode = 404
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllTruckResponseModel>>(owners);
+
+        return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = "Truck Owner successfully retrieved",
+            StatusCode = 200,
+        };
+    }
 
 }

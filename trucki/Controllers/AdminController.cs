@@ -389,5 +389,11 @@ namespace trucki.Controllers
             var response = await _adminService.GetDashBoardData();
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("SearchTruckOwners")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> SearchTruckOwners(string searchWords)
+        {
+            var response = await _adminService.SearchTruckOwners(searchWords);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
