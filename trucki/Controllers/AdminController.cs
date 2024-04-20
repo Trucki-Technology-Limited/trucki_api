@@ -356,7 +356,10 @@ namespace trucki.Controllers
         [HttpPost("CreateOrder")]
         public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
         {
-            var response = await _adminService.CreateNewOrder(model);
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            string managerId = await _adminService.GetManagerIdAsync(userId);
+
+            var response = await _adminService.CreateNewOrder(model, managerId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("UpdateOrder")]
@@ -365,22 +368,22 @@ namespace trucki.Controllers
             var response = await _adminService.EditOrder(model);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpPost("AssignTruckToOrder")]
+        public async Task<ActionResult<ApiResponseModel<string>>> AssignTruckToOrders([FromBody] AssignTruckRequestModel model)
+        {
+            var response = await _adminService.AssignTruckToOrder(model);
+            return response;
+        }
         [HttpGet("GetAllOrders")]
-        public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetAllOrders()
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
         {
             var response = await _adminService.GetAllOrders();
             return StatusCode(response.StatusCode, response);   
         }
         [HttpGet("GetOrderById")]
-        public async Task<ActionResult<ApiResponseModel<AllOrderResponseModel>>> GetOrderById(string orderId)
+        public async Task<ActionResult<ApiResponseModel<OrderResponseModel>>> GetOrderById(string orderId)
         {
             var response = await _adminService.GetOrderById(orderId);
-            return StatusCode(response.StatusCode, response);
-        }
-        [HttpGet("GetOrderByStatus")]
-        public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetOrdersByStatus(int status)
-        {
-            var response = await _adminService.GetOrdersByStatus(status);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetDashboardData")]

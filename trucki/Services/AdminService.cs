@@ -320,9 +320,9 @@ public class AdminService : IAdminService
         var res = await _adminRepository.DeleteCustomer(customerId);
         return res;
     }
-    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
+    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model, string managerId)
     {
-        var res = await _adminRepository.CreateNewOrder(model);
+        var res = await _adminRepository.CreateNewOrder(model, managerId);
         return res;
     }
     public async Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model)
@@ -330,21 +330,28 @@ public class AdminService : IAdminService
         var res = await _adminRepository.EditOrder(model);
         return res;
     }
-    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetAllOrders()
+    public async Task<ApiResponseModel<string>> AssignTruckToOrder(AssignTruckRequestModel model)
+    {
+        var res = await _adminRepository.AssignTruckToOrder(model);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders()
     {
         var res = await _adminRepository.GetAllOrders();
         return res;
     }
-    public async Task<ApiResponseModel<AllOrderResponseModel>> GetOrderById(string orderId)
+    public async Task<ApiResponseModel<OrderResponseModel>> GetOrderById(string orderId)
     {
         var res = await _adminRepository.GetOrderById(orderId);
         return res;
     }
-    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrdersByStatus(int status)
+    public async Task<string> GetManagerIdAsync(string? userId)
     {
-        var res = await _adminRepository.GetOrdersByStatus(status);
+        var res = await _adminRepository.GetManagerIdAsync(userId);
         return res;
     }
+
     public async Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData()
     {
         var res = await _adminRepository.GetDashBoardData();
