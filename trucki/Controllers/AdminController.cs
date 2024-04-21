@@ -398,5 +398,11 @@ namespace trucki.Controllers
             var response = await _adminService.SearchTruckOwners(searchWords);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("SearchCustomers")]
+        public async Task<ActionResult<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords)
+        {
+            var response = await _adminService.SearchCustomers(searchWords);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

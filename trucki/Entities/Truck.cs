@@ -7,7 +7,7 @@ public class Truck : BaseClass
     public string PlateNumber { get; set; }
     public string TruckCapacity { get; set; }
     public string? DriverId { get; set; }
-    public Driver Driver { get; set; }  
+    public Driver? Driver { get; set; }  
     //public string Capacity { get; set; }    
     public string? TruckOwnerId { get; set; }
     public TruckOwner? TruckOwner { get; set; }
