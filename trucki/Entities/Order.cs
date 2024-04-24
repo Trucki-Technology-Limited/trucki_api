@@ -3,7 +3,7 @@
     public class Order : BaseClass
     {
         public string OrderId { get; set; }
-        public string TruckNo { get; set; }
+        public string? TruckNo { get; set; }
         public string Quantity { get; set; }
         public string CargoType { get; set; }
         public DateTime StartDate { get; set; }
@@ -21,8 +21,8 @@
         public Officer Officer { get; set; }
         public string ManagerId { get; set; }
         public Manager Manager { get; set; }
-        public string CustomerId { get; set; }
-        public Customer Customer { get; set; }
+        public string? CustomerId { get; set; }
+        public Customer? Customer { get; set; }
     }
 
     public enum OrderStatus
