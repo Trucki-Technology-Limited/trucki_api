@@ -356,8 +356,9 @@ namespace trucki.Controllers
         [HttpPost("CreateOrder")]
         public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
         {
-            var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-            string managerId = await _adminService.GetManagerIdAsync(userId);
+            //var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            //string managerId = await _adminService.GetManagerIdAsync(userId);
+            string managerId = "a0511c15-c26c-4141-862b-fdbd26cc48fd";
 
             var response = await _adminService.CreateNewOrder(model, managerId);
             return StatusCode(response.StatusCode, response);

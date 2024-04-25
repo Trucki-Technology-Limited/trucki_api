@@ -1657,8 +1657,11 @@ public class AdminRepository : IAdminRepository
             OrderId = orderId,
             CargoType = model.CargoType,
             Quantity = model.Quantity,
+            OfficerId = model.FieldOfficerId,
             ManagerId = managerId,
             OrderStatus = OrderStatus.Pending,
+            //TruckNo = "",
+            //CustomerId = "d4b678f6-ffe3-4364-8ac3-68cc56191ddf"
             //RouteId = model.RouteId,
             //StartDate = DateTime.Parse(startDate),
             //EndDate = DateTime.Parse(startDate).AddHours(24),
