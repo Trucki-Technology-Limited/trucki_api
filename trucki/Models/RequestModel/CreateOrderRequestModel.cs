@@ -16,7 +16,7 @@ namespace trucki.Models.RequestModel
 
     public class AssignTruckRequestModel
     {
-        public string Id { get; set; }
+        public string OrderId { get; set; }
         public string CustomerId { get; set; }
         public string TruckId { get; set; }
         public string RouteId { get; set; }
