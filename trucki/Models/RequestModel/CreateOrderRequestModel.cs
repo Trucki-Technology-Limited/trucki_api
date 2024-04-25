@@ -4,6 +4,7 @@ namespace trucki.Models.RequestModel
 {
     public class CreateOrderRequestModel
     {
+        public string ManagerId { get; set; }
         //public string TruckNo { get; set; }
         public string Quantity { get; set; }
         public string CargoType { get; set; }

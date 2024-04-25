@@ -358,7 +358,7 @@ namespace trucki.Controllers
         {
             //var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
             //string managerId = await _adminService.GetManagerIdAsync(userId);
-            string managerId = "a0511c15-c26c-4141-862b-fdbd26cc48fd";
+            string managerId = model.ManagerId;
 
             var response = await _adminService.CreateNewOrder(model, managerId);
             return StatusCode(response.StatusCode, response);
