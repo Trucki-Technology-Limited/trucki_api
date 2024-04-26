@@ -1645,7 +1645,7 @@ public class AdminRepository : IAdminRepository
         };
     }
 
-    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model, string managerId)
+    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
     {
         string orderId = GenerateOrderId();
 
@@ -1658,7 +1658,7 @@ public class AdminRepository : IAdminRepository
             CargoType = model.CargoType,
             Quantity = model.Quantity,
             OfficerId = model.FieldOfficerId,
-            ManagerId = managerId,
+            ManagerId = model.ManagerId,
             OrderStatus = OrderStatus.Pending,
             //TruckNo = "",
             //CustomerId = "d4b678f6-ffe3-4364-8ac3-68cc56191ddf"
@@ -1695,10 +1695,11 @@ public class AdminRepository : IAdminRepository
 
         order.RouteId = model.RouteId;
         order.TruckId = model.TruckId;
-        order.Price = model.Price;
+        //order.Price = model.Price;
         order.CustomerId = model.CustomerId;
         order.StartDate = DateTime.Parse(startDate);
         order.EndDate = DateTime.Parse(startDate).AddHours(24);
+        order.DeliveryAddress = model.DeliveryAddress;
 
         await _context.SaveChangesAsync();
 
@@ -1834,7 +1835,7 @@ public class AdminRepository : IAdminRepository
             RouteTo = order.Routes?.ToRoute ?? "",
             StartDate = order.StartDate.ToString(),
             EndDate = order.EndDate.ToString(),
-            Price = order.Price,
+            Price = order.Routes?.Price,
             Driver = order.Truck?.DriverId ?? ""
         };
 

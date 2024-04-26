@@ -31,7 +31,7 @@ namespace trucki.Models.ResponseModels
         public string RouteTo { get; set; }
         public string StartDate { get; set; }
         public string EndDate { get; set; }
-        public decimal Price {  get; set; }
+        public float? Price {  get; set; }
         public string Driver { get; set; }
     }
 }

@@ -54,7 +54,7 @@ public interface IAdminService
     Task<ApiResponseModel<AllCustomerResponseModel>> GetCustomerById(string customerId);
     Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers();
     Task<ApiResponseModel<string>> DeleteCustomer(string customerId);
-    Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model, string managerId);
+    Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model);
     Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model);
     Task<ApiResponseModel<string>> AssignTruckToOrder(AssignTruckRequestModel model);
     Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders();
