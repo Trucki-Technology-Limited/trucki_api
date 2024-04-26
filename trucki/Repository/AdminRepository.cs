@@ -1681,7 +1681,7 @@ public class AdminRepository : IAdminRepository
 
     public async Task<ApiResponseModel<string>> AssignTruckToOrder(AssignTruckRequestModel model)
     {
-        var order = await _context.Orders.FindAsync(model.Id);
+        var order = await _context.Orders.Where(x => x.OrderId == model.OrderId).FirstOrDefaultAsync();
         if (order == null)
         {
             return new ApiResponseModel<string>
@@ -1807,7 +1807,7 @@ public class AdminRepository : IAdminRepository
             .Include(o => o.Officer)
             .Include(o => o.Truck)
             .Include(o => o.Routes)
-            .Where(x => x.Id == orderId).FirstOrDefaultAsync();
+            .Where(x => x.OrderId == orderId).FirstOrDefaultAsync();
 
 
         if(order == null)
