@@ -358,9 +358,8 @@ namespace trucki.Controllers
         {
             //var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
             //string managerId = await _adminService.GetManagerIdAsync(userId);
-            string managerId = model.ManagerId;
 
-            var response = await _adminService.CreateNewOrder(model, managerId);
+            var response = await _adminService.CreateNewOrder(model);
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("UpdateOrder")]

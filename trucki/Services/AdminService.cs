@@ -320,9 +320,9 @@ public class AdminService : IAdminService
         var res = await _adminRepository.DeleteCustomer(customerId);
         return res;
     }
-    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model, string managerId)
+    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
     {
-        var res = await _adminRepository.CreateNewOrder(model, managerId);
+        var res = await _adminRepository.CreateNewOrder(model);
         return res;
     }
     public async Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model)

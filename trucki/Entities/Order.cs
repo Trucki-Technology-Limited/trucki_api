@@ -10,7 +10,7 @@
         public DateTime EndDate { get; set; }
 
         public OrderStatus OrderStatus { get; set; }
-        public decimal Price { get; set; }
+        //public decimal Price { get; set; }
 
         //  Foreign key property referencing the Manager and Officer class
         public string? TruckId { get; set; }
@@ -19,10 +19,11 @@
         public Routes? Routes { get; set; }    
         public string OfficerId { get; set; }
         public Officer Officer { get; set; }
-        public string ManagerId { get; set; }
-        public Manager Manager { get; set; }
+        public string? ManagerId { get; set; }
+        public Manager? Manager { get; set; }
         public string? CustomerId { get; set; }
         public Customer? Customer { get; set; }
+        public string? DeliveryAddress { get; set; }
     }
 
     public enum OrderStatus
