@@ -1742,7 +1742,7 @@ public class AdminRepository : IAdminRepository
             IsSuccessful = true,
             Message = "Order updated successfully",
             StatusCode = 200,
-            Data = order.Id
+            Data = order.OrderId
         };
     }
 
