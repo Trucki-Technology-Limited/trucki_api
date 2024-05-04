@@ -87,7 +87,8 @@ public class AdminRepository : IAdminRepository
                 FromRoute = i.FromRoute,
                 ToRoute = i.ToRoute,
                 Price = i.Price,
-                IsActive = i.IsActive
+                IsActive = i.IsActive,
+                Gtv = i.Gtv
             };
 
             // Add the route to the business
@@ -302,6 +303,7 @@ public class AdminRepository : IAdminRepository
         route.ToRoute = model.ToRoute;
         route.Price = model.Price;
         route.IsActive = model.IsActive;
+        route.Gtv = model.Gtv;
 
         // Save changes to the database
         await _context.SaveChangesAsync();
@@ -1650,6 +1652,10 @@ public class AdminRepository : IAdminRepository
         string orderId = GenerateOrderId();
 
         //string startDate = model.StartDate;
+        var fieldOfficer = await _context.Officers.Where(x => x.CompanyId == model.CompanyId).FirstOrDefaultAsync();
+        if (fieldOfficer == null)
+            return new ApiResponseModel<string> { IsSuccessful = false, Message = "No field officer found for company", StatusCode = 404 };
+
 
 
         var order = new Order
@@ -1657,7 +1663,7 @@ public class AdminRepository : IAdminRepository
             OrderId = orderId,
             CargoType = model.CargoType,
             Quantity = model.Quantity,
-            OfficerId = model.FieldOfficerId,
+            OfficerId = fieldOfficer.CompanyId,
             ManagerId = model.ManagerId,
             OrderStatus = OrderStatus.Pending,
             //TruckNo = "",
