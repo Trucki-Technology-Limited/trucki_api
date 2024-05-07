@@ -12,7 +12,8 @@ namespace trucki.Models.RequestModel
         //public OrderStatus OrderStatus { get; set; }
 
         // Field officer ID to be attached to the order
-        public string FieldOfficerId { get; set; }
+        //public string FieldOfficerId { get; set; }
+        public string CompanyId { get; set; }
     }
 
     public class AssignTruckRequestModel
