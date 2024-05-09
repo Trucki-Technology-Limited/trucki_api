@@ -404,5 +404,17 @@ namespace trucki.Controllers
             var response = await _adminService.SearchCustomers(searchWords);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("GetGtvDashBoardData")]
+        public async Task<ActionResult<ApiResponseModel<GtvDashboardSummary>>> GetGtvDashboardSummary(DateTime startDate, DateTime endDate)
+        {
+            var response = await _adminService.GetGtvDashBoardSummary(startDate, endDate);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetTruckDashboardData")]
+        public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetTruckDashboardSummary(string truckId)
+        {
+            var response = await _adminService.GetTruckDashboardData(truckId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
