@@ -377,4 +377,10 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetTruckDashboardData(truckId);
         return res;
     }
+    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
+    {
+        var res = await _adminRepository.GetManagerDashboardData(managerId);
+        return res;
+    }
+
 }

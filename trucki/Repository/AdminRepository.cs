@@ -2036,4 +2036,31 @@ public class AdminRepository : IAdminRepository
 
         return new ApiResponseModel<TruckDahsBoardData> { Data = stats, IsSuccessful = true, Message = "Dashboard data", StatusCode = 200 };
     }
+
+    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
+    {
+        var orders = await _context.Orders
+            .Include(o => o.Manager)
+            .Where(o => o.ManagerId == managerId)
+            .ToListAsync();
+
+        int completedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+        int flaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
+        decimal totalOrderPrice = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
+
+        var stats = new ManagerDashboardData
+        {
+            CompletedOrders = completedOrders,
+            FlaggedOrders = flaggedOrders,
+            TotalOrderPrice = totalOrderPrice
+        };
+
+        return new ApiResponseModel<ManagerDashboardData>
+        {
+            Data = stats,
+            IsSuccessful = true,
+            Message = "Dashboard data",
+            StatusCode = 200
+        };
+    }
 }

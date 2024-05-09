@@ -65,5 +65,6 @@ public interface IAdminService
     Task<ApiResponseModel<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords);
     Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate, DateTime endDate);
     Task<ApiResponseModel<TruckDahsBoardData>> GetTruckDashboardData(string truckId);
+    Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId);
 
 }

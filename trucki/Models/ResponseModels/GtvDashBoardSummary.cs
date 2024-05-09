@@ -13,4 +13,11 @@
         public int FlaggedOrders { get; set; }
         public decimal TotalOrderPrice { get; set; }
     }
+
+    public class ManagerDashboardData
+    {
+        public int CompletedOrders { get; set; }
+        public int FlaggedOrders { get; set; }
+        public decimal TotalOrderPrice { get; set; }
+    }
 }
