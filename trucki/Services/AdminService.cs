@@ -367,4 +367,20 @@ public class AdminService : IAdminService
         var res = await _adminRepository.SearchCustomers(searchWords);
         return res;
     }
+    public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate, DateTime endDate)
+    {
+        var res = await _adminRepository.GetGtvDashBoardSummary(startDate, endDate);
+        return res;
+    }
+    public async Task<ApiResponseModel<TruckDahsBoardData>> GetTruckDashboardData(string truckId)
+    {
+        var res = await _adminRepository.GetTruckDashboardData(truckId);
+        return res;
+    }
+    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
+    {
+        var res = await _adminRepository.GetManagerDashboardData(managerId);
+        return res;
+    }
+
 }

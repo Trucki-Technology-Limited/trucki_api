@@ -1980,4 +1980,87 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
         };
     }
+
+    public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate, DateTime endDate)
+    {
+        // validate satrtDate and endDate
+        if(startDate > endDate)
+        {
+            return new ApiResponseModel<GtvDashboardSummary>
+            {
+                Data = null,
+                IsSuccessful = false,
+                Message = "Start date must be less than or equal to end datae",
+                StatusCode = 400
+            };
+        }
+
+        List<Order> orders = await _context.Orders.Where(o => o.StartDate >= startDate && o.EndDate <= endDate).ToListAsync();
+
+        decimal totalGtv = orders.Sum(o => decimal.Parse(o.Routes?.Gtv ?? "0"));
+        decimal totalRevenue = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
+
+        var summary = new GtvDashboardSummary
+        {
+            TotalGtv = totalGtv,
+            TotalRevenue = totalRevenue
+        };
+
+        return new ApiResponseModel<GtvDashboardSummary>
+        {
+            Data = summary,
+            IsSuccessful = true,
+            Message = "Dashboard data",
+            StatusCode = 200,
+        };
+    }
+
+    public async Task<ApiResponseModel<TruckDahsBoardData>> GetTruckDashboardData(string truckId)
+    {
+        var orders = await _context.Orders
+                .Include(o => o.Truck)
+                .Where(o => o.TruckId == truckId)
+                .ToListAsync();
+
+        int completedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+        int flaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
+        decimal totalOrderPrice = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
+
+
+        var stats = new TruckDahsBoardData
+        {
+            CompletedOrders = completedOrders,
+            FlaggedOrders = flaggedOrders,
+            TotalOrderPrice = totalOrderPrice
+        };
+
+        return new ApiResponseModel<TruckDahsBoardData> { Data = stats, IsSuccessful = true, Message = "Dashboard data", StatusCode = 200 };
+    }
+
+    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
+    {
+        var orders = await _context.Orders
+            .Include(o => o.Manager)
+            .Where(o => o.ManagerId == managerId)
+            .ToListAsync();
+
+        int completedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+        int flaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
+        decimal totalOrderPrice = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
+
+        var stats = new ManagerDashboardData
+        {
+            CompletedOrders = completedOrders,
+            FlaggedOrders = flaggedOrders,
+            TotalOrderPrice = totalOrderPrice
+        };
+
+        return new ApiResponseModel<ManagerDashboardData>
+        {
+            Data = stats,
+            IsSuccessful = true,
+            Message = "Dashboard data",
+            StatusCode = 200
+        };
+    }
 }
