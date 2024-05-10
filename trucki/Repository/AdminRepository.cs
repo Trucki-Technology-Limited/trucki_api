@@ -2063,4 +2063,30 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200
         };
     }
+
+    public async Task<ApiResponseModel<DriverDashboardData>> GetDriverDashboardData(string driverId)
+    {
+        var orders = await _context.Orders
+                .Where(o => o.Truck.DriverId == driverId)
+                .ToListAsync();
+
+        int completedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+        int flaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
+        decimal totalOrderPrice = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
+
+        var stats = new DriverDashboardData
+        {
+            CompletedOrders = completedOrders,
+            FlaggedOrders = flaggedOrders,
+            TotalOrderPrice = totalOrderPrice
+        };
+
+        return new ApiResponseModel<DriverDashboardData>
+        {
+            Data = stats,
+            IsSuccessful = true,
+            Message = "Dashboard data",
+            StatusCode = 200
+        };
+    }
 }

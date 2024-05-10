@@ -382,5 +382,10 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetManagerDashboardData(managerId);
         return res;
     }
+    public async Task<ApiResponseModel<DriverDashboardData>> GetDriverDashboardData(string driverId)
+    {
+        var res = await _adminRepository.GetDriverDashboardData(driverId);
+        return res;
+    }
 
 }

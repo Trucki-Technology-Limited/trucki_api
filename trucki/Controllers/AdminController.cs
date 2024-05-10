@@ -422,5 +422,11 @@ namespace trucki.Controllers
             var response = await _adminService.GetManagerDashboardData(managerId);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("GetDriverDashboardData")]
+        public async Task<ActionResult<ApiResponseModel<DriverDashboardData>>> GetDriverDashboardData(string driverId)
+        {
+            var response = await _adminService.GetDriverDashboardData(driverId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
