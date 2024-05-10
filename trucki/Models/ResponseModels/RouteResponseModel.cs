@@ -10,6 +10,7 @@ public class RouteResponseModel
     public string ToRoute { get; set; }
 
     public float Price { get; set; }
+    public string Gtv { get; set; }
 
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
