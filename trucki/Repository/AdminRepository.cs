@@ -1694,11 +1694,23 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+        var routes = await _context.RoutesEnumerable.Where(x => x.Id == model.RouteId).FirstOrDefaultAsync();
+        if (routes == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Route not found",
+                StatusCode = 404
+            };
+        }
         string startDate = model.StartDate;
-
-        order.RouteId = model.RouteId;
+        order.RoutesId = routes.Id;
         order.TruckId = model.TruckId;
-        //order.Price = model.Price;
+        if (decimal.TryParse(routes.Gtv, out decimal price))
+        {
+            order.Price = price;
+        }
         order.CustomerId = model.CustomerId;
         order.StartDate = DateTime.Parse(startDate);
         order.EndDate = DateTime.Parse(startDate).AddHours(24);
@@ -1779,6 +1791,8 @@ public class AdminRepository : IAdminRepository
                 OrderId = order.OrderId,
                 TruckNo = order.Truck?.PlateNumber ?? "",
                 Quantity = order.Quantity,
+                StartDate = order.StartDate,
+                EndDate = order.EndDate,
                 OrderStatus = order.OrderStatus,
                 FieldOfficer =  _mapper.Map<AllOfficerResponseModel>(order.Officer),
                 Route =_mapper.Map<RouteResponseModel>(order.Routes),
@@ -2059,6 +2073,33 @@ public class AdminRepository : IAdminRepository
             IsSuccessful = true,
             Message = "Dashboard data",
             StatusCode = 200
+        };
+    }
+    public async Task<ApiResponseModel<List<RouteResponseModel>>> GetRoutesByBusinessId(string businessId)
+    {
+        var business = await _context.Businesses
+            .Include(b => b.Routes)
+            .FirstOrDefaultAsync(b => b.Id == businessId);
+        
+        if (business == null)
+        {
+            return new ApiResponseModel<List<RouteResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Business not found",
+                StatusCode = 404,
+                Data = null
+            };
+        }
+        
+        var routeResponseModels = _mapper.Map<List<RouteResponseModel>>(business.Routes);
+
+        return new ApiResponseModel<List<RouteResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Routes retrieved successfully",
+            StatusCode = 200,
+            Data = routeResponseModels
         };
     }
 }

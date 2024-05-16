@@ -17,7 +17,7 @@
         public Truck? Truck { get; set; }
         public string? BusinessId { get; set; }
         public Business? Business { get; set; } 
-        public string? RouteId { get; set; }
+        public string? RoutesId { get; set; }
         public Routes? Routes { get; set; }    
         public string OfficerId { get; set; }
         public Officer Officer { get; set; }

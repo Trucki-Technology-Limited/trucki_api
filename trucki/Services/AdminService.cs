@@ -382,5 +382,10 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetManagerDashboardData(managerId);
         return res;
     }
+    public async Task<ApiResponseModel<List<RouteResponseModel>>> GetRoutesByBusinessId(string businessId)
+    {
+        var res = await _adminRepository.GetRoutesByBusinessId(businessId);
+        return res;
+    }
 
 }

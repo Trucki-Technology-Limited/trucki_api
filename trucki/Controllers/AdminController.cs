@@ -35,6 +35,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddRouteToBusiness")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> AddRouteToBusiness([FromBody] AddRouteToBusinessRequestModel model)
         {
             var result = await _adminService.AddRouteToBusiness(model);
@@ -42,6 +43,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetBusinessById")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<BusinessResponseModel>>> GetBusinessById(string businessId)
         {
             var business = await _adminService.GetBusinessById(businessId);
@@ -49,6 +51,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditBusiness")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditBusiness([FromBody] EditBusinessRequestModel model)
         {
             var response = await _adminService.EditBusiness(model);
@@ -56,6 +59,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DeleteBusiness")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeleteBusiness([FromQuery] string businessId)
         {
             var response = await _adminService.DeleteBusiness(businessId);
@@ -63,6 +67,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DisableBusiness")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DisableBusiness([FromQuery] string businessId)
         {
             var response = await _adminService.DisableBusiness(businessId);
@@ -70,6 +75,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EnableBusiness")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EnableBusiness([FromQuery] string businessId)
         {
             var response = await _adminService.EnableBusiness(businessId);
@@ -77,6 +83,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditRoute")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditRoute([FromBody] EditRouteRequestModel model)
         {
             var response = await _adminService.EditRoute(model);
@@ -84,6 +91,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DeleteRoute")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeleteRoute([FromQuery] string routeId)
         {
             var response = await _adminService.DeleteRoute(routeId);
@@ -91,6 +99,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddManager")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> AddManager([FromBody] AddManagerRequestModel model)
         {
             var response = await _adminService.AddManager(model);
@@ -98,6 +107,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddDriver")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromForm] AddDriverRequestModel model)
         {
             var response = await _adminService.AddDriver(model);
@@ -105,6 +115,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditDriver")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditDriver([FromForm] EditDriverRequestModel model)
         {
             var response = await _adminService.EditDriver(model);
@@ -112,6 +123,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllManager")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllManagerResponseModel>>> GetAllManager()
         {
             var business = await _adminService.GetAllManager();
@@ -119,6 +131,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetManager")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllManagerResponseModel>>> GetManagerById(string id)
         {
             var manager = await _adminService.GetManagerById(id);
@@ -126,6 +139,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditManager")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditManagerRequestModel model)
         {
             var response = await _adminService.EditManager(model);
@@ -133,6 +147,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DeleteManager")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeleteManager([FromQuery] string managerId)
         {
             var response = await _adminService.DeactivateManager(managerId);
@@ -140,6 +155,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllTruckOwners")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<List<TruckOwnerResponseModel>>>> GetAllTruckOwners()
         {
             var response = await _adminService.GetAllTruckOwners();
@@ -147,6 +163,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DeleteTruckOwner")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeleteTruckOwner([FromQuery] string ownerId)
         {
             var response = await _adminService.DeleteTruckOwner(ownerId);
@@ -154,6 +171,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditTruckOwner")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditTruckOwner(
             [FromForm] EditTruckOwnerRequestBody model)
         {
@@ -162,6 +180,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetTruckOwnerById")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<TruckOwnerResponseModel>>> GetTruckOwnerById(
             [FromQuery] string ownerId)
         {
@@ -170,6 +189,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateNewTruckOwner")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> CreateNewTruckOwner(
             [FromForm] AddTruckOwnerRequestBody model)
         {
@@ -178,6 +198,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllDrivers")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDrivers()
         {
             var response = await _adminService.GetAllDrivers();
@@ -185,6 +206,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetDriverById")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriverById(string id)
         {
             var response = await _adminService.GetDriverById(id);
@@ -192,6 +214,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("SearchDrivers")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllDriverResponseModel>>>> SearchDrivers(string searchWords)
         {
             var response = await _adminService.SearchDrivers(searchWords);
@@ -199,6 +222,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DeactivvateDriver")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> DeactivateDriver(string driverId)
         {
             var response = await _adminService.DeactivateDriver(driverId);
@@ -207,6 +231,7 @@ namespace trucki.Controllers
 
 
         [HttpGet("SearchManagers")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchManagers(string searchWords)
         {
             var response = await _adminService.SearchManagers(searchWords);
@@ -214,6 +239,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("SearchBusinesses")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchBusinesses(string searchWords)
         {
             var response = await _adminService.SearchBusinesses(searchWords);
@@ -221,6 +247,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateNewOfficer")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOfficer([FromBody] AddOfficerRequestModel model)
         {
             var response = await _adminService.AddOfficer(model);
@@ -228,6 +255,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllFieldOfficers")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>>> GetAllFieldOfficers(int page, int size)
         {
             var response = await _adminService.GetAllFieldOfficers(page, size);
@@ -235,6 +263,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditOfficer")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditManager([FromBody] EditOfficerRequestModel model)
         {
             var response = await _adminService.EditOfficer(model);
@@ -242,6 +271,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddNewTruck")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck([FromForm] AddTruckRequestModel model)
         {
             var response = await _adminService.AddNewTruck(model);
@@ -249,42 +279,49 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditTruck")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> EditTruck([FromForm]EditTruckRequestModel model)
         {
             var response = await _adminService.EditTruck(model);
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("DeleteTruck")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<string>>> DeleteTruck(string truckId)
         {
             var response = await _adminService.DeleteTruck(truckId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetTruckById")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllTruckResponseModel>>> GetTruckById(string truckId)
         {
             var response = await _adminService.GetTruckById(truckId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("SearchTrucks")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> SearchTruck(string? searchWords)
         {
             var response = await _adminService.SearchTruck(searchWords);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetAllTrucks")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> GetAllTrucks()
         {
             var response = await _adminService.GetAllTrucks();
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetTruckDocuments")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<string>>>> GetTruckDocuments(string truckId)
         {
             var response = await _adminService.GetTruckDocuments(truckId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("AssignDriverToTruck")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<bool>>> AssignDriverToTruck(AssignDriverToTruckRequestModel model)
         {
             var response = await _adminService.AssignDriverToTruck(model);
@@ -292,6 +329,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("UpdateTruckStatus")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<string>>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
         {
             var response = await _adminService.UpdateTruckStatus(truckId, model);
@@ -299,6 +337,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetOfficerById")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllOfficerResponseModel>>> GetOfficerById(string officerId)
         {
             var response = await _adminService.GetOfficerById(officerId);
@@ -306,6 +345,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("DeleteOfficer")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<string>>> DeleteOfficer(string officerId)
         {
             var response = await _adminService.DeleteOfficers(officerId);
@@ -313,6 +353,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("SearchOfficers")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>>> SearchOfficer(string? searchWords)
         {
             var response = await _adminService.SearchOfficer(searchWords);
@@ -320,6 +361,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("AddNewCustomer")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<string>>> AddNewCustomer([FromBody] AddCustomerRequestModel model)
         {
             var response = await _adminService.AddNewCustomer(model);
@@ -327,6 +369,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("EditCustomer")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<string>>> EditCustomer([FromBody] EditCustomerRequestModel model)
         {
             var response = await _adminService.EditCustomer(model);
@@ -334,6 +377,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetCustomerById")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<AllCustomerResponseModel>>> GetCustomerById(string customerId)
         {
             var response = await _adminService.GetCustomerById(customerId);
@@ -341,6 +385,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllCustomers")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<List<AllCustomerResponseModel>>>> GetAllCustomers()
         {
             var response = await _adminService.GetAllCustomers();
@@ -348,6 +393,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("RemoveCustomer")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<string>>> DeleteCustomer(string customerId)
         {
             var response = await _adminService.DeleteCustomer(customerId);
@@ -365,12 +411,14 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("UpdateOrder")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<string>>> EditOrder([FromBody] EditOrderRequestModel model)
         {
             var response = await _adminService.EditOrder(model);
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("AssignTruckToOrder")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<string>>> AssignTruckToOrders([FromBody] AssignTruckRequestModel model)
         {
             var response = await _adminService.AssignTruckToOrder(model);
@@ -384,45 +432,59 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);   
         }
         [HttpGet("GetOrderById")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<OrderResponseModel>>> GetOrderById(string orderId)
         {
             var response = await _adminService.GetOrderById(orderId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetDashboardData")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<DashboardSummaryResponse>>> GetDashboardData()
         {
             var response = await _adminService.GetDashBoardData();
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("SearchTruckOwners")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>>> SearchTruckOwners(string searchWords)
         {
             var response = await _adminService.SearchTruckOwners(searchWords);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("SearchCustomers")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords)
         {
             var response = await _adminService.SearchCustomers(searchWords);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetGtvDashBoardData")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<GtvDashboardSummary>>> GetGtvDashboardSummary(DateTime startDate, DateTime endDate)
         {
             var response = await _adminService.GetGtvDashBoardSummary(startDate, endDate);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetTruckDashboardData")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetTruckDashboardSummary(string truckId)
         {
             var response = await _adminService.GetTruckDashboardData(truckId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetManagerDashboardData")]
+        [Authorize(Roles = "manager")]
         public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetManagerDashboardSummary(string managerId)
         {
             var response = await _adminService.GetManagerDashboardData(managerId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetRoutesByBusinessId")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> GetRoutesByBusinessId(string businessId)
+        {
+            var response = await _adminService.GetRoutesByBusinessId(businessId);
             return StatusCode(response.StatusCode, response);
         }
     }
