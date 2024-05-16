@@ -9,7 +9,6 @@ namespace trucki.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "admin")]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _adminService;
@@ -20,6 +19,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateNewBusiness")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> CreateNewBusiness([FromBody] CreateNewBusinessRequestModel model)
         {
             var result = await _adminService.CreateNewBusiness(model);
@@ -27,6 +27,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllBusiness")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
         {
             var business = await _adminService.GetAllBusiness();
@@ -354,6 +355,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateOrder")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
         {
             //var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
@@ -375,6 +377,7 @@ namespace trucki.Controllers
             return response;
         }
         [HttpGet("GetAllOrders")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
         {
             var response = await _adminService.GetAllOrders();

@@ -4,7 +4,7 @@ namespace trucki.Models.RequestModel
 {
     public class CreateOrderRequestModel
     {
-        public string? ManagerId { get; set; }
+        // public string? ManagerId { get; set; }
         //public string TruckNo { get; set; }
         public string Quantity { get; set; }
         public string CargoType { get; set; }
@@ -12,7 +12,7 @@ namespace trucki.Models.RequestModel
         //public OrderStatus OrderStatus { get; set; }
 
         // Field officer ID to be attached to the order
-        //public string FieldOfficerId { get; set; }
+        public string? FieldOfficerId { get; set; }
         public string CompanyId { get; set; }
     }
 

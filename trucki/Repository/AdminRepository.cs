@@ -1652,25 +1652,22 @@ public class AdminRepository : IAdminRepository
         string orderId = GenerateOrderId();
 
         //string startDate = model.StartDate;
-        var fieldOfficer = await _context.Officers.Where(x => x.CompanyId == model.CompanyId).FirstOrDefaultAsync();
+        var fieldOfficer = await _context.Officers.Where(x => x.Id == model.FieldOfficerId).FirstOrDefaultAsync();
         if (fieldOfficer == null)
-            return new ApiResponseModel<string> { IsSuccessful = false, Message = "No field officer found for company", StatusCode = 404 };
-
-
-
+            return new ApiResponseModel<string> { IsSuccessful = false, Message = "Field officer inactive or not found", StatusCode = 404 };
+        var business = await _context.Businesses.Where(x => x.Id == model.CompanyId).FirstOrDefaultAsync();
+        if(business == null )
+            return new ApiResponseModel<string> { IsSuccessful = false, Message = "Business not found or Inactive", StatusCode = 400 };
+        
         var order = new Order
         {
             OrderId = orderId,
             CargoType = model.CargoType,
             Quantity = model.Quantity,
-            OfficerId = fieldOfficer.CompanyId,
-            ManagerId = model.ManagerId,
+            OfficerId = fieldOfficer.Id,
+            ManagerId = business.managerId,
+            BusinessId = business.Id,
             OrderStatus = OrderStatus.Pending,
-            //TruckNo = "",
-            //CustomerId = "d4b678f6-ffe3-4364-8ac3-68cc56191ddf"
-            //RouteId = model.RouteId,
-            //StartDate = DateTime.Parse(startDate),
-            //EndDate = DateTime.Parse(startDate).AddHours(24),
         };
 
         _context.Orders.Add(order);
@@ -1758,6 +1755,7 @@ public class AdminRepository : IAdminRepository
         {
             var ordersWithDetails = await _context.Orders
                 .Include(o => o.Officer)
+                .Include(o => o.Business)
                 .Include(o => o.Manager)
                 .Include(o => o.Truck)
                 .Include(o => o.Routes)
@@ -1782,9 +1780,9 @@ public class AdminRepository : IAdminRepository
                 TruckNo = order.Truck?.PlateNumber ?? "",
                 Quantity = order.Quantity,
                 OrderStatus = order.OrderStatus,
-                FieldOfficerName = order.Officer.OfficerName,
-                RouteFrom = order.Routes?.FromRoute ?? "",
-                RouteTo = order.Routes?.ToRoute ?? ""
+                FieldOfficer =  _mapper.Map<AllOfficerResponseModel>(order.Officer),
+                Route =_mapper.Map<RouteResponseModel>(order.Routes),
+                Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
             });
 
             return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
