@@ -16,9 +16,10 @@ public class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly ITokenService _tokenService;
     private readonly TruckiDBContext _context;
+    private readonly IUploadService _uploadService;
     private readonly IMapper _mapper;
 
-    public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper, ITokenService tokenService
+    public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper, ITokenService tokenService, IUploadService uploadService
     
     )
     {
@@ -26,6 +27,7 @@ public class AuthService : IAuthService
         _mapper = mapper;
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _tokenService = tokenService;
+        _uploadService = uploadService;
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
@@ -145,4 +147,83 @@ public class AuthService : IAuthService
             };
 
         }
+    public async Task<ApiResponseModel<bool>> RegisterTransporterAsync(RegisterTransporterRequestModel model)
+    {
+        string[] fullName = model.FullName.Split(' ');
+        if (fullName.Length == 2)
+        {
+            var user = new User
+            {
+                UserName = model.EmailAddress,
+                NormalizedUserName = model.EmailAddress.ToUpper(),
+                Email = model.EmailAddress,
+                NormalizedEmail = model.EmailAddress.ToUpper(),
+                PasswordHash =
+                    new PasswordHasher<User>().HashPassword(null,
+                        model.Password),
+                SecurityStamp = string.Empty,
+                firstName = fullName[0],
+                lastName = fullName[1],
+                IsActive = false
+            };
+            var result = await _userManager.CreateAsync(user);
+            switch (result.Succeeded)
+            {
+                case true:
+                    await _userManager.AddToRoleAsync(user, "Transporter");
+                    break;
+                case false:
+                    // Handle user creation failure
+                    return new ApiResponseModel<bool>
+                    {
+                        IsSuccessful = false,
+                        Message = result.Errors.FirstOrDefault()?.Description ?? "Failed to create user",
+                        StatusCode = 400
+                    };
+            }
+            var transporterDetails = new TransporterUser
+            {
+                UserId = user.Id,
+                Location = model.Location,
+                NumberOfDrivers = model.NumberOfDrivers,
+                TruckType = model.TruckType,
+                TruckCapacity = model.TruckCapacity,
+                TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
+                RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
+                InsruanceExpiryDate = model.InsruanceExpiryDate,
+                //Documents = model.Documents
+            };
+            List<string> documents = new List<string>();
+
+            if (model.Documents != null)
+            {
+                foreach (var document in model.Documents)
+                {
+                    documents.Add(await _uploadService.UploadFile(document, $"{transporterDetails.Id}"));
+                }
+            }
+
+            transporterDetails.Documents = documents;
+
+            // Step 4: Save transporter details to the database
+            _context.TransporterUsers.Add(transporterDetails);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Please enter just your firstname and lastname",
+                StatusCode = 400
+            };
+        }
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "User created successfully",
+            StatusCode = 201
+        };
+
+    }
 }

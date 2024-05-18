@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
+using trucki.Models.ResponseModels;
 
 namespace trucki.Controllers;
 
@@ -23,6 +24,12 @@ public class AuthController: ControllerBase
             return StatusCode(400, "Invalid email address format");
 
         var result = await _authService.Login(request);
+        return StatusCode(result.StatusCode, result);
+    }
+    [HttpPost("RegisterTransporter")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> RegisterTransporterUseer([FromForm] RegisterTransporterRequestModel request)
+    {
+        var result = await _authService.RegisterTransporterAsync(request);
         return StatusCode(result.StatusCode, result);
     }
 }
