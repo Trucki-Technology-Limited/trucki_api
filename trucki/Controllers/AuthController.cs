@@ -32,4 +32,10 @@ public class AuthController: ControllerBase
         var result = await _authService.RegisterTransporterAsync(request);
         return StatusCode(result.StatusCode, result);
     }
+    [HttpPost("RegisterFleetOwner")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> RegisterFleetOwner([FromForm] RegisterFleetOwnerRequestModel request)
+    {
+        var result = await _authService.RegisterFleetOwnerAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
 }

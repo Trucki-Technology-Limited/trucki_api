@@ -170,7 +170,7 @@ public class AuthService : IAuthService
             switch (result.Succeeded)
             {
                 case true:
-                    await _userManager.AddToRoleAsync(user, "Transporter");
+                    await _userManager.AddToRoleAsync(user, "transporter");
                     break;
                 case false:
                     // Handle user creation failure
@@ -207,6 +207,85 @@ public class AuthService : IAuthService
 
             // Step 4: Save transporter details to the database
             _context.TransporterUsers.Add(transporterDetails);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Please enter just your firstname and lastname",
+                StatusCode = 400
+            };
+        }
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "User created successfully",
+            StatusCode = 201
+        };
+
+    }
+    public async Task<ApiResponseModel<bool>> RegisterFleetOwnerAsync(RegisterFleetOwnerRequestModel model)
+    {
+        string[] fullName = model.FullName.Split(' ');
+        if (fullName.Length == 2)
+        {
+            var user = new User
+            {
+                UserName = model.EmailAddress,
+                NormalizedUserName = model.EmailAddress.ToUpper(),
+                Email = model.EmailAddress,
+                NormalizedEmail = model.EmailAddress.ToUpper(),
+                PasswordHash =
+                    new PasswordHasher<User>().HashPassword(null,
+                        model.Password),
+                SecurityStamp = string.Empty,
+                firstName = fullName[0],
+                lastName = fullName[1],
+                IsActive = false
+            };
+            var result = await _userManager.CreateAsync(user);
+            switch (result.Succeeded)
+            {
+                case true:
+                    await _userManager.AddToRoleAsync(user, "fleet owner");
+                    break;
+                case false:
+                    // Handle user creation failure
+                    return new ApiResponseModel<bool>
+                    {
+                        IsSuccessful = false,
+                        Message = result.Errors.FirstOrDefault()?.Description ?? "Failed to create user",
+                        StatusCode = 400
+                    };
+            }
+            var fleetOwner = new FleetOwnerUser
+            {
+                UserId = user.Id,
+                Location = model.Location,
+                NumberOfDrivers = model.NumberOfDrivers,
+                TruckType = model.TruckType,
+                TruckCapacity = model.TruckCapacity,
+                TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
+                RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
+                InsruanceExpiryDate = model.InsruanceExpiryDate,
+                //Documents = model.Documents
+            };
+            List<string> documents = new List<string>();
+
+            if (model.Documents != null)
+            {
+                foreach (var document in model.Documents)
+                {
+                    documents.Add(await _uploadService.UploadFile(document, $"{fleetOwner.Id}"));
+                }
+            }
+
+            fleetOwner.Documents = documents;
+
+            // Step 4: Save transporter details to the database
+            _context.FleetOwners.Add(fleetOwner);
             await _context.SaveChangesAsync();
         }
         else
