@@ -255,7 +255,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllFieldOfficers")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>>> GetAllFieldOfficers(int page, int size)
         {
             var response = await _adminService.GetAllFieldOfficers(page, size);
