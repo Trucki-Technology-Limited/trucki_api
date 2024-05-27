@@ -255,7 +255,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllFieldOfficers")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>>> GetAllFieldOfficers(int page, int size)
         {
             var response = await _adminService.GetAllFieldOfficers(page, size);
@@ -307,7 +307,7 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetAllTrucks")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> GetAllTrucks()
         {
             var response = await _adminService.GetAllTrucks();
@@ -385,7 +385,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetAllCustomers")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<List<AllCustomerResponseModel>>>> GetAllCustomers()
         {
             var response = await _adminService.GetAllCustomers();
@@ -401,7 +401,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("CreateOrder")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
         {
             //var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
@@ -411,21 +411,21 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("UpdateOrder")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<string>>> EditOrder([FromBody] EditOrderRequestModel model)
         {
             var response = await _adminService.EditOrder(model);
             return StatusCode(response.StatusCode, response);
         }
         [HttpPost("AssignTruckToOrder")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<string>>> AssignTruckToOrders([FromBody] AssignTruckRequestModel model)
         {
             var response = await _adminService.AssignTruckToOrder(model);
             return response;
         }
         [HttpGet("GetAllOrders")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
         {
             var response = await _adminService.GetAllOrders();
@@ -481,7 +481,7 @@ namespace trucki.Controllers
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetRoutesByBusinessId")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,field officer")]
         public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> GetRoutesByBusinessId(string businessId)
         {
             var response = await _adminService.GetRoutesByBusinessId(businessId);

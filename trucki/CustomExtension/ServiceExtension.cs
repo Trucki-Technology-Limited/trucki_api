@@ -1,4 +1,5 @@
-﻿using trucki.Interfaces.IRepository;
+﻿using Microsoft.AspNetCore.Identity.UI.Services;
+using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Repository;
 using trucki.Services;
@@ -25,6 +26,7 @@ namespace trucki.CustomExtension
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IUploadService, UploadService>();
+            services.AddTransient<IEmailSender, EmailService>();
         }
     }
 }

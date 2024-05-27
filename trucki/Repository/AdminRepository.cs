@@ -1,5 +1,6 @@
 using AutoMapper;
 using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Entities;
@@ -16,13 +17,15 @@ public class AdminRepository : IAdminRepository
     private readonly IMapper _mapper;
     private readonly IAuthService _authService;
     private readonly IUploadService _uploadService;
+    private readonly IEmailSender _emailSender;
 
-    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper,IAuthService authService,IUploadService uploadService)
+    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper,IAuthService authService,IUploadService uploadService,IEmailSender emailSender)
     {
         _context = appDbContext;
         _mapper = mapper;
         _authService = authService;
         _uploadService = uploadService;
+        _emailSender = emailSender;
     }
 
     public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
@@ -397,6 +400,9 @@ public class AdminRepository : IAdminRepository
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
+            var emailSubject = "Account Created";
+            var emailBody = $"Your new password is: {password}, Ensure to change the password when you login";
+            await _emailSender.SendEmailAsync(newManager.EmailAddress, emailSubject, emailBody);
             // **Save changes to database**
             await _context.SaveChangesAsync();
             return new ApiResponseModel<string>
@@ -455,7 +461,7 @@ public class AdminRepository : IAdminRepository
         const string lowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
         const string uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const string digits = "0123456789";
-        const string symbols = "!@#$%^&*()-_=+[]{};':\"\\|,<.>/?";
+        const string symbols = "@£#$";
 
         // Combine all character sets (adjust as needed)
         string chars = lowercaseLetters + uppercaseLetters + digits + symbols;
@@ -982,6 +988,9 @@ public class AdminRepository : IAdminRepository
         var password = GenerateRandomPassword();
         var res = await _authService.AddNewUserAsync(newOfficer.OfficerName,
             newOfficer.EmailAddress, newOfficer.OfficerType == 0 ? "field officer" : "safety officer", password);
+        var emailSubject = "Account Created";
+        var emailBody = $"Your new password is: {password}, Ensure to change the password when you login";
+        await _emailSender.SendEmailAsync(newOfficer.EmailAddress, emailSubject, emailBody);
         if(res.StatusCode == 201)
         {
             await _context.SaveChangesAsync();
