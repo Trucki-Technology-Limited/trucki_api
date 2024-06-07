@@ -6,7 +6,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace trucki.Migrations
 {
-    public partial class Initial : Migration
+    public partial class initial_con : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

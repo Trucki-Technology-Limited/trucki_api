@@ -297,7 +297,12 @@ namespace trucki.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Managers");
                 });
@@ -357,6 +362,9 @@ namespace trucki.Migrations
                     b.Property<string>("DeliveryAddress")
                         .HasColumnType("text");
 
+                    b.Property<List<string>>("Documents")
+                        .HasColumnType("text[]");
+
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -374,8 +382,8 @@ namespace trucki.Migrations
                     b.Property<int>("OrderStatus")
                         .HasColumnType("integer");
 
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("numeric");
+                    b.Property<float?>("Price")
+                        .HasColumnType("real");
 
                     b.Property<string>("Quantity")
                         .IsRequired()
@@ -428,9 +436,8 @@ namespace trucki.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Gtv")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<float>("Gtv")
+                        .HasColumnType("real");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -688,6 +695,15 @@ namespace trucki.Migrations
                         .HasForeignKey("managerId");
 
                     b.Navigation("Manager");
+                });
+
+            modelBuilder.Entity("trucki.Entities.Manager", b =>
+                {
+                    b.HasOne("trucki.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("trucki.Entities.Order", b =>

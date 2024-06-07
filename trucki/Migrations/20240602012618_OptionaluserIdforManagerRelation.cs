@@ -2,41 +2,41 @@
 
 #nullable disable
 
-namespace trucki.Migrations.TruckiDB
+namespace trucki.Migrations
 {
-    public partial class updatemigration : Migration
+    public partial class OptionaluserIdforManagerRelation : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_Trucks_Drivers_DriverId1",
-                table: "Trucks");
+                name: "FK_Managers_AspNetUsers_UserId",
+                table: "Managers");
 
             migrationBuilder.AlterColumn<string>(
-                name: "DriverId1",
-                table: "Trucks",
+                name: "UserId",
+                table: "Managers",
                 type: "text",
                 nullable: true,
                 oldClrType: typeof(string),
                 oldType: "text");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Trucks_Drivers_DriverId1",
-                table: "Trucks",
-                column: "DriverId1",
-                principalTable: "Drivers",
+                name: "FK_Managers_AspNetUsers_UserId",
+                table: "Managers",
+                column: "UserId",
+                principalTable: "AspNetUsers",
                 principalColumn: "Id");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_Trucks_Drivers_DriverId1",
-                table: "Trucks");
+                name: "FK_Managers_AspNetUsers_UserId",
+                table: "Managers");
 
             migrationBuilder.AlterColumn<string>(
-                name: "DriverId1",
-                table: "Trucks",
+                name: "UserId",
+                table: "Managers",
                 type: "text",
                 nullable: false,
                 defaultValue: "",
@@ -45,10 +45,10 @@ namespace trucki.Migrations.TruckiDB
                 oldNullable: true);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Trucks_Drivers_DriverId1",
-                table: "Trucks",
-                column: "DriverId1",
-                principalTable: "Drivers",
+                name: "FK_Managers_AspNetUsers_UserId",
+                table: "Managers",
+                column: "UserId",
+                principalTable: "AspNetUsers",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
         }

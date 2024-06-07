@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace trucki.Migrations
 {
     [DbContext(typeof(ConfigurationDbContext))]
-    [Migration("20240322080450_Initial")]
-    partial class Initial
+    [Migration("20240602011452_initial_con")]
+    partial class initial_con
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

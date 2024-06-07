@@ -487,5 +487,12 @@ namespace trucki.Controllers
             var response = await _adminService.GetRoutesByBusinessId(businessId);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpPost("UploadOrderDocuments")]
+        [Authorize(Roles = "manager,field officer")]
+        public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromForm]UploadOrderManifestRequestModel model)
+        {
+            var response = await _adminService.uploadOrderManifest(model);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

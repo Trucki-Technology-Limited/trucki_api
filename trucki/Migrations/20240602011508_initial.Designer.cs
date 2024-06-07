@@ -10,11 +10,11 @@ using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations.TruckiDB
+namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
-    [Migration("20240409175410_AddField")]
-    partial class AddField
+    [Migration("20240602011508_initial")]
+    partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -169,9 +169,6 @@ namespace trucki.Migrations.TruckiDB
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("ManagerId")
-                        .HasColumnType("text");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -186,11 +183,49 @@ namespace trucki.Migrations.TruckiDB
                     b.Property<bool>("isActive")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("managerId")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ManagerId");
+                    b.HasIndex("managerId");
 
                     b.ToTable("Businesses");
+                });
+
+            modelBuilder.Entity("trucki.Entities.Customer", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EmailAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RCNo")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("trucki.Entities.Driver", b =>
@@ -225,7 +260,6 @@ namespace trucki.Migrations.TruckiDB
                         .HasColumnType("text");
 
                     b.Property<string>("TruckId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -265,7 +299,13 @@ namespace trucki.Migrations.TruckiDB
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Managers");
                 });
@@ -276,7 +316,6 @@ namespace trucki.Migrations.TruckiDB
                         .HasColumnType("text");
 
                     b.Property<string>("CompanyId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -305,6 +344,86 @@ namespace trucki.Migrations.TruckiDB
                     b.ToTable("Officers");
                 });
 
+            modelBuilder.Entity("trucki.Entities.Order", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BusinessId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CargoType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CustomerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryAddress")
+                        .HasColumnType("text");
+
+                    b.Property<List<string>>("Documents")
+                        .HasColumnType("text[]");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ManagerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OfficerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OrderId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<float?>("Price")
+                        .HasColumnType("real");
+
+                    b.Property<string>("Quantity")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoutesId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("TruckId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TruckNo")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ManagerId");
+
+                    b.HasIndex("OfficerId");
+
+                    b.HasIndex("RoutesId");
+
+                    b.HasIndex("TruckId");
+
+                    b.ToTable("Orders");
+                });
+
             modelBuilder.Entity("trucki.Entities.Routes", b =>
                 {
                     b.Property<string>("Id")
@@ -319,6 +438,9 @@ namespace trucki.Migrations.TruckiDB
                     b.Property<string>("FromRoute")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<float>("Gtv")
+                        .HasColumnType("real");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -347,14 +469,6 @@ namespace trucki.Migrations.TruckiDB
             modelBuilder.Entity("trucki.Entities.Truck", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Capacity")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CertOfOwnerShip")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -388,8 +502,10 @@ namespace trucki.Migrations.TruckiDB
                         .HasColumnType("text");
 
                     b.Property<string>("TruckOwnerId")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("TruckStatus")
+                        .HasColumnType("integer");
 
                     b.Property<int>("TruckType")
                         .HasColumnType("integer");
@@ -398,6 +514,8 @@ namespace trucki.Migrations.TruckiDB
                         .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TruckOwnerId");
 
                     b.ToTable("Trucks");
                 });
@@ -575,9 +693,63 @@ namespace trucki.Migrations.TruckiDB
 
             modelBuilder.Entity("trucki.Entities.Business", b =>
                 {
-                    b.HasOne("trucki.Entities.Manager", null)
+                    b.HasOne("trucki.Entities.Manager", "Manager")
                         .WithMany("Company")
+                        .HasForeignKey("managerId");
+
+                    b.Navigation("Manager");
+                });
+
+            modelBuilder.Entity("trucki.Entities.Manager", b =>
+                {
+                    b.HasOne("trucki.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("trucki.Entities.Order", b =>
+                {
+                    b.HasOne("trucki.Entities.Business", "Business")
+                        .WithMany()
+                        .HasForeignKey("BusinessId");
+
+                    b.HasOne("trucki.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId");
+
+                    b.HasOne("trucki.Entities.Manager", "Manager")
+                        .WithMany()
                         .HasForeignKey("ManagerId");
+
+                    b.HasOne("trucki.Entities.Officer", "Officer")
+                        .WithMany()
+                        .HasForeignKey("OfficerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("trucki.Entities.Routes", "Routes")
+                        .WithMany()
+                        .HasForeignKey("RoutesId");
+
+                    b.HasOne("trucki.Entities.Truck", "Truck")
+                        .WithMany()
+                        .HasForeignKey("TruckId");
+
+                    b.Navigation("Business");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Manager");
+
+                    b.Navigation("Officer");
+
+                    b.Navigation("Routes");
+
+                    b.Navigation("Truck");
                 });
 
             modelBuilder.Entity("trucki.Entities.Routes", b =>
@@ -589,6 +761,15 @@ namespace trucki.Migrations.TruckiDB
                     b.Navigation("Business");
                 });
 
+            modelBuilder.Entity("trucki.Entities.Truck", b =>
+                {
+                    b.HasOne("trucki.Entities.TruckOwner", "TruckOwner")
+                        .WithMany("trucks")
+                        .HasForeignKey("TruckOwnerId");
+
+                    b.Navigation("TruckOwner");
+                });
+
             modelBuilder.Entity("trucki.Entities.Business", b =>
                 {
                     b.Navigation("Routes");
@@ -597,6 +778,11 @@ namespace trucki.Migrations.TruckiDB
             modelBuilder.Entity("trucki.Entities.Manager", b =>
                 {
                     b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("trucki.Entities.TruckOwner", b =>
+                {
+                    b.Navigation("trucks");
                 });
 #pragma warning restore 612, 618
         }

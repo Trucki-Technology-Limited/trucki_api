@@ -2,9 +2,9 @@
 {
     public class GtvDashboardSummary
     {
-        public decimal TotalGtv { get; set; }
-        public decimal TotalPayout { get; set; }
-        public decimal TotalRevenue { get; set; }
+        public float TotalGtv { get; set; }
+        public float TotalPayout { get; set; }
+        public float TotalRevenue { get; set; }
     }
 
     public class TruckDahsBoardData

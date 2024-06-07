@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
-using Microsoft.AspNetCore.Identity;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
@@ -15,20 +14,18 @@ namespace trucki.Repository;
 public class AdminRepository : IAdminRepository
 {
     private readonly TruckiDBContext _context;
-    private readonly UserManager<User> _userManager;
     private readonly IMapper _mapper;
     private readonly IAuthService _authService;
     private readonly IUploadService _uploadService;
     private readonly IEmailSender _emailSender;
 
-    public AdminRepository(TruckiDBContext appDbContext,UserManager<User> userManager, IMapper mapper,IAuthService authService,IUploadService uploadService,IEmailSender emailSender)
+    public AdminRepository(TruckiDBContext appDbContext, IMapper mapper,IAuthService authService,IUploadService uploadService,IEmailSender emailSender)
     {
         _context = appDbContext;
         _mapper = mapper;
         _authService = authService;
         _uploadService = uploadService;
         _emailSender = emailSender;
-        _userManager = userManager;
     }
 
     public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
@@ -403,8 +400,6 @@ public class AdminRepository : IAdminRepository
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
-            var user = await _userManager.FindByEmailAsync(newManager.EmailAddress); 
-            newManager.UserId = user.Id;
             var emailSubject = "Account Created";
             var emailBody = $"Your new password is: {password}, Ensure to change the password when you login";
             await _emailSender.SendEmailAsync(newManager.EmailAddress, emailSubject, emailBody);
@@ -1721,9 +1716,10 @@ public class AdminRepository : IAdminRepository
         string startDate = model.StartDate;
         order.RoutesId = routes.Id;
         order.TruckId = model.TruckId;
-     
-            order.Price = routes.Gtv;
-   
+        if (decimal.TryParse(routes.Gtv, out decimal price))
+        {
+            order.Price = price;
+        }
         order.CustomerId = model.CustomerId;
         order.StartDate = DateTime.Parse(startDate);
         order.EndDate = DateTime.Parse(startDate).AddHours(24);
@@ -1787,6 +1783,7 @@ public class AdminRepository : IAdminRepository
                 .Include(o => o.Routes)
                 .Include(o => o.Customer)
                 .ToListAsync();
+
             if (ordersWithDetails == null || !ordersWithDetails.Any())
             {
                 return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
@@ -2027,8 +2024,8 @@ public class AdminRepository : IAdminRepository
 
         List<Order> orders = await _context.Orders.Where(o => o.StartDate >= startDate && o.EndDate <= endDate).ToListAsync();
 
-        float totalGtv = orders.Sum(o => o.Routes?.Gtv ?? 0);
-        float totalRevenue = orders.Sum(o => o.Routes?.Price ?? 0);
+        decimal totalGtv = orders.Sum(o => decimal.Parse(o.Routes?.Gtv ?? "0"));
+        decimal totalRevenue = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
 
         var summary = new GtvDashboardSummary
         {

@@ -388,4 +388,9 @@ public class AdminService : IAdminService
         return res;
     }
 
+    public async Task<ApiResponseModel<bool>> uploadOrderManifest(UploadOrderManifestRequestModel model)
+    {
+        var res = await _adminRepository.uploadOrderManifest(model);
+        return res;
+    }
 }

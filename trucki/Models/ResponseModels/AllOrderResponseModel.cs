@@ -20,11 +20,10 @@ namespace trucki.Models.ResponseModels
     {
         public string Id { get; set; }
         public string OrderId { get; set; }
+        public string businessId { get; set; }
         public string TruckNo { get; set; }
         public string Quantity { get; set; }
         public string CargoType { get; set; }
-        //public string StartDate { get; set; }
-        //public string EndDate { get; set; }
         public OrderStatus OrderStatus { get; set; }
         public string FieldOfficerName { get; set; }
         public string RouteFrom { get; set; }
@@ -33,5 +32,10 @@ namespace trucki.Models.ResponseModels
         public string EndDate { get; set; }
         public float? Price {  get; set; }
         public string Driver { get; set; }
+        
+        public string Customer { get; set; }
+        
+        public string DeliveryLocation { get; set; }
+        public List<string> Documents { get; set; } 
     }
 }

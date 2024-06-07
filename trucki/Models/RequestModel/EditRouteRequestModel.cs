@@ -8,5 +8,5 @@ public class EditRouteRequestModel
     public string ToRoute { get; set; }
     public float Price { get; set; }
     public bool IsActive { get; set; }
-    public string Gtv { get; set; }
+    public float Gtv { get; set; }
 }
