@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace trucki.Migrations
 {
-    public partial class persist : Migration
+    public partial class Initial_persist : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

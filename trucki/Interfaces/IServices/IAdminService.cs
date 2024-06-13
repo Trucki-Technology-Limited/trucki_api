@@ -67,5 +67,10 @@ public interface IAdminService
     Task<ApiResponseModel<TruckDahsBoardData>> GetTruckDashboardData(string truckId);
     Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId);
     Task<ApiResponseModel<List<RouteResponseModel>>> GetRoutesByBusinessId(string businessId);
+    Task<ApiResponseModel<bool>> uploadOrderManifest(UploadOrderManifestRequestModel model);
+    Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetOrdersByStatus(OrderStatus orderStatus);
+    Task<ApiResponseModel<bool>> uploadDeliveryManifest(UploadOrderManifestRequestModel model);
+    Task<ApiResponseModel<bool>> pay40Percent(string orderId);
+    Task<ApiResponseModel<bool>> pay60Percent(string orderId);
 
 }

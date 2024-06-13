@@ -388,4 +388,30 @@ public class AdminService : IAdminService
         return res;
     }
 
+    public async Task<ApiResponseModel<bool>> uploadOrderManifest(UploadOrderManifestRequestModel model)
+    {
+        var res = await _adminRepository.uploadOrderManifest(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetOrdersByStatus(OrderStatus orderStatus)
+    {
+        var res = await _adminRepository.GetOrdersByStatus(orderStatus);
+        return res;
+    }
+    public async Task<ApiResponseModel<bool>> uploadDeliveryManifest(UploadOrderManifestRequestModel model)
+    {
+        var res = await _adminRepository.uploadDeliveryManifest(model);
+        return res;
+    }
+    
+    public async Task<ApiResponseModel<bool>> pay60Percent(string model)
+    {
+        var res = await _adminRepository.pay60Percent(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<bool>> pay40Percent(string model)
+    {
+        var res = await _adminRepository.pay40Percent(model);
+        return res;
+    }
 }

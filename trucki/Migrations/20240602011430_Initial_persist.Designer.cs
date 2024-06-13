@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace trucki.Migrations
 {
     [DbContext(typeof(PersistedGrantDbContext))]
-    [Migration("20240322080539_persist")]
-    partial class persist
+    [Migration("20240602011430_Initial_persist")]
+    partial class Initial_persist
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
