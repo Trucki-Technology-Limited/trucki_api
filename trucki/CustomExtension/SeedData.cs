@@ -226,6 +226,31 @@ public class SeedData
                         await userManagerService.AddToRoleAsync(user, "admin");
                     }
                 }
+                if (await userManagerService.FindByEmailAsync("ss@trucki.co") == null)
+                {
+                    var user = new User
+                    {
+                        Id = "Financial",
+                        UserName = "ss@trucki.co",
+                        NormalizedUserName = "ss@trucki.co".ToUpper(),
+                        Email = "ss@trucki.co",
+                        NormalizedEmail = "ss@trucki.co".ToUpper(),
+                        EmailConfirmed = true,
+                        PasswordHash =
+                            new PasswordHasher<User>().HashPassword(null,
+                                "Admin@1234"), // Change to your desired password
+                        SecurityStamp = string.Empty,
+                        firstName = "Financial",
+                        lastName = "Admin",
+                        IsActive = true,
+                    };
+
+                    var result = await userManagerService.CreateAsync(user);
+                    if (result.Succeeded)
+                    {
+                        await userManagerService.AddToRoleAsync(user, "finance manager");
+                    }
+                }
             }
         }
     }

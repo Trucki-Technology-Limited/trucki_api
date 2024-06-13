@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
@@ -12,9 +13,10 @@ using trucki.DatabaseContext;
 namespace trucki.Migrations
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240607072617_UpdateOrderPaidStatus")]
+    partial class UpdateOrderPaidStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -389,9 +391,6 @@ namespace trucki.Migrations
 
                     b.Property<string>("DeliveryAddress")
                         .HasColumnType("text");
-
-                    b.Property<List<string>>("DeliveryDocuments")
-                        .HasColumnType("text[]");
 
                     b.Property<List<string>>("Documents")
                         .HasColumnType("text[]");

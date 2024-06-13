@@ -21,7 +21,8 @@ public class AdminRepository : IAdminRepository
     private readonly IUploadService _uploadService;
     private readonly IEmailSender _emailSender;
 
-    public AdminRepository(TruckiDBContext appDbContext,UserManager<User> userManager, IMapper mapper,IAuthService authService,IUploadService uploadService,IEmailSender emailSender)
+    public AdminRepository(TruckiDBContext appDbContext, UserManager<User> userManager, IMapper mapper,
+        IAuthService authService, IUploadService uploadService, IEmailSender emailSender)
     {
         _context = appDbContext;
         _mapper = mapper;
@@ -86,7 +87,8 @@ public class AdminRepository : IAdminRepository
         }
 
         // Business exists, proceed to add the route
-        foreach (var i in model.Routes) {
+        foreach (var i in model.Routes)
+        {
             var newRoute = new Routes
             {
                 Name = i.Name,
@@ -257,7 +259,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
-    
+
     public async Task<ApiResponseModel<bool>> EnableBusiness(string id)
     {
         // Retrieve the business
@@ -351,6 +353,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model)
     {
         var existingManager = await _context.Managers
@@ -377,6 +380,7 @@ public class AdminRepository : IAdminRepository
                 };
             }
         }
+
         var newManager = new Manager
         {
             Name = model.Name,
@@ -403,7 +407,7 @@ public class AdminRepository : IAdminRepository
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
-            var user = await _userManager.FindByEmailAsync(newManager.EmailAddress); 
+            var user = await _userManager.FindByEmailAsync(newManager.EmailAddress);
             newManager.UserId = user.Id;
             var emailSubject = "Account Created";
             var emailBody = $"Your new password is: {password}, Ensure to change the password when you login";
@@ -418,6 +422,7 @@ public class AdminRepository : IAdminRepository
                 Data = password
             };
         }
+
         return new ApiResponseModel<string>
         {
             IsSuccessful = false,
@@ -425,7 +430,7 @@ public class AdminRepository : IAdminRepository
             StatusCode = 400, // Bad Request
         };
     }
-    
+
     public async Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager()
     {
         var managers = await _context.Managers.ToListAsync();
@@ -446,7 +451,11 @@ public class AdminRepository : IAdminRepository
         var manager = await _context.Managers.Where(x => x.Id == id).Include(b => b.Company).FirstOrDefaultAsync();
 
         if (manager == null)
-            return new ApiResponseModel<AllManagerResponseModel> { Data = new AllManagerResponseModel { }, IsSuccessful = false, Message = "No manager found", StatusCode = 404 };
+            return new ApiResponseModel<AllManagerResponseModel>
+            {
+                Data = new AllManagerResponseModel { }, IsSuccessful = false, Message = "No manager found",
+                StatusCode = 404
+            };
 
         var managerToReturn = _mapper.Map<AllManagerResponseModel>(manager);
 
@@ -480,7 +489,7 @@ public class AdminRepository : IAdminRepository
 
         return password;
     }
-    
+
     public async Task<ApiResponseModel<bool>> EditManager(EditManagerRequestModel model)
     {
         var manager = await _context.Managers.FindAsync(model.ManagerId);
@@ -508,6 +517,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<bool>> DeactivateManager(string managerId)
     {
         var manager = await _context.Managers.FindAsync(managerId);
@@ -531,6 +541,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model)
     {
         var existingManager = await _context.Drivers
@@ -557,6 +568,7 @@ public class AdminRepository : IAdminRepository
                 };
             }
         }
+
         var newDriver = new Driver
         {
             Name = model.Name,
@@ -565,7 +577,6 @@ public class AdminRepository : IAdminRepository
             TruckId = model.TruckId,
             //PassportFile = "",
             //DriversLicence = ""
-            
         };
 
         var imagePath = "";
@@ -579,7 +590,7 @@ public class AdminRepository : IAdminRepository
         newDriver.DriversLicence = imagePath;
 
         var profilePicPath = "";
-        if(model.Picture != null && model.Picture.Length > 0)
+        if (model.Picture != null && model.Picture.Length > 0)
         {
             // save profile picture
             profilePicPath = await _uploadService.UploadFile(model.Picture, $"{newDriver.Name}userProfilePicture");
@@ -607,6 +618,7 @@ public class AdminRepository : IAdminRepository
                 Data = password
             };
         }
+
         return new ApiResponseModel<string>
         {
             IsSuccessful = false,
@@ -681,12 +693,23 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<bool>> CreateNewTruckOwner(AddTruckOwnerRequestBody model)
     {
         // Create a new TruckiOwner instance
+        var bankDetails = new BankDetails
+        {
+            BankName = model.BankName,
+            BankAccountNumber = model.BankAccountNumber,
+            BankAccountName = model.BankAccountName
+        };
+
+        _context.BankDetails.Add(bankDetails);
+        await _context.SaveChangesAsync();
         var newOwner = new TruckOwner
         {
             Name = model.Name,
             EmailAddress = model.EmailAddress,
             Phone = model.Phone,
-            Address = model.Address
+            Address = model.Address,
+            BankDetailsId = bankDetails.Id, // Associate the new owner with the created bank details
+            BankDetails = bankDetails
         };
 
         // Add owner to context and save changes
@@ -694,15 +717,16 @@ public class AdminRepository : IAdminRepository
         if (model.IdCard != null && model.IdCard.Length > 0)
         {
             // Save image (locally, to database, or external storage)
-            imagePath =await _uploadService.UploadFile(model.IdCard,$"{newOwner.Name}userIdCard");
+            imagePath = await _uploadService.UploadFile(model.IdCard, $"{newOwner.Name}userIdCard");
         }
 
         var profilePicPath = "";
-        if(model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+        if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
         {
-            profilePicPath = await _uploadService.UploadFile(model.ProfilePicture, $"{newOwner.Name}userProfilePicture");
+            profilePicPath =
+                await _uploadService.UploadFile(model.ProfilePicture, $"{newOwner.Name}userProfilePicture");
         }
-      
+
         newOwner.IdCardUrl = imagePath;
         newOwner.ProfilePictureUrl = profilePicPath;
         _context.TruckOwners.Add(newOwner);
@@ -716,6 +740,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id)
     {
         // Fetch owner from database
@@ -731,6 +756,7 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+
         var result = _mapper.Map<TruckOwnerResponseModel>(owner);
         return new ApiResponseModel<TruckOwnerResponseModel>
         {
@@ -740,6 +766,7 @@ public class AdminRepository : IAdminRepository
             Data = result
         };
     }
+
     public async Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model)
     {
         // Find the owner to update
@@ -773,6 +800,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<bool>> DeleteTruckOwner(string id)
     {
         // Find the owner to delete
@@ -801,6 +829,7 @@ public class AdminRepository : IAdminRepository
             Data = true
         };
     }
+
     public async Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners()
     {
         // Fetch all truck owners from the database
@@ -834,7 +863,11 @@ public class AdminRepository : IAdminRepository
         var driver = await _context.Drivers.Where(x => x.Id == id).FirstOrDefaultAsync();
 
         if (driver == null)
-            return new ApiResponseModel<AllDriverResponseModel> { Data = new AllDriverResponseModel { }, IsSuccessful = false, Message = "No manager found", StatusCode = 404 };
+            return new ApiResponseModel<AllDriverResponseModel>
+            {
+                Data = new AllDriverResponseModel { }, IsSuccessful = false, Message = "No manager found",
+                StatusCode = 404
+            };
 
         var driverToReturn = _mapper.Map<AllDriverResponseModel>(driver);
 
@@ -846,14 +879,14 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
             Data = driverToReturn
         };
-
     }
 
     public async Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords)
     {
         IQueryable<Driver> query = _context.Drivers;
 
-        if(!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
         }
@@ -888,7 +921,8 @@ public class AdminRepository : IAdminRepository
     {
         IQueryable<Manager> query = _context.Managers;
 
-        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
         }
@@ -923,7 +957,8 @@ public class AdminRepository : IAdminRepository
     {
         IQueryable<Business> query = _context.Businesses;
 
-        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
         }
@@ -956,10 +991,11 @@ public class AdminRepository : IAdminRepository
 
     public async Task<ApiResponseModel<string>> AddOfficer(AddOfficerRequestModel model)
     {
-        var existingOfficer = await _context.Officers.FirstOrDefaultAsync(m => m.EmailAddress == model.EmailAddress || m.PhoneNumber == model.PhoneNumber);
-        if(existingOfficer != null)
+        var existingOfficer = await _context.Officers.FirstOrDefaultAsync(m =>
+            m.EmailAddress == model.EmailAddress || m.PhoneNumber == model.PhoneNumber);
+        if (existingOfficer != null)
         {
-            if(existingOfficer.EmailAddress == model.EmailAddress)
+            if (existingOfficer.EmailAddress == model.EmailAddress)
             {
                 return new ApiResponseModel<string>
                 {
@@ -968,7 +1004,7 @@ public class AdminRepository : IAdminRepository
                     StatusCode = 400 // Bad Request
                 };
             }
-            else if(existingOfficer.PhoneNumber == model.PhoneNumber)
+            else if (existingOfficer.PhoneNumber == model.PhoneNumber)
             {
                 return new ApiResponseModel<string>
                 {
@@ -984,7 +1020,7 @@ public class AdminRepository : IAdminRepository
             OfficerName = model.OfficerName,
             PhoneNumber = model.PhoneNumber,
             EmailAddress = model.EmailAddress,
-            OfficerType = model.OfficerType, 
+            OfficerType = model.OfficerType,
             CompanyId = model.CompanyId
         };
 
@@ -996,7 +1032,7 @@ public class AdminRepository : IAdminRepository
         var emailSubject = "Account Created";
         var emailBody = $"Your new password is: {password}, Ensure to change the password when you login";
         await _emailSender.SendEmailAsync(newOfficer.EmailAddress, emailSubject, emailBody);
-        if(res.StatusCode == 201)
+        if (res.StatusCode == 201)
         {
             await _context.SaveChangesAsync();
 
@@ -1008,23 +1044,24 @@ public class AdminRepository : IAdminRepository
                 Data = password
             };
         }
+
         return new ApiResponseModel<string>
         {
             IsSuccessful = false,
             Message = "An error occurred while creating officer",
             StatusCode = 400, // Bad Request
         };
-
     }
 
-    public async Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllFieldOfficers(int page, int size)
+    public async Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllFieldOfficers(int page,
+        int size)
     {
         var fieldOfficers = await _context.Officers.Where(x => x.OfficerType == OfficerType.FieldOfficer)
             //.Skip(((page - 1) * size))
             //.Take(size)
             .ToListAsync();
 
-        var totalItems =  fieldOfficers.Count();
+        var totalItems = fieldOfficers.Count();
 
         var data = _mapper.Map<IEnumerable<AllOfficerResponseModel>>(fieldOfficers);
         var paginatedList = PagedList<AllOfficerResponseModel>.Paginates(data, page, size);
@@ -1073,7 +1110,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<string>> AddNewTruck(AddTruckRequestModel model)
     {
         var existingTruck = await _context.Trucks.Where(x => x.PlateNumber == model.PlateNumber).FirstOrDefaultAsync();
-        if(existingTruck != null)
+        if (existingTruck != null)
         {
             return new ApiResponseModel<string>
             {
@@ -1131,15 +1168,14 @@ public class AdminRepository : IAdminRepository
             IsSuccessful = true,
             Message = "Truck added successfully",
             StatusCode = 200,
-            Data = newTruck.Id 
+            Data = newTruck.Id
         };
-
     }
 
     public async Task<ApiResponseModel<bool>> EditTruck(EditTruckRequestModel model)
     {
         var truck = await _context.Trucks.Where(x => x.Id == model.TruckId).FirstOrDefaultAsync();
-        if(truck == null)
+        if (truck == null)
         {
             return new ApiResponseModel<bool>
             {
@@ -1148,6 +1184,7 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+
         var truckOwner = await _context.TruckOwners.FindAsync(model.TruckOwnerId);
 
         if (truckOwner == null)
@@ -1160,6 +1197,7 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 400
             };
         }
+
         //truck.CertOfOwnerShip = model.CertOfOwnerShip;
         truck.PlateNumber = model.PlateNumber;
         truck.TruckCapacity = model.TruckCapacity;
@@ -1198,7 +1236,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<string>> DeleteTruck(string truckId)
     {
         var truck = await _context.Trucks.Where(x => x.Id == truckId).FirstOrDefaultAsync();
-        if(truck == null)
+        if (truck == null)
         {
             return new ApiResponseModel<string>
             {
@@ -1207,6 +1245,7 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+
         _context.Trucks.Remove(truck);
         await _context.SaveChangesAsync();
 
@@ -1221,7 +1260,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<AllTruckResponseModel>> GetTruckById(string truckId)
     {
         var truck = await _context.Trucks.Where(x => x.Id == truckId).FirstOrDefaultAsync();
-        if(truck == null)
+        if (truck == null)
         {
             return new ApiResponseModel<AllTruckResponseModel>
             {
@@ -1267,7 +1306,8 @@ public class AdminRepository : IAdminRepository
     {
         IQueryable<Truck> query = _context.Trucks;
 
-        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.PlateNumber.ToLower().Contains(searchWords.ToLower()));
         }
@@ -1297,10 +1337,9 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200,
         };
     }
+
     public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks()
     {
-       
-
         var trucks = await _context.Trucks.ToListAsync();
 
         if (!trucks.Any())
@@ -1317,16 +1356,20 @@ public class AdminRepository : IAdminRepository
         var data = _mapper.Map<IEnumerable<AllTruckResponseModel>>(trucks);
         foreach (var truck in data)
         {
-            if (truck.DriverId != null) {
+            if (truck.DriverId != null)
+            {
                 var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
                 truck.DriverName = driver.Name;
             }
-            if (truck.TruckOwnerId != null) {
-                var truckOwner = await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
+
+            if (truck.TruckOwnerId != null)
+            {
+                var truckOwner =
+                    await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
                 truck.TruckOwnerName = truckOwner.Name; // Check for null before accessing Name
             }
-          
         }
+
         return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
         {
             Data = data,
@@ -1340,7 +1383,7 @@ public class AdminRepository : IAdminRepository
     {
         var truck = await _context.Trucks.FindAsync(truckId);
 
-        if(truck  == null)
+        if (truck == null)
         {
             return new ApiResponseModel<IEnumerable<string>>
             {
@@ -1365,7 +1408,7 @@ public class AdminRepository : IAdminRepository
         var truck = await _context.Trucks.FindAsync(model.TruckId);
         var driver = await _context.Drivers.FindAsync(model.DriverId);
 
-        if(truck == null)
+        if (truck == null)
         {
             return new ApiResponseModel<bool>
             {
@@ -1374,7 +1417,7 @@ public class AdminRepository : IAdminRepository
                 Message = "Truck not found"
             };
         }
-        
+
         if (driver == null)
         {
             return new ApiResponseModel<bool>
@@ -1402,7 +1445,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
     {
         var truck = await _context.Trucks.FindAsync(truckId);
-        if(truck == null)
+        if (truck == null)
         {
             return new ApiResponseModel<string>
             {
@@ -1480,7 +1523,8 @@ public class AdminRepository : IAdminRepository
     {
         IQueryable<Officer> query = _context.Officers;
 
-        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.OfficerName.ToLower().Contains(searchWords.ToLower()));
         }
@@ -1513,7 +1557,8 @@ public class AdminRepository : IAdminRepository
 
     public async Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model)
     {
-        var existingCustomer = await _context.Customers.FirstOrDefaultAsync(m => m.EmailAddress == model.EmailAddress || m.PhoneNumber == model.PhoneNumber);
+        var existingCustomer = await _context.Customers.FirstOrDefaultAsync(m =>
+            m.EmailAddress == model.EmailAddress || m.PhoneNumber == model.PhoneNumber);
         if (existingCustomer != null)
         {
             if (existingCustomer.EmailAddress == model.EmailAddress)
@@ -1558,7 +1603,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<string>> EditCustomer(EditCustomerRequestModel model)
     {
         var customer = await _context.Customers.FindAsync(model.CustomerId);
-        if(customer == null)
+        if (customer == null)
         {
             return new ApiResponseModel<string>
             {
@@ -1589,7 +1634,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<AllCustomerResponseModel>> GetCustomerById(string customerId)
     {
         var customer = await _context.Customers.FindAsync(customerId);
-        if(customer == null)
+        if (customer == null)
         {
             return new ApiResponseModel<AllCustomerResponseModel>
             {
@@ -1615,7 +1660,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers()
     {
         var customers = await _context.Customers.ToListAsync();
-        if(customers == null)
+        if (customers == null)
         {
             return new ApiResponseModel<List<AllCustomerResponseModel>>
             {
@@ -1640,7 +1685,7 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<string>> DeleteCustomer(string customerId)
     {
         var customer = await _context.Customers.FindAsync(customerId);
-        if(customer == null)
+        if (customer == null)
         {
             return new ApiResponseModel<string>
             {
@@ -1668,11 +1713,13 @@ public class AdminRepository : IAdminRepository
         //string startDate = model.StartDate;
         var fieldOfficer = await _context.Officers.Where(x => x.Id == model.FieldOfficerId).FirstOrDefaultAsync();
         if (fieldOfficer == null)
-            return new ApiResponseModel<string> { IsSuccessful = false, Message = "Field officer inactive or not found", StatusCode = 404 };
+            return new ApiResponseModel<string>
+                { IsSuccessful = false, Message = "Field officer inactive or not found", StatusCode = 404 };
         var business = await _context.Businesses.Where(x => x.Id == model.CompanyId).FirstOrDefaultAsync();
-        if(business == null )
-            return new ApiResponseModel<string> { IsSuccessful = false, Message = "Business not found or Inactive", StatusCode = 400 };
-        
+        if (business == null)
+            return new ApiResponseModel<string>
+                { IsSuccessful = false, Message = "Business not found or Inactive", StatusCode = 400 };
+
         var order = new Order
         {
             OrderId = orderId,
@@ -1708,6 +1755,7 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+
         var routes = await _context.RoutesEnumerable.Where(x => x.Id == model.RouteId).FirstOrDefaultAsync();
         if (routes == null)
         {
@@ -1718,12 +1766,13 @@ public class AdminRepository : IAdminRepository
                 StatusCode = 404
             };
         }
+
         string startDate = model.StartDate;
         order.RoutesId = routes.Id;
         order.TruckId = model.TruckId;
-     
-            order.Price = routes.Gtv;
-   
+
+        order.Price = routes.Gtv;
+
         order.CustomerId = model.CustomerId;
         order.StartDate = DateTime.Parse(startDate);
         order.EndDate = DateTime.Parse(startDate).AddHours(24);
@@ -1807,8 +1856,67 @@ public class AdminRepository : IAdminRepository
                 StartDate = order.StartDate,
                 EndDate = order.EndDate,
                 OrderStatus = order.OrderStatus,
-                FieldOfficer =  _mapper.Map<AllOfficerResponseModel>(order.Officer),
-                Route =_mapper.Map<RouteResponseModel>(order.Routes),
+                FieldOfficer = _mapper.Map<AllOfficerResponseModel>(order.Officer),
+                Route = _mapper.Map<RouteResponseModel>(order.Routes),
+                Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
+            });
+
+            return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+            {
+                IsSuccessful = true,
+                Message = "Orders retrieved successfully",
+                StatusCode = 200,
+                Data = orderResponseList
+            };
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Failed to retrieve orders",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetOrdersByStatus(OrderStatus orderStatus)
+    {
+        try
+        {
+            var ordersWithDetails = await _context.Orders
+                .Include(o => o.Officer)
+                .Include(o => o.Business)
+                .Include(o => o.Manager)
+                .Include(o => o.Truck)
+                .Include(o => o.Routes)
+                .Include(o => o.Customer)
+                .Where(o => o.OrderStatus == orderStatus) // Filter by the provided status
+                .ToListAsync();
+            if (ordersWithDetails == null || !ordersWithDetails.Any())
+            {
+                return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+                {
+                    IsSuccessful = false,
+                    Message = "No orders found",
+                    StatusCode = 404,
+                    Data = new List<AllOrderResponseModel> { }
+                };
+            }
+
+            var orderResponseList = ordersWithDetails.Select(order => new AllOrderResponseModel
+            {
+                Id = order.Id, // Assuming there's a property called Id in Order entity
+                OrderId = order.OrderId,
+                TruckNo = order.Truck?.PlateNumber ?? "",
+                Quantity = order.Quantity,
+                StartDate = order.StartDate,
+                EndDate = order.EndDate,
+                OrderStatus = order.OrderStatus,
+                FieldOfficer = _mapper.Map<AllOfficerResponseModel>(order.Officer),
+                Route = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
             });
 
@@ -1840,7 +1948,8 @@ public class AdminRepository : IAdminRepository
             .Include(o => o.Truck)
             .Include(o => o.Routes)
             .Include(o => o.Customer) // Add Customer include
-            .Where(x => x.Id == orderId)
+            .Include(o => o.Truck.TruckOwner)
+            .ThenInclude(to => to.BankDetails).Where(x => x.Id == orderId)
             .FirstOrDefaultAsync();
 
         if (order == null)
@@ -1872,7 +1981,13 @@ public class AdminRepository : IAdminRepository
             Driver = order.Truck?.DriverId ?? "",
             Customer = order.Customer?.CustomerName ?? "", // Get customer name
             DeliveryLocation = order.DeliveryAddress ?? "", // Get delivery address
-            Documents = order.Documents
+            Documents = order.Documents,
+            DeliveryDocuments = order.DeliveryDocuments,
+            TruckOwnerName = order.Truck?.TruckOwner?.Name ?? "",
+            TruckOwnerBankName = order.Truck?.TruckOwner?.BankDetails?.BankName ?? "",
+            TruckOwnerBankAccountNumber = order.Truck?.TruckOwner?.BankDetails?.BankAccountNumber ?? "",
+            is60Paid = order.is60Paid,
+            is40Paid = order.is40Paid
         };
 
         return new ApiResponseModel<OrderResponseModel>
@@ -1922,7 +2037,8 @@ public class AdminRepository : IAdminRepository
 
         int totalTrucks = await _context.Trucks.CountAsync();
 
-        int totalActiveTrucks = await _context.Trucks.CountAsync(t => t.TruckStatus == TruckStatus.EnRoute || t.TruckStatus == TruckStatus.Available);
+        int totalActiveTrucks = await _context.Trucks.CountAsync(t =>
+            t.TruckStatus == TruckStatus.EnRoute || t.TruckStatus == TruckStatus.Available);
 
         var dashboardSummary = new DashboardSummaryResponse
         {
@@ -1938,14 +2054,15 @@ public class AdminRepository : IAdminRepository
             IsSuccessful = true,
             StatusCode = 200,
             Message = "Successful"
-    };
-
+        };
     }
+
     public async Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         IQueryable<TruckOwner> query = _context.TruckOwners;
 
-        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.Name.ToLower().Contains(searchWords.ToLower()));
         }
@@ -1980,7 +2097,8 @@ public class AdminRepository : IAdminRepository
     {
         IQueryable<Customer> query = _context.Customers;
 
-        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " && searchWords.ToLower() != "null")
+        if (!string.IsNullOrEmpty(searchWords) && searchWords != "" && searchWords != " " &&
+            searchWords.ToLower() != "null")
         {
             query = query.Where(d => d.CustomerName.ToLower().Contains(searchWords.ToLower()));
         }
@@ -2011,10 +2129,11 @@ public class AdminRepository : IAdminRepository
         };
     }
 
-    public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate, DateTime endDate)
+    public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate,
+        DateTime endDate)
     {
         // validate satrtDate and endDate
-        if(startDate > endDate)
+        if (startDate > endDate)
         {
             return new ApiResponseModel<GtvDashboardSummary>
             {
@@ -2025,7 +2144,8 @@ public class AdminRepository : IAdminRepository
             };
         }
 
-        List<Order> orders = await _context.Orders.Where(o => o.StartDate >= startDate && o.EndDate <= endDate).ToListAsync();
+        List<Order> orders = await _context.Orders.Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
+            .ToListAsync();
 
         float totalGtv = orders.Sum(o => o.Routes?.Gtv ?? 0);
         float totalRevenue = orders.Sum(o => o.Routes?.Price ?? 0);
@@ -2048,9 +2168,9 @@ public class AdminRepository : IAdminRepository
     public async Task<ApiResponseModel<TruckDahsBoardData>> GetTruckDashboardData(string truckId)
     {
         var orders = await _context.Orders
-                .Include(o => o.Truck)
-                .Where(o => o.TruckId == truckId)
-                .ToListAsync();
+            .Include(o => o.Truck)
+            .Where(o => o.TruckId == truckId)
+            .ToListAsync();
 
         int completedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
         int flaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
@@ -2064,7 +2184,8 @@ public class AdminRepository : IAdminRepository
             TotalOrderPrice = totalOrderPrice
         };
 
-        return new ApiResponseModel<TruckDahsBoardData> { Data = stats, IsSuccessful = true, Message = "Dashboard data", StatusCode = 200 };
+        return new ApiResponseModel<TruckDahsBoardData>
+            { Data = stats, IsSuccessful = true, Message = "Dashboard data", StatusCode = 200 };
     }
 
     public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
@@ -2093,12 +2214,13 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200
         };
     }
+
     public async Task<ApiResponseModel<List<RouteResponseModel>>> GetRoutesByBusinessId(string businessId)
     {
         var business = await _context.Businesses
             .Include(b => b.Routes)
             .FirstOrDefaultAsync(b => b.Id == businessId);
-        
+
         if (business == null)
         {
             return new ApiResponseModel<List<RouteResponseModel>>
@@ -2109,7 +2231,7 @@ public class AdminRepository : IAdminRepository
                 Data = null
             };
         }
-        
+
         var routeResponseModels = _mapper.Map<List<RouteResponseModel>>(business.Routes);
 
         return new ApiResponseModel<List<RouteResponseModel>>
@@ -2169,17 +2291,143 @@ public class AdminRepository : IAdminRepository
                 uploadedFileUrls.Add(uploadedDocument);
             }
         }
+
         // 4. Update Order
         if (order.Documents == null)
         {
             order.Documents = new List<string>();
         }
+
         order.Documents.AddRange(uploadedFileUrls);
 
         // Update order status if this is the first document being uploaded
         if (order.Documents.Count == uploadedFileUrls.Count)
         {
             order.OrderStatus = OrderStatus.Loaded;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Documents uploaded and order updated",
+            StatusCode = 200,
+        };
+    }
+       public async Task<ApiResponseModel<bool>> pay60Percent(string orderId)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Order not found",
+                StatusCode = 404
+            };
+        }
+        
+        
+            order.is60Paid = true;
+            order.OrderStatus = OrderStatus.InTransit;
+
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "payment made",
+            StatusCode = 200,
+        };
+    }
+    public async Task<ApiResponseModel<bool>> pay40Percent(string orderId)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Order not found",
+                StatusCode = 404
+            };
+        }
+        
+        
+        order.is40Paid = true;
+        order.OrderStatus = OrderStatus.Delivered;
+
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "payment made",
+            StatusCode = 200,
+        };
+    }
+       public async Task<ApiResponseModel<bool>> uploadDeliveryManifest(UploadOrderManifestRequestModel model)
+    {
+        var order = await _context.Orders.FindAsync(model.orderId);
+        if (order == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Order not found",
+                StatusCode = 404
+            };
+        }
+
+        // 1. Validation
+        if (!model.Documents.Any())
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "No files uploaded",
+                StatusCode = 400
+            };
+        }
+
+        // 2. File Type Validation
+        // foreach (var file in model.Documents)
+        // {
+        //     if (file.ContentType != "application/pdf")
+        //     {
+        //         return new ApiResponseModel<List<string>>
+        //         {
+        //             IsSuccessful = false,
+        //             Message = "Invalid file format. Only PDF files are allowed.",
+        //             StatusCode = 400
+        //         };
+        //     }
+        // }
+
+        // 3. Upload to Cloudinary and Get URLs
+        var uploadedFileUrls = new List<string>();
+        if (model.Documents != null)
+        {
+            foreach (var document in model.Documents)
+            {
+                var uploadedDocument = await _uploadService.UploadFile(document, $"{order.OrderId}");
+                uploadedFileUrls.Add(uploadedDocument);
+            }
+        }
+
+        // 4. Update Order
+        if (order.Documents == null)
+        {
+            order.DeliveryDocuments = new List<string>();
+        }
+
+        order.DeliveryDocuments.AddRange(uploadedFileUrls);
+
+        // Update order status if this is the first document being uploaded
+        if (order.DeliveryDocuments.Count == uploadedFileUrls.Count)
+        {
+            order.OrderStatus = OrderStatus.Destination;
         }
 
         await _context.SaveChangesAsync();

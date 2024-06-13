@@ -26,15 +26,18 @@
         public string? CustomerId { get; set; }
         public Customer? Customer { get; set; }
         public string? DeliveryAddress { get; set; }
+        public bool is60Paid { get; set; } = false;
+        public bool is40Paid { get; set; } = false;
         public List<string>? Documents { get; set; } = new(); 
+        public List<string>? DeliveryDocuments { get; set; } = new(); 
     }
 
     public enum OrderStatus
     {
         Pending,
         Assigned,
-        InTransit,
         Loaded,
+        InTransit,
         Destination,
         Delivered,
         Flagged,
