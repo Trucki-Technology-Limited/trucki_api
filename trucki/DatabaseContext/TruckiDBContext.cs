@@ -28,5 +28,6 @@ namespace trucki.DatabaseContext
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<BankDetails> BankDetails { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
     }
 }
