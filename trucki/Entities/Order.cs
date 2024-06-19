@@ -19,8 +19,6 @@
         public Business? Business { get; set; } 
         public string? RoutesId { get; set; }
         public Routes? Routes { get; set; }    
-        public string OfficerId { get; set; }
-        public Officer Officer { get; set; }
         public string? ManagerId { get; set; }
         public Manager? Manager { get; set; }
         public string? CustomerId { get; set; }
