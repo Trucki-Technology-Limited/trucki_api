@@ -10,9 +10,7 @@ namespace trucki.Models.RequestModel
         public string CargoType { get; set; }
         //public string StartDate { get; set; }
         //public OrderStatus OrderStatus { get; set; }
-
-        // Field officer ID to be attached to the order
-        public string? FieldOfficerId { get; set; }
+        
         public string CompanyId { get; set; }
     }
 
@@ -33,8 +31,5 @@ namespace trucki.Models.RequestModel
         public string CargoType { get; set; }
         //public string StartDate { get; set; }
         public OrderStatus OrderStatus { get; set; }
-
-        // Field officer ID to be attached to the order
-        public string FieldOfficerId { get; set; }
     }
 }

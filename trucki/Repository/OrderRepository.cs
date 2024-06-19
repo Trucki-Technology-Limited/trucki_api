@@ -31,12 +31,6 @@ public class OrderRepository:IOrderRepository
         public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
     {
         string orderId = GenerateOrderId();
-
-        //string startDate = model.StartDate;
-        var fieldOfficer = await _context.Officers.Where(x => x.Id == model.FieldOfficerId).FirstOrDefaultAsync();
-        if (fieldOfficer == null)
-            return new ApiResponseModel<string>
-                { IsSuccessful = false, Message = "Field officer inactive or not found", StatusCode = 404 };
         var business = await _context.Businesses.Where(x => x.Id == model.CompanyId).FirstOrDefaultAsync();
         if (business == null)
             return new ApiResponseModel<string>
@@ -47,7 +41,6 @@ public class OrderRepository:IOrderRepository
             OrderId = orderId,
             CargoType = model.CargoType,
             Quantity = model.Quantity,
-            OfficerId = fieldOfficer.Id,
             ManagerId = business.managerId,
             BusinessId = business.Id,
             OrderStatus = OrderStatus.Pending,
@@ -133,7 +126,6 @@ public class OrderRepository:IOrderRepository
         order.OrderStatus = model.OrderStatus;
         //order.StartDate = DateTime.Parse(startDate);
         //order.EndDate = DateTime.Parse(startDate).AddHours(24);
-        order.OfficerId = model.FieldOfficerId;
 
 
         await _context.SaveChangesAsync();
@@ -152,7 +144,6 @@ public class OrderRepository:IOrderRepository
         try
         {
             var ordersWithDetails = await _context.Orders
-                .Include(o => o.Officer)
                 .Include(o => o.Business)
                 .Include(o => o.Manager)
                 .Include(o => o.Truck)
@@ -179,7 +170,6 @@ public class OrderRepository:IOrderRepository
                 StartDate = order.StartDate,
                 EndDate = order.EndDate,
                 OrderStatus = order.OrderStatus,
-                FieldOfficer = _mapper.Map<AllOfficerResponseModel>(order.Officer),
                 Route = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
             });
@@ -210,7 +200,6 @@ public class OrderRepository:IOrderRepository
         try
         {
             var ordersWithDetails = await _context.Orders
-                .Include(o => o.Officer)
                 .Include(o => o.Business)
                 .Include(o => o.Manager)
                 .Include(o => o.Truck)
@@ -238,7 +227,6 @@ public class OrderRepository:IOrderRepository
                 StartDate = order.StartDate,
                 EndDate = order.EndDate,
                 OrderStatus = order.OrderStatus,
-                FieldOfficer = _mapper.Map<AllOfficerResponseModel>(order.Officer),
                 Route = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
             });
@@ -267,7 +255,6 @@ public class OrderRepository:IOrderRepository
     public async Task<ApiResponseModel<OrderResponseModel>> GetOrderById(string orderId)
     {
         var order = await _context.Orders
-            .Include(o => o.Officer)
             .Include(o => o.Truck)
             .Include(o => o.Routes)
             .Include(o => o.Customer) // Add Customer include
@@ -295,7 +282,6 @@ public class OrderRepository:IOrderRepository
             businessId = order.BusinessId,
             CargoType = order.CargoType,
             OrderStatus = order.OrderStatus,
-            FieldOfficerName = order.Officer.OfficerName,
             RouteFrom = order.Routes?.FromRoute ?? "",
             RouteTo = order.Routes?.ToRoute ?? "",
             StartDate = order.StartDate.ToString(),
