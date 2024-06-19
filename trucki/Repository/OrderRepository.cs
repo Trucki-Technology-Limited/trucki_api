@@ -482,21 +482,7 @@ public class OrderRepository:IOrderRepository
                 StatusCode = 400
             };
         }
-
-        // 2. File Type Validation
-        // foreach (var file in model.Documents)
-        // {
-        //     if (file.ContentType != "application/pdf")
-        //     {
-        //         return new ApiResponseModel<List<string>>
-        //         {
-        //             IsSuccessful = false,
-        //             Message = "Invalid file format. Only PDF files are allowed.",
-        //             StatusCode = 400
-        //         };
-        //     }
-        // }
-
+        
         // 3. Upload to Cloudinary and Get URLs
         var uploadedFileUrls = new List<string>();
         if (model.Documents != null)
