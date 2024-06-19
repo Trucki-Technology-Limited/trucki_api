@@ -45,4 +45,11 @@ namespace trucki.Models.ResponseModels
         public bool is40Paid { get; set; }
 
     }
+    public class OrderStatsResponse
+    {
+        public int CompletedOrders { get; set; }
+        public int FlaggedOrders { get; set; }
+        public int InTransitOrders { get; set; }
+        public int TotalOrders { get; set;}
+    }
 }

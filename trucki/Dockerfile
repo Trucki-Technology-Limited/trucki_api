@@ -19,4 +19,6 @@ RUN dotnet publish "trucki.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:Us
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY otp_template.html /app/
+COPY order_template.html /app/
 ENTRYPOINT ["dotnet", "trucki.dll"]
