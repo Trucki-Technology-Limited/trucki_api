@@ -7,6 +7,7 @@
         public string EmailAddress { get; set; }
         public string Location { get; set; }
         public string? RCNo { get; set; }
+        public string BusinessId { get; set; }
     }
 
     public class EditCustomerRequestModel
@@ -17,5 +18,6 @@
         public string EmailAddress { get; set; }
         public string Location { get; set; }
         public string? RCNo { get; set; }
+        public string BusinessId { get; set; }
     }
 }

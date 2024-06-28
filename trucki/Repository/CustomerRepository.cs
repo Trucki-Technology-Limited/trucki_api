@@ -31,8 +31,23 @@ public class CustomerRepository:ICustomerRepository
         _userManager = userManager;
     }
         
-    public async Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model)
-    {
+    public async Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model){
+        var business = await _context.Businesses
+            .Include(b => b.Customers)
+            .FirstOrDefaultAsync(b => b.Id == model.BusinessId);
+
+        if (business == null)
+        {
+            // If business does not exist, return appropriate response
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Business does not exist",
+                StatusCode = 404,
+                Data = "false"
+            };
+        }
+
         var existingCustomer = await _context.Customers.FirstOrDefaultAsync(m =>
             m.EmailAddress == model.EmailAddress || m.PhoneNumber == model.PhoneNumber);
         if (existingCustomer != null)
@@ -62,11 +77,15 @@ public class CustomerRepository:ICustomerRepository
             CustomerName = model.CustomerName,
             PhoneNumber = model.PhoneNumber,
             EmailAddress = model.EmailAddress,
-            Location = model.Location
+            Location = model.Location,
+            BusinessId = model.BusinessId // Set the BusinessId
         };
 
         _context.Customers.Add(newCustomer);
         await _context.SaveChangesAsync();
+
+        business.Customers ??= new List<Customer>();
+        business.Customers.Add(newCustomer);
 
         return new ApiResponseModel<string>
         {

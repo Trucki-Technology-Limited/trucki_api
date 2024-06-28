@@ -42,14 +42,14 @@ public class OrderController: ControllerBase
         return response;
     }
     [HttpGet("GetAllOrders")]
-    [Authorize(Roles = "admin,manager,field officer,finance manager")]
+    [Authorize(Roles = "admin,manager,field officer,finance")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
     {
         var response = await _orderService.GetAllOrders();
         return StatusCode(response.StatusCode, response);   
     }
     [HttpGet("GetOrderById")]
-    [Authorize(Roles = "admin,manager,finance manager")]
+    [Authorize(Roles = "admin,manager,finance")]
     public async Task<ActionResult<ApiResponseModel<OrderResponseModel>>> GetOrderById(string orderId)
     {
         var response = await _orderService.GetOrderById(orderId);
@@ -64,7 +64,7 @@ public class OrderController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetOrdersByStatus")]
-    [Authorize(Roles = "admin,manager,field officer,finance manager")]
+    [Authorize(Roles = "admin,manager,field officer,finance")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetOrdersByStatus([FromQuery] OrderStatus status)
     {
         var response = await _orderService.GetOrdersByStatus(status);
@@ -78,14 +78,14 @@ public class OrderController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("pay40Percent")]
-    [Authorize(Roles = "finance manager")]
+    [Authorize(Roles = "finance")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> Pay40Percent([FromBody] string status)
     {
         var response = await _orderService.Pay40Percent(status);
         return StatusCode(response.StatusCode, response);   
     }
     [HttpPost("pay60Percent")]
-    [Authorize(Roles = "finance manager")]
+    [Authorize(Roles = "finance")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> Pay60Percent([FromBody] string status)
     {
         var response = await _orderService.Pay60Percent(status);

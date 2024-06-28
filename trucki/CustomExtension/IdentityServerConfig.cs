@@ -56,7 +56,7 @@ public static class IdentityServerConfig
             //     options.AddPolicy("DriverPolicy", policy => policy.RequireRole("driver"));
             //     options.AddPolicy("CargoOwnerPolicy", policy => policy.RequireRole("cargo owner"));
             //     options.AddPolicy("TransporterPolicy", policy => policy.RequireRole("transporter"));
-            //     options.AddPolicy("FinanceManagerPolicy", policy => policy.RequireRole("finance manager"));
+            //     options.AddPolicy("FinanceManagerPolicy", policy => policy.RequireRole("finance"));
             //     options.AddPolicy("HrPolicy", policy => policy.RequireRole("hr"));
             // });
             var serviceProvider = serviceDescriptors.BuildServiceProvider();

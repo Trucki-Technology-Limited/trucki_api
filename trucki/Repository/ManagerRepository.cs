@@ -80,7 +80,7 @@ public class ManagerRepository: IManagerRepository
         _context.Managers.Add(newManager);
         var password = HelperClass.GenerateRandomPassword();
         var res = await _authService.AddNewUserAsync(newManager.Name, newManager.EmailAddress,
-            newManager.ManagerType == 0 ? "manager" : "finance manager", password);
+            newManager.ManagerType == 0 ? "manager" : "finance", password);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
