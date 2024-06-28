@@ -188,7 +188,7 @@ public class SeedData
         {
             var userManagerService = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             var roleManagerService = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var roles = new[] { "admin", "manager", "driver", "cargo owner", "transporter", "finance manager", "hr", "field officer", "safety officer" };
+            var roles = new[] { "admin","finance", "manager", "driver", "cargo owner", "transporter", "hr", "field officer", "safety officer" };
             foreach (var roleName in roles)
             {
                 if (!await roleManagerService.RoleExistsAsync(roleName))
@@ -200,7 +200,7 @@ public class SeedData
 
                 // Create permissions if they don't exist (add your permission logic here)
                 // ...
-
+            }
                 if (await userManagerService.FindByEmailAsync("admin@trucki.com") == null)
                 {
                     var user = new User
@@ -248,10 +248,9 @@ public class SeedData
                     var result = await userManagerService.CreateAsync(user);
                     if (result.Succeeded)
                     {
-                        await userManagerService.AddToRoleAsync(user, "finance manager");
+                        await userManagerService.AddToRoleAsync(user, "finance");
                     }
                 }
-            }
         }
     }
 }

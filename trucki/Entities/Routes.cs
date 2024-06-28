@@ -7,6 +7,7 @@
         public string FromRoute { get; set; }
 
         public string ToRoute { get; set; }
+        public string Ntons { get; set; }
 
         public float Price { get; set; }
 

@@ -20,7 +20,7 @@ namespace trucki.Controllers
 
 
         [HttpGet("GetDashboardData")]
-        [Authorize(Roles = "admin,finance manager")]
+        [Authorize(Roles = "admin,finance")]
         public async Task<ActionResult<ApiResponseModel<DashboardSummaryResponse>>> GetDashboardData()
         {
             var response = await _adminService.GetDashBoardData();
@@ -29,14 +29,14 @@ namespace trucki.Controllers
      
       
         [HttpGet("GetGtvDashBoardData")]
-        [Authorize(Roles = "admin,finance manager")]
+        [Authorize(Roles = "admin,finance")]
         public async Task<ActionResult<ApiResponseModel<GtvDashboardSummary>>> GetGtvDashboardSummary(DateTime startDate, DateTime endDate)
         {
             var response = await _adminService.GetGtvDashBoardSummary(startDate, endDate);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetTruckDashboardData")]
-        [Authorize(Roles = "admin,finance manager")]
+        [Authorize(Roles = "admin,finance")]
         public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetTruckDashboardSummary(string truckId)
         {
             var response = await _adminService.GetTruckDashboardData(truckId);
@@ -44,7 +44,7 @@ namespace trucki.Controllers
         }
         
         [HttpGet("GetOrderStatistics")]
-        [Authorize(Roles = "admin,finance manager")]
+        [Authorize(Roles = "admin,finance")]
         public async Task<ActionResult<ApiResponseModel<OrderStatsResponse>>> GetOrderStatistics()
         {
             var response = await _adminService.GetOrderStatistics();

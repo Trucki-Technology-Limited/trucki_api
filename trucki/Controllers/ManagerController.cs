@@ -64,14 +64,14 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetManagerDashboardData")]
-    [Authorize(Roles = "manager,finance manager")]
+    [Authorize(Roles = "manager,finance")]
     public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetManagerDashboardSummary(string managerId)
     {
         var response = await _managerService.GetManagerDashboardData(managerId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionsByManager")]
-    [Authorize(Roles = "manager,finance manager")]
+    [Authorize(Roles = "manager,finance")]
     public async Task<ActionResult<ApiResponseModel<List<TransactionResponseModel>>>> GetTransactionsByManager()
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -83,7 +83,7 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionSummaryResponseModel")]
-    [Authorize(Roles = "manager,finance manager")]
+    [Authorize(Roles = "manager,finance")]
     public async Task<ActionResult<ApiResponseModel<TransactionSummaryResponseModel>>> GetTransactionSummaryResponseModel()
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -95,7 +95,7 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionsByFinancialManager")]
-    [Authorize(Roles = "finance manager")]
+    [Authorize(Roles = "finance")]
     public async Task<ActionResult<ApiResponseModel<List<TransactionResponseModel>>>> GetTransactionsByFinancialManager()
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -107,7 +107,7 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetFinancialTransactionSummaryResponseModel")]
-    [Authorize(Roles = "finance manager")]
+    [Authorize(Roles = "finance")]
     public async Task<ActionResult<ApiResponseModel<TransactionSummaryResponseModel>>> GetFinancialTransactionSummaryResponseModel()
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

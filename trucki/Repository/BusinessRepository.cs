@@ -35,7 +35,7 @@ public class BusinessRepository : IBusinessRepository
         var newBusiness = new Business
         {
             Name = model.Name,
-            Ntons = model.Ntons,
+            Location = model.Location,
             Address = model.Address,
             isActive = true
         };
@@ -92,6 +92,7 @@ public class BusinessRepository : IBusinessRepository
                 Name = i.Name,
                 FromRoute = i.FromRoute,
                 ToRoute = i.ToRoute,
+                Ntons = i.Ntons,
                 Price = i.Price,
                 IsActive = i.IsActive,
                 Gtv = i.Gtv
@@ -163,7 +164,7 @@ public class BusinessRepository : IBusinessRepository
 
         // Update business properties
         business.Name = model.Name;
-        business.Ntons = model.Ntons;
+        business.Location = model.Location;
         business.Address = model.Address;
         business.isActive = model.IsActive;
 
@@ -307,6 +308,7 @@ public class BusinessRepository : IBusinessRepository
         route.Name = model.Name;
         route.FromRoute = model.FromRoute;
         route.ToRoute = model.ToRoute;
+        route.Ntons = model.Ntons;
         route.Price = model.Price;
         route.IsActive = model.IsActive;
         route.Gtv = model.Gtv;

@@ -7,6 +7,6 @@
         public string PhoneNumber { get; set; }
         public string EmailAddress { get; set; }
         public string Location { get; set; }
-        public string? RCNo { get; set; }   
+        public string? RCNo { get; set; }
     }
 }
