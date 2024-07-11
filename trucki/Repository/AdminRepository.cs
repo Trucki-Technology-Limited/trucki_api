@@ -32,7 +32,6 @@ public class AdminRepository : IAdminRepository
         _emailSender = emailSender;
         _userManager = userManager;
     }
-    
 
 
     public async Task<ApiResponseModel<DashboardSummaryResponse>> GetDashBoardData()
@@ -62,33 +61,66 @@ public class AdminRepository : IAdminRepository
         };
     }
 
- 
 
     public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate,
         DateTime endDate)
     {
-        // validate satrtDate and endDate
+        // validate startDate and endDate
         if (startDate > endDate)
         {
             return new ApiResponseModel<GtvDashboardSummary>
             {
                 Data = null,
                 IsSuccessful = false,
-                Message = "Start date must be less than or equal to end datae",
+                Message = "Start date must be less than or equal to end date",
                 StatusCode = 400
             };
         }
 
-        List<Order> orders = await _context.Orders.Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
+        // Get orders within the date range
+        List<Order> orders = await _context.Orders
+            .Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
             .ToListAsync();
 
-        float totalGtv = orders.Sum(o => o.Routes?.Gtv ?? 0);
-        float totalRevenue = orders.Sum(o => o.Routes?.Price ?? 0);
+        // Initialize dictionary to hold monthly data
+        Dictionary<string, (float income, float revenue)> monthlyData = new Dictionary<string, (float, float)>();
+
+        // Process orders and group by month
+        foreach (var order in orders)
+        {
+            string monthName = order.StartDate.ToString("MMM"); // Get short month name
+
+            if (!monthlyData.ContainsKey(monthName))
+            {
+                monthlyData[monthName] = (0, 0);
+            }
+
+            float orderGtv = order.Routes?.Gtv ?? 0;
+            float orderRevenue = order.Routes?.Price ?? 0;
+
+            monthlyData[monthName] = (
+                income: monthlyData[monthName].income + orderGtv,
+                revenue: monthlyData[monthName].revenue + orderRevenue
+            );
+        }
+
+        // Convert dictionary to list for chart data
+        var chartData = monthlyData.Select(m => new LineChartEntry
+        {
+            Name = m.Key,
+            Income = m.Value.income,
+            Revenue = m.Value.revenue
+        }).ToList();
+
+        // Calculate total GTV and revenue
+        float totalGtv = monthlyData.Sum(m => m.Value.income);
+        float totalRevenue = monthlyData.Sum(m => m.Value.revenue);
 
         var summary = new GtvDashboardSummary
         {
             TotalGtv = totalGtv,
-            TotalRevenue = totalRevenue
+            TotalRevenue = totalRevenue,
+            MonthlyData = chartData
         };
 
         return new ApiResponseModel<GtvDashboardSummary>
@@ -96,7 +128,7 @@ public class AdminRepository : IAdminRepository
             Data = summary,
             IsSuccessful = true,
             Message = "Dashboard data",
-            StatusCode = 200,
+            StatusCode = 200
         };
     }
 
@@ -122,7 +154,7 @@ public class AdminRepository : IAdminRepository
         return new ApiResponseModel<TruckDahsBoardData>
             { Data = stats, IsSuccessful = true, Message = "Dashboard data", StatusCode = 200 };
     }
-    
+
     public async Task<ApiResponseModel<OrderStatsResponse>> GetOrderStatistics()
     {
         // Total Completed Orders
@@ -157,5 +189,4 @@ public class AdminRepository : IAdminRepository
             StatusCode = 200
         };
     }
-    
 }

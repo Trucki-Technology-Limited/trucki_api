@@ -11,7 +11,9 @@ public class Profiles : Profile
     {
         CreateMap<AllBusinessResponseModel, Business>().ReverseMap();
         CreateMap<BusinessResponseModel, Business>().ReverseMap();
+        CreateMap<ManagersBusinessResponseModel, Business>().ReverseMap();
         CreateMap<RouteResponseModel, Routes>().ReverseMap();
+        CreateMap<AllManagerResponseModel, Manager>().ReverseMap();
         CreateMap<AllManagerResponseModel, Manager>().ReverseMap();
         CreateMap<TruckOwnerResponseModel, TruckOwner>().ReverseMap();
         CreateMap<AllDriverResponseModel, Driver>().ReverseMap();
