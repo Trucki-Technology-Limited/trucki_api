@@ -20,7 +20,7 @@ public class UploadService: IUploadService
         var uploadParams = new ImageUploadParams
         {
             File = new FileDescription(file.FileName, file.OpenReadStream()),
-            PublicId = publicId,
+            PublicId = publicId + file.FileName,
         };
 
         var uploadResult = _cloudinary.Upload(uploadParams);
