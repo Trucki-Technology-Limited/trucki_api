@@ -9,7 +9,7 @@ public interface ITruckOwnerRepository
     Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id);
     Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model);
     Task<ApiResponseModel<bool>> DeleteTruckOwner(string id);
-    Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners();
-    Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
+    Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners();
+    Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
 
 }

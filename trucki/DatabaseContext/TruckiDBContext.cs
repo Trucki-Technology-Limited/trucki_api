@@ -17,6 +17,14 @@ namespace trucki.DatabaseContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Driver>()
+                .HasOne(d => d.Truck)
+                .WithOne(t => t.Driver)
+                .HasForeignKey<Driver>(d => d.TruckId);
+            modelBuilder.Entity<Truck>() // Specify Truck as the principal
+                .HasOne(t => t.Driver)
+                .WithOne(d => d.Truck)
+                .HasForeignKey<Driver>(d => d.TruckId);
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }

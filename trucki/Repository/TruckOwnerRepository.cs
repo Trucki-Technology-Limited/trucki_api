@@ -84,10 +84,11 @@ public class TruckOwnerRepository:ITruckOwnerRepository
 
     public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id)
     {
-        // Fetch owner from database
-        var owner = await _context.TruckOwners.FindAsync(id);
+        var owner = await _context.TruckOwners
+            .Include(o => o.trucks) // Eagerly load the trucks collection
+            .Include(o => o.BankDetails) // Eagerly load the trucks collection
+            .FirstOrDefaultAsync(o => o.Id == id);
 
-        // Check if owner exists
         if (owner == null)
         {
             return new ApiResponseModel<TruckOwnerResponseModel>
@@ -98,13 +99,27 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             };
         }
 
-        var result = _mapper.Map<TruckOwnerResponseModel>(owner);
+        // Manual mapping to ensure correct population
+        var responseModel = new TruckOwnerResponseModel
+        {
+            Id = owner.Id,
+            Name = owner.Name,
+            EmailAddress = owner.EmailAddress,
+            Phone = owner.Phone,
+            Address = owner.Address,
+            IdCardUrl = owner.IdCardUrl,
+            noOfTrucks = owner.trucks.Count.ToString(),  
+            BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
+            CreatedAt = owner.CreatedAt,
+            UpdatedAt = owner.UpdatedAt
+        };
+
         return new ApiResponseModel<TruckOwnerResponseModel>
         {
             IsSuccessful = true,
             StatusCode = 200,
             Message = "Success",
-            Data = result
+            Data = responseModel
         };
     }
 
@@ -171,12 +186,12 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         };
     }
 
-    public async Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners()
+    public async Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners()
     {
         // Fetch all truck owners from the database
         var owners = await _context.TruckOwners.ToListAsync();
-        var result = _mapper.Map<List<TruckOwnerResponseModel>>(owners);
-        return new ApiResponseModel<List<TruckOwnerResponseModel>>
+        var result = _mapper.Map<List<AllTruckOwnerResponseModel>>(owners);
+        return new ApiResponseModel<List<AllTruckOwnerResponseModel>>
         {
             IsSuccessful = true,
             StatusCode = 200,
@@ -184,7 +199,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         };
     }
     
-    public async Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         IQueryable<TruckOwner> query = _context.TruckOwners;
 
@@ -200,18 +215,18 @@ public class TruckOwnerRepository:ITruckOwnerRepository
 
         if (!owners.Any())
         {
-            return new ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>
+            return new ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>
             {
-                Data = new List<TruckOwnerResponseModel> { },
+                Data = new List<AllTruckOwnerResponseModel> { },
                 IsSuccessful = false,
                 Message = "No Truck Owner found",
                 StatusCode = 404
             };
         }
 
-        var data = _mapper.Map<IEnumerable<TruckOwnerResponseModel>>(owners);
+        var data = _mapper.Map<IEnumerable<AllTruckOwnerResponseModel>>(owners);
 
-        return new ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>
+        return new ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>
         {
             Data = data,
             IsSuccessful = true,

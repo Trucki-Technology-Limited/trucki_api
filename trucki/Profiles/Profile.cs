@@ -15,12 +15,15 @@ public class Profiles : Profile
         CreateMap<RouteResponseModel, Routes>().ReverseMap();
         CreateMap<AllManagerResponseModel, Manager>().ReverseMap();
         CreateMap<AllManagerResponseModel, Manager>().ReverseMap();
-        CreateMap<TruckOwnerResponseModel, TruckOwner>().ReverseMap();
+        CreateMap<AllTruckOwnerResponseModel, TruckOwner>().ReverseMap();
         CreateMap<AllDriverResponseModel, Driver>().ReverseMap();
         CreateMap<AllOfficerResponseModel, Officer>().ReverseMap();
         CreateMap<AllTruckResponseModel, Truck>().ReverseMap();
         CreateMap<AllOfficerResponseModel, Officer>().ReverseMap();   
         CreateMap<AllCustomerResponseModel, Customer>().ReverseMap();
         CreateMap<AllOrderResponseModel, Order>().ReverseMap();
+        CreateMap<BankDetailsResponseModel, BankDetails>().ReverseMap();
+        CreateMap<TruckOwnerResponseModel, TruckOwner>().ReverseMap();
+        CreateMap<DriverResponseModel, Driver>().ReverseMap();
     }
 }

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace trucki.Entities;
 
 public class Truck : BaseClass
@@ -6,9 +8,9 @@ public class Truck : BaseClass
     //public string CertOfOwnerShip { get; set; }
     public string PlateNumber { get; set; }
     public string TruckCapacity { get; set; }
+    [ForeignKey("DriverId")]
     public string? DriverId { get; set; }
-    //public Driver? Driver { get; set; }  
-    //public string Capacity { get; set; }    
+    public Driver? Driver { get; set; }
     public string? TruckOwnerId { get; set; }
     public TruckOwner? TruckOwner { get; set; }
     public TruckiType TruckType { get; set; }

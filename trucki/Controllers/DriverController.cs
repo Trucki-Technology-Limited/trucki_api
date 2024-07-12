@@ -42,7 +42,7 @@ public class DriverController: ControllerBase
 
     [HttpGet("GetDriverById")]
     [Authorize(Roles = "admin")]
-    public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriverById(string id)
+    public async Task<ActionResult<ApiResponseModel<DriverResponseModel>>> GetDriverById(string id)
     {
         var response = await _driverService.GetDriverById(id);
         return StatusCode(response.StatusCode, response);

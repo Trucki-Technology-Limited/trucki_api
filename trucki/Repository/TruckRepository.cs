@@ -353,7 +353,7 @@ public class TruckRepository:ITruckRepository
             };
         }
 
-        truck.DriverId = model.DriverId;
+        truck.Driver = driver;
 
         _context.Trucks.Update(truck);
         await _context.SaveChangesAsync();

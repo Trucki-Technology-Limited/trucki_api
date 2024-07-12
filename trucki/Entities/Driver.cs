@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace trucki.Entities
 {
@@ -11,7 +12,9 @@ namespace trucki.Entities
         [EmailAddress]
         public string EmailAddress { get; set; }
 
+        [ForeignKey("TruckId")]
         public string? TruckId { get; set; }
+        public Truck? Truck { get; set; }
 
         public string DriversLicence { get; set; }
 

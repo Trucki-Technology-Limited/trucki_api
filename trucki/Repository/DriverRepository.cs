@@ -193,21 +193,24 @@ public class DriverRepository:IDriverRepository
         };
     }
 
-    public async Task<ApiResponseModel<AllDriverResponseModel>> GetDriverById(string id)
+    public async Task<ApiResponseModel<DriverResponseModel>> GetDriverById(string id)
     {
-        var driver = await _context.Drivers.Where(x => x.Id == id).FirstOrDefaultAsync();
+        var driver = await _context.Drivers.Where(x => x.Id == id).Include(d => d.Truck).FirstOrDefaultAsync();
 
         if (driver == null)
-            return new ApiResponseModel<AllDriverResponseModel>
+            return new ApiResponseModel<DriverResponseModel>
             {
-                Data = new AllDriverResponseModel { }, IsSuccessful = false, Message = "No manager found",
+                Data = new DriverResponseModel { }, IsSuccessful = false, Message = "No manager found",
                 StatusCode = 404
             };
 
-        var driverToReturn = _mapper.Map<AllDriverResponseModel>(driver);
+        var driverToReturn = _mapper.Map<DriverResponseModel>(driver);
+        if (driver.Truck != null)
+        {
+            driverToReturn.Truck = _mapper.Map<AllTruckResponseModel>(driver.Truck); 
+        }
 
-
-        return new ApiResponseModel<AllDriverResponseModel>
+        return new ApiResponseModel<DriverResponseModel>
         {
             IsSuccessful = true,
             Message = "Driver retrieved successfully",

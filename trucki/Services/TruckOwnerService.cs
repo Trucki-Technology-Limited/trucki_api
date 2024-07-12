@@ -40,12 +40,12 @@ public class TruckOwnerService: ITruckOwnerService
         return res;
     }
 
-    public async Task<ApiResponseModel<List<TruckOwnerResponseModel>>> GetAllTruckOwners()
+    public async Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners()
     {
         var res = await _ownerRepository.GetAllTruckOwners();
         return res;
     }
-    public async Task<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         var res = await _ownerRepository.SearchTruckOwners(searchWords);
         return res;

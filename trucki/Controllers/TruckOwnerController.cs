@@ -18,7 +18,7 @@ public class TruckOwnerController: ControllerBase
       
     [HttpGet("GetAllTruckOwners")]
     [Authorize(Roles = "admin")]
-    public async Task<ActionResult<ApiResponseModel<List<TruckOwnerResponseModel>>>> GetAllTruckOwners()
+    public async Task<ActionResult<ApiResponseModel<List<AllTruckOwnerResponseModel>>>> GetAllTruckOwners()
     {
         var response = await _truckOwnerService.GetAllTruckOwners();
         return StatusCode(response.StatusCode, response);
@@ -60,7 +60,7 @@ public class TruckOwnerController: ControllerBase
     }
     [HttpGet("SearchTruckOwners")]
     [Authorize(Roles = "admin")]
-    public async Task<ActionResult<ApiResponseModel<IEnumerable<TruckOwnerResponseModel>>>> SearchTruckOwners(string searchWords)
+    public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>>> SearchTruckOwners(string searchWords)
     {
         var response = await _truckOwnerService.SearchTruckOwners(searchWords);
         return StatusCode(response.StatusCode, response);

@@ -6,7 +6,7 @@ namespace trucki.Interfaces.IRepository;
 public interface IDriverRepository
 {
     Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers();
-    Task<ApiResponseModel<AllDriverResponseModel>> GetDriverById(string id);
+    Task<ApiResponseModel<DriverResponseModel>> GetDriverById(string id);
     Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords);
     Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model);
     Task<ApiResponseModel<bool>> EditDriver(EditDriverRequestModel model);
