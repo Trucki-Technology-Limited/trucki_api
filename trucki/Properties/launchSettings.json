@@ -19,6 +19,26 @@
       },
       "dotnetRunMessages": true
     },
+    "trucki_api_prod": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://trucki-web-api.azurewebsites.net;http://trucki-web-api.azurewebsites.net",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Prod"
+      },
+      "dotnetRunMessages": true
+    },
+    "trucki_api_staging": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://admin.trucki.co;http://admin.trucki.co",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging"
+      },
+      "dotnetRunMessages": true
+    },
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
