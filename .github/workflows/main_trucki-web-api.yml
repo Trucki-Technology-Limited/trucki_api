@@ -20,7 +20,8 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
-
+      - name: Set Environment
+        run: echo "DOTNET_ENVIRONMENT=Prod" >> $GITHUB_ENV
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
