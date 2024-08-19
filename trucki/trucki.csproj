@@ -43,4 +43,13 @@
 	  <Folder Include="Implementations\" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="otp_template.html">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="order_template.html">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

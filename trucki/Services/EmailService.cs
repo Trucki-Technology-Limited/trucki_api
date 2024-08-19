@@ -29,8 +29,8 @@ public class EmailService: IEmailService
 
         public async Task SendEmailAsync(string toEmail, string subject, string otp)
         {
-            var templatePath = Path.Combine(AppContext.BaseDirectory, "otp_template.html"); // Using BaseDirectory instead of GetCurrentDirectory
-            // var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "otp_template.html"); // Assuming the template is in your project's root
+            // var templatePath = Path.Combine(AppContext.BaseDirectory, "otp_template.html"); // Using BaseDirectory instead of GetCurrentDirectory
+            var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "otp_template.html"); // Assuming the template is in your project's root
             var templateSource = File.ReadAllText(templatePath);
             var template = Handlebars.Compile(templateSource);
 
