@@ -78,12 +78,13 @@ public class AdminRepository : IAdminRepository
         }
 
         // Get orders within the date range
-        List<Order> orders = await _context.Orders
+        List<Order> orders = await _context.Orders.Include(e => e.Routes)
+            .Where(o => o.OrderStatus == OrderStatus.Delivered)
             .Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
             .ToListAsync();
 
         // Initialize dictionary to hold monthly data
-        Dictionary<string, (float income, float revenue)> monthlyData = new Dictionary<string, (float, float)>();
+        Dictionary<string, (float income, float revenue,float payout)> monthlyData = new Dictionary<string, (float, float,float)>();
 
         // Process orders and group by month
         foreach (var order in orders)
@@ -92,7 +93,7 @@ public class AdminRepository : IAdminRepository
 
             if (!monthlyData.ContainsKey(monthName))
             {
-                monthlyData[monthName] = (0, 0);
+                monthlyData[monthName] = (0, 0,0);
             }
 
             float orderGtv = order.Routes?.Gtv ?? 0;
@@ -100,7 +101,8 @@ public class AdminRepository : IAdminRepository
 
             monthlyData[monthName] = (
                 income: monthlyData[monthName].income + orderGtv,
-                revenue: monthlyData[monthName].revenue + orderRevenue
+                revenue:orderGtv - monthlyData[monthName].revenue + orderRevenue,
+                payout: monthlyData[monthName].payout + orderRevenue
             );
         }
 
@@ -109,17 +111,20 @@ public class AdminRepository : IAdminRepository
         {
             Name = m.Key,
             Income = m.Value.income,
-            Revenue = m.Value.revenue
+            Revenue = m.Value.revenue,
+            Payout = m.Value.payout
         }).ToList();
 
         // Calculate total GTV and revenue
-        float totalGtv = monthlyData.Sum(m => m.Value.income);
+        float totalGtv = orders.Sum(m => m.Routes.Gtv);
         float totalRevenue = monthlyData.Sum(m => m.Value.revenue);
+        float totalPayout = monthlyData.Sum(m => m.Value.payout);
 
         var summary = new GtvDashboardSummary
         {
             TotalGtv = totalGtv,
             TotalRevenue = totalRevenue,
+            TotalPayout = totalPayout,
             MonthlyData = chartData
         };
 

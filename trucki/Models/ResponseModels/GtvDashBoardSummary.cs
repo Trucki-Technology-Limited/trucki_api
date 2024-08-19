@@ -14,6 +14,7 @@
         public string Name { get; set; }
         public float Income { get; set; }  // Using GTV as "income"
         public float Revenue { get; set; }
+        public float Payout { get; set; }
     }
     public class TruckDahsBoardData
     {
