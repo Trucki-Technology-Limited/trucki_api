@@ -175,48 +175,27 @@ public class ManagerRepository: IManagerRepository
 
     public async Task<ApiResponseModel<bool>> DeactivateManager(string managerId)
     {
-        var inactiveManagers = await _context.Managers.Where(m => !m.IsActive).ToListAsync();
-
-        if (inactiveManagers.Count == 0)
+        var manager = await _context.Managers.FindAsync(managerId);
+        if (manager == null)
         {
             return new ApiResponseModel<bool>
             {
-                IsSuccessful = true,
-                Message = "No inactive managers found",
-                StatusCode = 200
+                IsSuccessful = false,
+                Message = "Manager not found",
+                StatusCode = 404 // Not Found
             };
         }
 
-        _context.Managers.RemoveRange(inactiveManagers);
+        // manager.IsActive = false;
+        _context.Managers.Remove(manager);
         await _context.SaveChangesAsync();
-
         return new ApiResponseModel<bool>
         {
             IsSuccessful = true,
-            Message = $"{inactiveManagers.Count} inactive managers deleted successfully",
-            StatusCode = 200
+            Message = "Manager deactivated successfully",
+            StatusCode = 200,
+            Data = true
         };
-        // var manager = await _context.Managers.FindAsync(managerId);
-        // if (manager == null)
-        // {
-        //     return new ApiResponseModel<bool>
-        //     {
-        //         IsSuccessful = false,
-        //         Message = "Manager not found",
-        //         StatusCode = 404 // Not Found
-        //     };
-        // }
-        //
-        // // manager.IsActive = false;
-        // _context.Managers.Remove(manager);
-        // await _context.SaveChangesAsync();
-        // return new ApiResponseModel<bool>
-        // {
-        //     IsSuccessful = true,
-        //     Message = "Manager deactivated successfully",
-        //     StatusCode = 200,
-        //     Data = true
-        // };
     }
     public async Task<ApiResponseModel<IEnumerable<AllManagerResponseModel>>> SearchManagers(string searchWords)
     {
