@@ -157,39 +157,20 @@ public class DriverRepository:IDriverRepository
 
     public async Task<ApiResponseModel<bool>> DeactivateDriver(string driverId)
     {
-        var json = File.ReadAllText("drivers.json");
-
-        // Deserialize JSON data into a list of UserEntity objects
-        var entities = JsonConvert.DeserializeObject<List<Driver>>(json);
-
-        // Save the entities to the database
-        _context.Drivers.AddRange(entities);
-        _context.SaveChanges();
+        var driver = await _context.Drivers.FindAsync(driverId);
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404 // Not Found
+            };
+        }
         
-        // var allUsers =_context.Drivers.ToList();
-        //
-        // // Serialize to JSON
-        // var json = JsonConvert.SerializeObject(allUsers, Formatting.Indented);
-        //
-        // // Output to console for testing
-        // Console.WriteLine(json);
-        //
-        // // Save to a file
-        // File.WriteAllText("drivers.json", json);
-        // var driver = await _context.Drivers.FindAsync(driverId);
-        // if (driver == null)
-        // {
-        //     return new ApiResponseModel<bool>
-        //     {
-        //         IsSuccessful = false,
-        //         Message = "Driver not found",
-        //         StatusCode = 404 // Not Found
-        //     };
-        // }
-        //
-        // driver.IsActive = false;
-        // _context.Drivers.Update(driver);
-        // await _context.SaveChangesAsync();
+        driver.IsActive = false;
+        _context.Drivers.Update(driver);
+        await _context.SaveChangesAsync();
         return new ApiResponseModel<bool>
         {
             IsSuccessful = true,

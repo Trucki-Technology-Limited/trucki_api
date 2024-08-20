@@ -175,96 +175,48 @@ public class ManagerRepository: IManagerRepository
 
     public async Task<ApiResponseModel<bool>> DeactivateManager(string managerId)
     {
-        // Get all inactive managers with eager loading for Company
-        var inactiveManagers = await _context.Managers
-            .Include(m => m.Company)
-            .Where(m => !m.IsActive)
-            .ToListAsync();
-
-        if (inactiveManagers.Count == 0)
+        var manager = await _context.Managers
+            .Include(m => m.Company) // Eagerly load the Company collection
+            .FirstOrDefaultAsync(m => m.Id == managerId);
+        if (manager == null)
         {
             return new ApiResponseModel<bool>
             {
-                IsSuccessful = true,
-                Message = "No inactive managers found",
-                StatusCode = 200,
+                IsSuccessful = false,
+                Message = "Manager not found",
+                StatusCode = 404 // Not Found
             };
         }
-
-        // Loop through each manager for deletion
-        foreach (var manager in inactiveManagers)
+        // Get attached businesses
+        var businesses = manager.Company.ToList();
+        
+        // Remove manager from businesses
+        foreach (var business in businesses)
         {
-            // Remove manager from businesses
-            foreach (var business in manager.Company.ToList()) // Create a copy to avoid modification during iteration
-            {
-                business.Manager = null;
-                business.managerId = null;
-            }
-
-            // Check if a User is associated and remove it using .NET Identity
-            if (manager.UserId != null)
-            {
-                var user = await _userManager.FindByIdAsync(manager.UserId);
-                if (user != null)
-                {
-                    await _userManager.DeleteAsync(user);
-                }
-            }
-
-            // Remove manager
-            _context.Managers.Remove(manager);
+            business.Manager = null;
+            business.managerId = null;
         }
-
+        
+        if (manager.UserId != null)
+        {
+            var user = await _userManager.FindByIdAsync(manager.UserId);
+            if (user != null)
+            {
+                await _userManager.DeleteAsync(user);
+            }
+        }
+        // Remove manager
+        _context.Managers.Remove(manager);
+        
         await _context.SaveChangesAsync();
-
+        
         return new ApiResponseModel<bool>
         {
             IsSuccessful = true,
-            Message = $"{inactiveManagers.Count} inactive managers deleted successfully",
+            Message = "Manager deactivated successfully",
             StatusCode = 200,
+            Data = true
         };
-        // var manager = await _context.Managers
-        //     .Include(m => m.Company) // Eagerly load the Company collection
-        //     .FirstOrDefaultAsync(m => m.Id == managerId);
-        // if (manager == null)
-        // {
-        //     return new ApiResponseModel<bool>
-        //     {
-        //         IsSuccessful = false,
-        //         Message = "Manager not found",
-        //         StatusCode = 404 // Not Found
-        //     };
-        // }
-        // // Get attached businesses
-        // var businesses = manager.Company.ToList();
-        //
-        // // Remove manager from businesses
-        // foreach (var business in businesses)
-        // {
-        //     business.Manager = null;
-        //     business.managerId = null;
-        // }
-        //
-        // if (manager.UserId != null)
-        // {
-        //     var user = await _userManager.FindByIdAsync(manager.UserId);
-        //     if (user != null)
-        //     {
-        //         await _userManager.DeleteAsync(user);
-        //     }
-        // }
-        // // Remove manager
-        // _context.Managers.Remove(manager);
-        //
-        // await _context.SaveChangesAsync();
-        //
-        // return new ApiResponseModel<bool>
-        // {
-        //     IsSuccessful = true,
-        //     Message = "Manager deactivated successfully",
-        //     StatusCode = 200,
-        //     Data = true
-        // };
     }
     public async Task<ApiResponseModel<IEnumerable<AllManagerResponseModel>>> SearchManagers(string searchWords)
     {
