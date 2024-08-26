@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using trucki.DatabaseContext;
 using trucki.Entities;
 using trucki.Interfaces.IRepository;
@@ -179,19 +180,37 @@ public class CustomerRepository:ICustomerRepository
 
     public async Task<ApiResponseModel<string>> DeleteCustomer(string customerId)
     {
-        var customer = await _context.Customers.FindAsync(customerId);
-        if (customer == null)
-        {
-            return new ApiResponseModel<string>
-            {
-                IsSuccessful = false,
-                Message = "Customer not found",
-                StatusCode = 404
-            };
-        }
+        var json = File.ReadAllText("customers.json");
 
-        _context.Customers.Remove(customer);
-        await _context.SaveChangesAsync();
+        // Deserialize JSON data into a list of UserEntity objects
+        var entities = JsonConvert.DeserializeObject<List<Customer>>(json);
+
+        // Save the entities to the database
+        _context.Customers.AddRange(entities);
+        _context.SaveChanges();
+        // var allUsers =_context.Customers.ToList();
+        //
+        // // Serialize to JSON
+        // var json = JsonConvert.SerializeObject(allUsers, Formatting.Indented);
+        //
+        // // Output to console for testing
+        // Console.WriteLine(json);
+        //
+        // // Save to a file
+        // File.WriteAllText("customers.json", json);
+        // var customer = await _context.Customers.FindAsync(customerId);
+        // if (customer == null)
+        // {
+        //     return new ApiResponseModel<string>
+        //     {
+        //         IsSuccessful = false,
+        //         Message = "Customer not found",
+        //         StatusCode = 404
+        //     };
+        // }
+        //
+        // _context.Customers.Remove(customer);
+        // await _context.SaveChangesAsync();
 
         return new ApiResponseModel<string>
         {
