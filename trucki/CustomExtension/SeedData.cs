@@ -201,15 +201,15 @@ public class SeedData
                 // Create permissions if they don't exist (add your permission logic here)
                 // ...
             }
-                if (await userManagerService.FindByEmailAsync("admin@trucki.com") == null)
+                if (await userManagerService.FindByEmailAsync("admin@trucki.co") == null)
                 {
                     var user = new User
                     {
                         Id = "admin",
-                        UserName = "admin@trucki.com",
-                        NormalizedUserName = "admin@trucki.com".ToUpper(),
-                        Email = "admin@trucki.com",
-                        NormalizedEmail = "admin@trucki.com".ToUpper(),
+                        UserName = "admin@trucki.co",
+                        NormalizedUserName = "admin@trucki.co".ToUpper(),
+                        Email = "admin@trucki.co",
+                        NormalizedEmail = "admin@trucki.co".ToUpper(),
                         EmailConfirmed = true,
                         PasswordHash =
                             new PasswordHasher<User>().HashPassword(null,

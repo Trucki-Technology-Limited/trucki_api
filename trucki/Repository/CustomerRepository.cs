@@ -180,14 +180,32 @@ public class CustomerRepository:ICustomerRepository
 
     public async Task<ApiResponseModel<string>> DeleteCustomer(string customerId)
     {
-        var json = File.ReadAllText("customers.json");
+           var json = File.ReadAllText("database_export.json");
 
-        // Deserialize JSON data into a list of UserEntity objects
-        var entities = JsonConvert.DeserializeObject<List<Customer>>(json);
+        // Deserialize JSON data into a dictionary of entity lists
+        var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+    // 10. Import Transactions, which reference Customers and Orders
+    var transactions = JsonConvert.DeserializeObject<List<Transaction>>(data["Transactions"].ToString());
+    foreach (var transaction in transactions)
+    {
+        // Assign the related Order
+        transaction.Order = _context.Orders.Find(transaction.OrderId);
 
-        // Save the entities to the database
-        _context.Customers.AddRange(entities);
-        _context.SaveChanges();
+        // Ensure the Truck exists if TruckId is provided
+        if (!string.IsNullOrEmpty(transaction.TruckId))
+        {
+            transaction.Truck = null;
+            transaction.TruckId = null;
+        }
+
+        // Now add the transaction to the context
+        _context.Transactions.Add(transaction);
+    }
+    _context.SaveChanges();
+    // 11. Import Officers, which may reference other entities
+    var officers = JsonConvert.DeserializeObject<List<Officer>>(data["Officers"].ToString());
+    _context.Officers.AddRange(officers);
+    _context.SaveChanges();
         // var allUsers =_context.Customers.ToList();
         //
         // // Serialize to JSON
