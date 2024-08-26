@@ -180,55 +180,19 @@ public class CustomerRepository:ICustomerRepository
 
     public async Task<ApiResponseModel<string>> DeleteCustomer(string customerId)
     {
-           var json = File.ReadAllText("database_export.json");
-
-        // Deserialize JSON data into a dictionary of entity lists
-        var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-    // 10. Import Transactions, which reference Customers and Orders
-    var transactions = JsonConvert.DeserializeObject<List<Transaction>>(data["Transactions"].ToString());
-    foreach (var transaction in transactions)
-    {
-        // Assign the related Order
-        transaction.Order = _context.Orders.Find(transaction.OrderId);
-
-        // Ensure the Truck exists if TruckId is provided
-        if (!string.IsNullOrEmpty(transaction.TruckId))
+        var customer = await _context.Customers.FindAsync(customerId);
+        if (customer == null)
         {
-            transaction.Truck = null;
-            transaction.TruckId = null;
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Customer not found",
+                StatusCode = 404
+            };
         }
-
-        // Now add the transaction to the context
-        _context.Transactions.Add(transaction);
-    }
-    _context.SaveChanges();
-    // 11. Import Officers, which may reference other entities
-    var officers = JsonConvert.DeserializeObject<List<Officer>>(data["Officers"].ToString());
-    _context.Officers.AddRange(officers);
-    _context.SaveChanges();
-        // var allUsers =_context.Customers.ToList();
-        //
-        // // Serialize to JSON
-        // var json = JsonConvert.SerializeObject(allUsers, Formatting.Indented);
-        //
-        // // Output to console for testing
-        // Console.WriteLine(json);
-        //
-        // // Save to a file
-        // File.WriteAllText("customers.json", json);
-        // var customer = await _context.Customers.FindAsync(customerId);
-        // if (customer == null)
-        // {
-        //     return new ApiResponseModel<string>
-        //     {
-        //         IsSuccessful = false,
-        //         Message = "Customer not found",
-        //         StatusCode = 404
-        //     };
-        // }
-        //
-        // _context.Customers.Remove(customer);
-        // await _context.SaveChangesAsync();
+        
+        _context.Customers.Remove(customer);
+        await _context.SaveChangesAsync();
 
         return new ApiResponseModel<string>
         {
