@@ -177,6 +177,7 @@ public class ManagerRepository: IManagerRepository
     {
         var manager = await _context.Managers
             .Include(m => m.Company) // Eagerly load the Company collection
+            .Include(e => e.User) // Eagerly load the Company collection
             .FirstOrDefaultAsync(m => m.Id == managerId);
         if (manager == null)
         {
