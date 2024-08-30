@@ -108,6 +108,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Phone = owner.Phone,
             Address = owner.Address,
             IdCardUrl = owner.IdCardUrl,
+            ProfilePictureUrl = owner.ProfilePictureUrl,
             noOfTrucks = owner.trucks.Count.ToString(),  
             BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
             CreatedAt = owner.CreatedAt,
