@@ -38,11 +38,27 @@ public class DriverService: IDriverService
     {
         var res = await _driverRepository.GetDriverById(id);
         return res;
+    } 
+    public async Task<ApiResponseModel<DriverProfileResponseModel>> GetDriverProfileById(string id)
+    {
+        var res = await _driverRepository.GetDriverProfileById(id);
+        return res;
     }
 
     public async Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords)
     {
         var res = await _driverRepository.SearchDrivers(searchWords);
         return res;
+    } 
+    public async Task<ApiResponseModel<OrderCountByDriver>> GetOrderCountByDriver(string searchWords)
+    {
+        var res = await _driverRepository.GetOrderCountByDriver(searchWords);
+        return res;
     }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrderAssignedToDriver(string id)
+    {
+        var res = await _driverRepository.GetOrderAssignedToDriver(id);
+        return res;
+    }
+
 }

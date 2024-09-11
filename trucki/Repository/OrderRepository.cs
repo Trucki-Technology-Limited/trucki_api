@@ -81,10 +81,21 @@ public class OrderRepository:IOrderRepository
                 StatusCode = 404
             };
         }
+        var truck = await _context.Trucks.Where(x => x.Id == model.TruckId).FirstOrDefaultAsync();
+        if (truck == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Truck not found",
+                StatusCode = 404
+            };
+        }
 
         string startDate = model.StartDate;
         order.RoutesId = routes.Id;
         order.TruckId = model.TruckId;
+        order.Truck = truck;
 
         order.Price = routes.Gtv;
 
@@ -170,7 +181,7 @@ public class OrderRepository:IOrderRepository
                 StartDate = order.StartDate,
                 EndDate = order.EndDate,
                 OrderStatus = order.OrderStatus,
-                Route = _mapper.Map<RouteResponseModel>(order.Routes),
+                Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
             });
 
@@ -227,7 +238,7 @@ public class OrderRepository:IOrderRepository
                 StartDate = order.StartDate,
                 EndDate = order.EndDate,
                 OrderStatus = order.OrderStatus,
-                Route = _mapper.Map<RouteResponseModel>(order.Routes),
+                Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
             });
 

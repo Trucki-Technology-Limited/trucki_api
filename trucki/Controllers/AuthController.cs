@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
@@ -23,6 +25,18 @@ public class AuthController: ControllerBase
             return StatusCode(400, "Invalid email address format");
 
         var result = await _authService.Login(request);
+        return StatusCode(result.StatusCode, result);
+    }
+    [HttpGet("UserProfile")]
+    [Authorize]
+    public async Task<IActionResult> GetUserAsync()
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var result = await _authService.GetUserById(userId);
         return StatusCode(result.StatusCode, result);
     }
 }

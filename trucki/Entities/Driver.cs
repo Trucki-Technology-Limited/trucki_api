@@ -20,5 +20,9 @@ namespace trucki.Entities
 
         public string PassportFile { get; set; }
         public bool IsActive { get; set; } = true;
+        [ForeignKey("User")] 
+        public string? UserId { get; set; } 
+
+        public User? User { get; set; }
     }
 }

@@ -72,7 +72,7 @@ public class FieldOfficerRepository:IFieldOfficerRepository
 
         var password = HelperClass.GenerateRandomPassword();
         var res = await _authService.AddNewUserAsync(newOfficer.OfficerName,
-            newOfficer.EmailAddress, newOfficer.OfficerType == 0 ? "field officer" : "safety officer", password);
+            newOfficer.EmailAddress, newOfficer.PhoneNumber,newOfficer.OfficerType == 0 ? "field officer" : "safety officer", password);
         var emailSubject = "Account Created";
         await _emailSender.SendEmailAsync(newOfficer.EmailAddress, emailSubject, password);
         if (res.StatusCode == 201)

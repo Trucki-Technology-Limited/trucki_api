@@ -115,16 +115,21 @@ public class AdminRepository : IAdminRepository
             Payout = m.Value.payout
         }).ToList();
 
-        // Calculate total GTV and revenue
-        float totalGtv = orders.Sum(m => m.Routes.Gtv);
-        float totalRevenue = monthlyData.Sum(m => m.Value.revenue);
-        float totalPayout = monthlyData.Sum(m => m.Value.payout);
+        // // Calculate total GTV and revenue
+        // float totalGtv = orders.Sum(m => m.Routes.Gtv);
+        // float totalRevenue = monthlyData.Sum(m => m.Value.revenue);
+        // float totalPayout = monthlyData.Sum(m => m.Value.payout);
+        
+        var totalGtv = orders.Sum(o => o.Routes != null ? o.Routes.Gtv : 0);
+        var totalPrice = orders.Sum(o => o.Price ?? 0);
+        var totalIncome = orders.Sum(o => (o.Price ?? 0) - (o.Routes != null ? o.Routes.Gtv : 0));
+
 
         var summary = new GtvDashboardSummary
         {
             TotalGtv = totalGtv,
-            TotalRevenue = totalRevenue,
-            TotalPayout = totalPayout,
+            TotalRevenue = totalIncome,
+            TotalPayout = totalGtv,
             MonthlyData = chartData
         };
 

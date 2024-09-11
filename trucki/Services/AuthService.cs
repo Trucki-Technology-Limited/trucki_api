@@ -60,6 +60,7 @@ public class AuthService : IAuthService
                 FirstName = user.firstName,
                 LastName = user.lastName,
                 RefreshToken = tokenResponse.RefreshToken,
+                PhoneNumber = user.PhoneNumber,
                 EmailAddress = user.Email,
                 //isPasswordChanged = user.IsPasswordChanged,
                 isEmailConfirmed = user.EmailConfirmed,
@@ -103,7 +104,7 @@ public class AuthService : IAuthService
 
         }
         
-        public async Task<ApiResponseModel<bool>> AddNewUserAsync(string name, string email, string role, string password)
+        public async Task<ApiResponseModel<bool>> AddNewUserAsync(string name, string email, string phone, string role, string password)
         {
             var user = new User
             {
@@ -112,6 +113,7 @@ public class AuthService : IAuthService
                 Email = email,
                 NormalizedEmail = email.ToUpper(),
                 EmailConfirmed = true,
+                PhoneNumber = phone,
                 PasswordHash =
                     new PasswordHasher<User>().HashPassword(null,
                         password),
@@ -144,5 +146,33 @@ public class AuthService : IAuthService
                 StatusCode = 201
             };
 
+        }
+        public async Task<ApiResponseModel<UserResponseModel>> GetUserById(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new ApiResponseModel<UserResponseModel>
+                {
+                    IsSuccessful = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+            var res = new UserResponseModel
+            {
+                name = user.firstName,
+                phone = user.PhoneNumber,
+                IsActive = user.IsActive,
+                email = user.Email,
+                IsPasswordChanged = false,
+                
+            };
+            return new ApiResponseModel<UserResponseModel>
+            {
+                IsSuccessful = true,
+                Data = res,
+                StatusCode = 200
+            };
         }
 }

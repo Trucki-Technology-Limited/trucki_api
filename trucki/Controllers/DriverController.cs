@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
@@ -63,6 +64,32 @@ public class DriverController: ControllerBase
         var response = await _driverService.DeactivateDriver(driverId);
         return StatusCode(response.StatusCode, response);
     }
-
+    [HttpGet("GetDriverProfileById")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<DriverProfileResponseModel>>> GetDriverProfileById()
+    {
+        
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var response = await _driverService.GetDriverProfileById(userId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetOrderCountByDriver")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<OrderCountByDriver>>> GetOrderCountByDriver(string id)
+    {
+        var response = await _driverService.GetOrderCountByDriver(id);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetOrderAssignedToDriver")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<DriverProfileResponseModel>>> GetOrderAssignedToDriver([FromQuery] string driverId)
+    {
+        var response = await _driverService.GetOrderAssignedToDriver(driverId);
+        return StatusCode(response.StatusCode, response);
+    }
 
 }

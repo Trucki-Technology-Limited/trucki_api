@@ -93,11 +93,16 @@ public class DriverRepository:IDriverRepository
 
         _context.Drivers.Add(newDriver);
         var password = HelperClass.GenerateRandomPassword();
-        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,
+        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,newDriver.Phone,
             "driver", password);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
+            var user = await _userManager.FindByEmailAsync(newDriver.EmailAddress);
+            newDriver.UserId = user.Id;
+            newDriver.User = user;
+            var emailSubject = "Account Created";
+            await _emailSender.SendEmailAsync(newDriver.EmailAddress, emailSubject, password);
             // **Save changes to database**
             await _context.SaveChangesAsync();
             return new ApiResponseModel<string>
@@ -201,7 +206,7 @@ public class DriverRepository:IDriverRepository
         if (driver == null)
             return new ApiResponseModel<DriverResponseModel>
             {
-                Data = new DriverResponseModel { }, IsSuccessful = false, Message = "No manager found",
+                Data = new DriverResponseModel { }, IsSuccessful = false, Message = "Driver not found",
                 StatusCode = 404
             };
 
@@ -255,6 +260,104 @@ public class DriverRepository:IDriverRepository
             StatusCode = 200,
         };
     }
-    
+    public async Task<ApiResponseModel<DriverProfileResponseModel>> GetDriverProfileById(string driverId)
+    {
+        var driver = await _context.Drivers
+            .Include(e => e.User)
+            .Include(d => d.Truck)
+            .FirstOrDefaultAsync(d => d.UserId == driverId);
 
+        if (driver == null)
+        {
+            return new ApiResponseModel<DriverProfileResponseModel>
+            {
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        var mappedDriver = _mapper.Map<DriverProfileResponseModel>(driver);
+
+        return new ApiResponseModel<DriverProfileResponseModel>
+        {
+            IsSuccessful = true,
+            Data = mappedDriver,
+            StatusCode = 200
+        };
+    }
+ 
+    public async Task<ApiResponseModel<OrderCountByDriver>> GetOrderCountByDriver(string driverId)
+    {
+        var today = DateTime.Now;
+        // var startOfWeek = today.StartOfWeek(DayOfWeek.Monday);
+        var startOfMonth = new DateTime(today.Year, today.Month, 1);
+
+        var orders = await _context.Orders
+            .Include(r => r.Truck)
+            .ThenInclude(e => e.Driver)
+            .Where(o => o.Truck.DriverId == driverId && o.OrderStatus == OrderStatus.Delivered)
+            .ToListAsync();
+
+        // Handle the case where no orders are found
+        if (!orders.Any())
+        {
+            return new ApiResponseModel<OrderCountByDriver>
+            {
+                IsSuccessful = true, // You might want to change this to false
+                Message = "No completed orders found for this driver",
+                Data =  new OrderCountByDriver
+                {
+                    week = 0,
+                    month = 0
+                },
+                StatusCode = 200
+            };
+        }
+
+        var completedThisWeek = orders.Count();
+        var completedThisMonth = orders.Count();
+
+        return new ApiResponseModel<OrderCountByDriver>
+        {
+            IsSuccessful = true,
+            Data =
+            {
+                week = completedThisWeek,
+                month = completedThisMonth
+            },
+            StatusCode = 200
+        };
+    }
+    
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrderAssignedToDriver(string driverId)
+    {
+        var orders = await _context.Orders
+            .Include(a => a.Business)
+            .Include(b => b.Routes)
+            .Include(c => c.Customer)
+            .Include(r => r.Truck)
+            .ThenInclude(e => e.Driver)
+            .Where(o => o.Truck.Driver.Id == driverId)
+            .ToListAsync();
+
+        // Handle the case where no orders are found
+        if (!orders.Any())
+        {
+            return new ApiResponseModel<List<AllOrderResponseModel>>
+            {
+                IsSuccessful = true, // You might want to change this to false
+                Message = "No orders found for this driver",
+                StatusCode = 200
+            };
+        }
+        
+        var mappedOrders = _mapper.Map<List<AllOrderResponseModel>>(orders);
+        return new ApiResponseModel<List<AllOrderResponseModel>>
+        {
+            IsSuccessful = true,
+            Data = mappedOrders,
+            StatusCode = 200
+        };
+    }
 }

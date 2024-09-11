@@ -45,9 +45,9 @@ public class SeedData
         scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
         var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
         context.Database.Migrate();
-        EnsureSeedData(context);
-        var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
-        ctx.Database.Migrate();
+        // EnsureSeedData(context);
+        // var ctx = scope.ServiceProvider.GetService<TruckiDBContext>();
+        // ctx.Database.Migrate();
         await SeedAsync(serviceProvider);
     }
 

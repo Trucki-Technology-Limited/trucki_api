@@ -8,10 +8,12 @@ namespace trucki.Models.ResponseModels
         public string OrderId { get; set; }
         public string TruckNo { get; set; }
         public string Quantity { get; set; }
+        public string DeliveryAddress { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public OrderStatus OrderStatus { get; set; }
-        public RouteResponseModel? Route { get; set; }
+        public RouteResponseModel? Routes { get; set; }
+        public AllCustomerResponseModel Customer { get; set; }
         public AllBusinessResponseModel? Business { get; set; }
     }
 

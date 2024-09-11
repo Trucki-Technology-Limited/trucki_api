@@ -11,4 +11,7 @@ public interface IDriverService
     Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model);
     Task<ApiResponseModel<bool>> EditDriver(EditDriverRequestModel model);
     Task<ApiResponseModel<bool>> DeactivateDriver(string driverId);
+    Task<ApiResponseModel<DriverProfileResponseModel>> GetDriverProfileById(string driverId);
+    Task<ApiResponseModel<OrderCountByDriver>> GetOrderCountByDriver(string driverId);
+    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrderAssignedToDriver(string driverId);
 }

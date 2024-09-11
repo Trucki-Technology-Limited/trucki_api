@@ -49,7 +49,7 @@ public class OrderController: ControllerBase
         return StatusCode(response.StatusCode, response);   
     }
     [HttpGet("GetOrderById")]
-    [Authorize(Roles = "admin,manager,finance")]
+    [Authorize(Roles = "admin,manager,finance,driver")]
     public async Task<ActionResult<ApiResponseModel<OrderResponseModel>>> GetOrderById(string orderId)
     {
         var response = await _orderService.GetOrderById(orderId);
