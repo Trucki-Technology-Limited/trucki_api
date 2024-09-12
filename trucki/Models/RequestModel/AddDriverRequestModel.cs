@@ -2,8 +2,8 @@ namespace trucki.Models.RequestModel;
 
 public class AddDriverRequestModel
 {
-    public IFormFile Picture { set; get; }
-    public IFormFile IdCard { set; get; }
+    public string Picture { set; get; }
+    public string IdCard { set; get; }
     public string Name { set; get; }
     public string Email { set; get; }
     public string Number { set; get; }
@@ -16,5 +16,5 @@ public class EditDriverRequestModel
     public string Id { get; set; }
     public string Name { set; get; }
     public string Number { get; set; }
-    public IFormFile? ProfilePicture { get; set; }
+    public String? ProfilePicture { get; set; }
 }

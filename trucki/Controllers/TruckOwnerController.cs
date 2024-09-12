@@ -35,7 +35,7 @@ public class TruckOwnerController: ControllerBase
     [HttpPost("EditTruckOwner")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<bool>>> EditTruckOwner(
-        [FromForm] EditTruckOwnerRequestBody model)
+        [FromBody] EditTruckOwnerRequestBody model)
     {
         var response = await _truckOwnerService.EditTruckOwner(model);
         return StatusCode(response.StatusCode, response);
@@ -53,7 +53,7 @@ public class TruckOwnerController: ControllerBase
     [HttpPost("CreateNewTruckOwner")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<bool>>> CreateNewTruckOwner(
-        [FromForm] AddTruckOwnerRequestBody model)
+        [FromBody] AddTruckOwnerRequestBody model)
     {
         var response = await _truckOwnerService.CreateNewTruckOwner(model);
         return StatusCode(response.StatusCode, response);

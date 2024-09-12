@@ -54,22 +54,10 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         };
 
         // Add owner to context and save changes
-        var imagePath = "";
-        if (model.IdCard != null && model.IdCard.Length > 0)
-        {
-            // Save image (locally, to database, or external storage)
-            imagePath = await _uploadService.UploadFile(model.IdCard, $"{newOwner.Name}userIdCard");
-        }
+        
 
-        var profilePicPath = "";
-        if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
-        {
-            profilePicPath =
-                await _uploadService.UploadFile(model.ProfilePicture, $"{newOwner.Name}userProfilePicture");
-        }
-
-        newOwner.IdCardUrl = imagePath;
-        newOwner.ProfilePictureUrl = profilePicPath;
+        newOwner.IdCardUrl = model.IdCard;
+        newOwner.ProfilePictureUrl = model.ProfilePicture;
         _context.TruckOwners.Add(newOwner);
         await _context.SaveChangesAsync();
 

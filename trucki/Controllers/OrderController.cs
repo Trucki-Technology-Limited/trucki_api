@@ -58,7 +58,7 @@ public class OrderController: ControllerBase
      
     [HttpPost("UploadOrderDocuments")]
     [Authorize(Roles = "manager,field officer")]
-    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromForm]UploadOrderManifestRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromBody]UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadOrderManifest(model);
         return StatusCode(response.StatusCode, response);
@@ -72,7 +72,7 @@ public class OrderController: ControllerBase
     }
     [HttpPost("uploadDeliveryManifest")]
     [Authorize(Roles = "manager,field officer")]
-    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadDeliveryManifest([FromForm]UploadOrderManifestRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadDeliveryManifest([FromBody]UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadDeliveryManifest(model);
         return StatusCode(response.StatusCode, response);

@@ -6,8 +6,8 @@ public class AddTruckOwnerRequestBody
     public string? EmailAddress { set; get; }
     public string Phone { set; get; }
     public string Address { set; get; }
-    public IFormFile IdCard  { set; get; }
-    public IFormFile ProfilePicture { get; set; }
+    public string IdCard  { set; get; }
+    public string ProfilePicture { get; set; }
     public string BankName { get; set; }
     public string BankAccountNumber { get; set; }
     public string BankAccountName { get; set; }
@@ -20,5 +20,5 @@ public class EditTruckOwnerRequestBody
     public string? EmailAddress { set; get; }
     public string Phone { set; get; }
     public string Address { set; get; }
-    public IFormFile? IdCard  { set; get; }
+    public string? IdCard  { set; get; }
 }

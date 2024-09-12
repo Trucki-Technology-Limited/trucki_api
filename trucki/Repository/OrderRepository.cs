@@ -365,15 +365,7 @@ public class OrderRepository:IOrderRepository
         // }
 
         // 3. Upload to Cloudinary and Get URLs
-        var uploadedFileUrls = new List<string>();
-        if (model.Documents != null)
-        {
-            foreach (var document in model.Documents)
-            {
-                var uploadedDocument = await _uploadService.UploadFile(document, $"{order.OrderId}");
-                uploadedFileUrls.Add(uploadedDocument);
-            }
-        }
+    
 
         // 4. Update Order
         if (order.Documents == null)
@@ -381,10 +373,10 @@ public class OrderRepository:IOrderRepository
             order.Documents = new List<string>();
         }
 
-        order.Documents.AddRange(uploadedFileUrls);
+        order.Documents.AddRange(model.Documents);
 
         // Update order status if this is the first document being uploaded
-        if (order.Documents.Count == uploadedFileUrls.Count)
+        if (order.Documents.Count == model.Documents.Count)
         {
             order.OrderStatus = OrderStatus.Loaded;
         }
@@ -495,26 +487,17 @@ public class OrderRepository:IOrderRepository
         }
         
         // 3. Upload to Cloudinary and Get URLs
-        var uploadedFileUrls = new List<string>();
-        if (model.Documents != null)
-        {
-            foreach (var document in model.Documents)
-            {
-                var uploadedDocument = await _uploadService.UploadFile(document, $"{order.OrderId}");
-                uploadedFileUrls.Add(uploadedDocument);
-            }
-        }
-
+     
         // 4. Update Order
         if (order.Documents == null)
         {
             order.DeliveryDocuments = new List<string>();
         }
 
-        order.DeliveryDocuments.AddRange(uploadedFileUrls);
+        order.DeliveryDocuments.AddRange(model.Documents);
 
         // Update order status if this is the first document being uploaded
-        if (order.DeliveryDocuments.Count == uploadedFileUrls.Count)
+        if (order.DeliveryDocuments.Count == model.Documents.Count)
         {
             order.OrderStatus = OrderStatus.Destination;
         }

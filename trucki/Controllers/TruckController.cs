@@ -18,7 +18,7 @@ public class TruckController: ControllerBase
     
         [HttpPost("AddNewTruck")]
         [Authorize(Roles = "admin")]
-        public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck([FromForm] AddTruckRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck([FromBody] AddTruckRequestModel model)
         {
             var response = await _truckService.AddNewTruck(model);
             return StatusCode(response.StatusCode, response);
@@ -26,7 +26,7 @@ public class TruckController: ControllerBase
 
         [HttpPost("EditTruck")]
         [Authorize(Roles = "admin")]
-        public async Task<ActionResult<ApiResponseModel<bool>>> EditTruck([FromForm]EditTruckRequestModel model)
+        public async Task<ActionResult<ApiResponseModel<bool>>> EditTruck([FromBody]EditTruckRequestModel model)
         {
             var response = await _truckService.EditTruck(model);
             return StatusCode(response.StatusCode, response);

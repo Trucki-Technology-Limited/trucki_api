@@ -19,7 +19,7 @@ public class DriverController: ControllerBase
     
     [HttpPost("AddDriver")]
     [Authorize(Roles = "admin")]
-    public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromForm] AddDriverRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromBody] AddDriverRequestModel model)
     {
         var response = await _driverService.AddDriver(model);
         return StatusCode(response.StatusCode, response);
@@ -27,7 +27,7 @@ public class DriverController: ControllerBase
 
     [HttpPost("EditDriver")]
     [Authorize(Roles = "admin")]
-    public async Task<ActionResult<ApiResponseModel<bool>>> EditDriver([FromForm] EditDriverRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<bool>>> EditDriver([FromBody] EditDriverRequestModel model)
     {
         var response = await _driverService.EditDriver(model);
         return StatusCode(response.StatusCode, response);

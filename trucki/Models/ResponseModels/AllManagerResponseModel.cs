@@ -8,6 +8,7 @@ public class AllManagerResponseModel
     public string Name { get; set; }
     
     public string Phone { get; set; }
+    public string UserId { get; set; }
     
     public string EmailAddress { get; set; }
     public List<ManagersBusinessResponseModel> Company { get; set; }

@@ -73,17 +73,9 @@ public class TruckRepository:ITruckRepository
             InsuranceExpiryDate = model.InsuranceExpiryDate
         };
 
-        List<string> documents = new List<string>();
+        
 
-        if (model.Documents != null)
-        {
-            foreach (var document in model.Documents)
-            {
-                documents.Add(await _uploadService.UploadFile(document, $"{newTruck.PlateNumber}"));
-            }
-        }
-
-        newTruck.Documents = documents;
+        newTruck.Documents = model.Documents;
 
         _context.Trucks.Add(newTruck);
         await _context.SaveChangesAsync();

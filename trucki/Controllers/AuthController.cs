@@ -38,5 +38,12 @@ public class AuthController: ControllerBase
         }
         var result = await _authService.GetUserById(userId);
         return StatusCode(result.StatusCode, result);
+    }  
+    [HttpPost("ResetUserPassword")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> ResetUserPassword([FromBody] ResetUsersPasswordRequestModel requestModel)
+    {
+        var result = await _authService.ChangePasswordAsync(requestModel.userId, requestModel.password);
+        return StatusCode(result.StatusCode, result);
     }
 }

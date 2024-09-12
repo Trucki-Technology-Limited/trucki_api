@@ -4,7 +4,7 @@ namespace trucki.Models.RequestModel
 {
     public class AddTruckRequestModel
     {
-        public List<IFormFile> Documents { get; set; }
+        public List<string> Documents { get; set; }
         //public string CertOfOwnerShip { get; set; }
         public string PlateNumber { get; set; }
         public string TruckCapacity { get; set; }

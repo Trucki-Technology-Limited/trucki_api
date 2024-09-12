@@ -71,7 +71,6 @@ public class AuthService : IAuthService
         };
 
         return ApiResponseModel<LoginResponseModel>.Success("User created successfully", responseDto.Data, StatusCodes.Status201Created);
-
     }
 
         private async Task<ApiResponseModel<bool>> ValidateUser(LoginRequestModel loginRequest)
@@ -175,4 +174,45 @@ public class AuthService : IAuthService
                 StatusCode = 200
             };
         }
+        
+        public async Task<ApiResponseModel<bool>> ChangePasswordAsync(string userId, string newPassword)
+        {
+            // Find the user by their ID
+            var user = await _userManager.FindByIdAsync(userId);
+    
+            if (user == null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+    
+            // Generate the new password hash
+            var passwordHasher = new PasswordHasher<User>();
+            user.PasswordHash = passwordHasher.HashPassword(user, newPassword);
+    
+            // Update the user with the new password
+            var result = await _userManager.UpdateAsync(user);
+    
+            if (!result.Succeeded)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = result.Errors.FirstOrDefault()?.Description ?? "Failed to update password",
+                    StatusCode = 400
+                };
+            }
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "Password updated successfully",
+                StatusCode = 200
+            };
+        }
+
 }

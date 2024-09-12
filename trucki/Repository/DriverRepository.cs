@@ -69,26 +69,11 @@ public class DriverRepository:IDriverRepository
             //DriversLicence = ""
         };
 
-        var imagePath = "";
-        if (model.IdCard != null && model.IdCard.Length > 0)
-        {
-            // Save Id card 
-            imagePath = await _uploadService.UploadFile(model.IdCard, $"{newDriver.Name}userIdCard");
-        }
-
         // Id card
-        newDriver.DriversLicence = imagePath;
-
-        var profilePicPath = "";
-        if (model.Picture != null && model.Picture.Length > 0)
-        {
-            // save profile picture
-            profilePicPath = await _uploadService.UploadFile(model.Picture, $"{newDriver.Name}userProfilePicture");
-        }
-
-
+        newDriver.DriversLicence = model.IdCard;
+        
         // Profile picture
-        newDriver.PassportFile = profilePicPath;
+        newDriver.PassportFile = model.Picture;
 
 
         _context.Drivers.Add(newDriver);
@@ -138,14 +123,9 @@ public class DriverRepository:IDriverRepository
 
         driver.Name = model.Name;
         driver.Phone = model.Number;
+        
 
-        var imagePath = "";
-        if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
-        {
-            imagePath = await _uploadService.UploadFile(model.ProfilePicture, $"{driver.Name}userIdCard");
-        }
-
-        driver.PassportFile = imagePath;
+        driver.PassportFile = model.ProfilePicture ?? driver.PassportFile;
 
         // Save changes to database
         _context.Drivers.Update(driver);
