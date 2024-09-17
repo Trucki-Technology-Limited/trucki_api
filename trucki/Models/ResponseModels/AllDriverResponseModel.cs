@@ -12,6 +12,7 @@ namespace trucki.Models.ResponseModels
         public string EmailAddress { get; set; }
 
         public string TruckId { get; set; }
+        public string UserId { get; set; } 
 
         public string DriversLicence { get; set; }
 
