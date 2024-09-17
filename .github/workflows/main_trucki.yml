@@ -23,14 +23,14 @@ jobs:
       uses: docker/login-action@v2
       with:
         registry: https://truckireg.azurecr.io/
-        username: ${{ secrets.AzureAppService_ContainerUsername_4adcdb40343f4d4c903838760fe9f9d2 }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_7f0b48fb174d496a80fcba5d69900969 }}
+        username: ${{ secrets.AzureAppService_ContainerUsername_231f3ebfaa6645179fb4882b03861e1d }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_2af90b67cf184e17872bd7fbe6299cf4 }}
 
     - name: Build and push container image to registry
       uses: docker/build-push-action@v3
       with:
         push: true
-        tags: truckireg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_4adcdb40343f4d4c903838760fe9f9d2 }}/truckitechnologylimitedtruckiapi:${{ github.sha }}
+        tags: truckireg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_231f3ebfaa6645179fb4882b03861e1d }}/truckitechnologylimitedtruckiapi:${{ github.sha }}
         file: ./Dockerfile
 
   deploy:
@@ -47,5 +47,5 @@ jobs:
       with:
         app-name: 'trucki'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_fc29e6ab02334e8f9de75c58ddb2089d }}
-        images: 'truckireg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_4adcdb40343f4d4c903838760fe9f9d2 }}/truckitechnologylimitedtruckiapi:${{ github.sha }}'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_caf07c12366e48f29deb19e91be3fab0 }}
+        images: 'truckireg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_231f3ebfaa6645179fb4882b03861e1d }}/truckitechnologylimitedtruckiapi:${{ github.sha }}'
