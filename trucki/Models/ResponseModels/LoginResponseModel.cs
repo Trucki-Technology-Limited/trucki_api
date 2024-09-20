@@ -13,6 +13,7 @@ public class LoginResponseModel
     public List<string> Permissions { get; set; }
     public bool isPasswordChanged { get; set; }
     public string? PhoneNumber { get; set; }
+    public string? refresh { get; set; }
     public bool isEmailConfirmed { get; set; }
     public bool isPhoneNumberConfirmed { get; set; }
     public DateTime? LastLoginDate { get; set; }
