@@ -28,6 +28,7 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    # Build and push the Docker image to the ACR with versioned tag (Build ID)
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
@@ -37,3 +38,15 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+
+    # Update the Container App to use the new versioned image (e.g. :1, :2, :3, etc.)
+    - task: AzureCLI@2
+      displayName: Update container app image with versioned tag
+      inputs:
+        azureSubscription: 'azdev2containerapps'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az containerapp update --name trucki \
+                                 --resource-group Trucki-Apps-Prod \
+                                 --image $(containerRegistry)/$(imageRepository):$(tag)
