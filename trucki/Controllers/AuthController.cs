@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
+using trucki.Models.ResponseModels;
 
 namespace trucki.Controllers;
 
@@ -18,7 +19,7 @@ public class AuthController: ControllerBase
         _authService = authService;
     }
     [HttpPost("Login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequestModel request)
+    public async Task<ActionResult<ApiResponseModel<LoginResponseModel>>> LoginAsync([FromBody] LoginRequestModel request)
     {
         string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
         if (!(Regex.IsMatch(request.email, emailPattern)))
