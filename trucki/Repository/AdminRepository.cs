@@ -121,8 +121,8 @@ public class AdminRepository : IAdminRepository
         // float totalPayout = monthlyData.Sum(m => m.Value.payout);
         
         var totalGtv = orders.Sum(o => o.Routes != null ? o.Routes.Gtv : 0);
-        var totalPrice = orders.Sum(o => o.Price ?? 0);
-        var totalIncome = orders.Sum(o => (o.Price ?? 0) - (o.Routes != null ? o.Routes.Gtv : 0));
+        var totalPrice =  orders.Sum(o => o.Routes != null ? o.Routes.Price : 0);
+        var totalIncome = orders.Sum(o => (o.Routes != null ? o.Routes.Gtv : 0) - (o.Routes != null ? o.Routes.Price : 0));
 
 
         var summary = new GtvDashboardSummary

@@ -188,6 +188,17 @@ public class ManagerRepository: IManagerRepository
                 StatusCode = 404 // Not Found
             };
         }
+        // Fetch orders related to the manager
+        var orders = await _context.Orders
+            .Where(o => o.ManagerId == managerId)
+            .ToListAsync();
+    
+        // Set ManagerId to null in all orders
+        foreach (var order in orders)
+        {
+            order.ManagerId = null;
+            order.Manager = null; // Optional, just to clear navigation property
+        }
         // Get attached businesses
         var businesses = manager.Company.ToList();
         
