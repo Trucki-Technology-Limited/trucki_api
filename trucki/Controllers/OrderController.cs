@@ -91,4 +91,11 @@ public class OrderController: ControllerBase
         var response = await _orderService.Pay60Percent(status);
         return StatusCode(response.StatusCode, response);   
     }
+    [HttpGet("GetOrderByIdForMobile")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<OrderResponseModelForMobile>>> GetOrderByIdForMobile(string orderId)
+    {
+        var response = await _orderService.GetOrderByIdForMobile(orderId);
+        return StatusCode(response.StatusCode, response);
+    }
 }

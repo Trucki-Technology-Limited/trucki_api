@@ -318,6 +318,68 @@ public class OrderRepository:IOrderRepository
             Data = orderResponseModel
         };
     }
+    
+    public async Task<ApiResponseModel<OrderResponseModelForMobile>> GetOrderByIdForMobile(string orderId)
+    {
+        var order = await _context.Orders
+            .Include(o => o.Truck)
+            .Include(o => o.Business)
+            .Include(o => o.Routes)
+            .Include(o => o.Customer) // Add Customer include
+            .Include(o => o.Truck.TruckOwner)
+            .ThenInclude(to => to.BankDetails).Where(x => x.Id == orderId)
+            .FirstOrDefaultAsync();
+
+        if (order == null)
+        {
+            return new ApiResponseModel<OrderResponseModelForMobile>
+            {
+                IsSuccessful = false,
+                Message = "Failed to retrieve orders",
+                StatusCode = 500,
+                Data = new OrderResponseModelForMobile()
+            };
+        }
+
+        var orderResponseModel = new OrderResponseModelForMobile
+        {
+            Id = order.Id,
+            OrderId = order.OrderId,
+            TruckNo = order.Truck?.PlateNumber ?? "",
+            Quantity = order.Quantity,
+            businessId = order.BusinessId,
+            businessName = order.Business.Name,
+            businessLocation = order.Business.Location,
+            customerId = order.CustomerId,
+            customerName = order.Customer.CustomerName,
+            customerLocation = order.Customer.Location,
+            CargoType = order.CargoType,
+            OrderStatus = order.OrderStatus,
+            RouteFrom = order.Routes?.FromRoute ?? "",
+            RouteTo = order.Routes?.ToRoute ?? "",
+            StartDate = order.StartDate.ToString(),
+            EndDate = order.EndDate.ToString(),
+            Price = order.Routes?.Price,
+            Driver = order.Truck?.DriverId ?? "",
+            Customer = order.Customer?.CustomerName ?? "", // Get customer name
+            DeliveryLocation = order.DeliveryAddress ?? "", // Get delivery address
+            Documents = order.Documents,
+            DeliveryDocuments = order.DeliveryDocuments,
+            TruckOwnerName = order.Truck?.TruckOwner?.Name ?? "",
+            TruckOwnerBankName = order.Truck?.TruckOwner?.BankDetails?.BankName ?? "",
+            TruckOwnerBankAccountNumber = order.Truck?.TruckOwner?.BankDetails?.BankAccountNumber ?? "",
+            is60Paid = order.is60Paid,
+            is40Paid = order.is40Paid
+        };
+
+        return new ApiResponseModel<OrderResponseModelForMobile>
+        {
+            IsSuccessful = true,
+            Message = "Order retrieved successfully",
+            StatusCode = 200,
+            Data = orderResponseModel
+        };
+    }
 
     private string GenerateOrderId()
     {

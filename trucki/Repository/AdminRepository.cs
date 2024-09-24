@@ -129,7 +129,7 @@ public class AdminRepository : IAdminRepository
         {
             TotalGtv = totalGtv,
             TotalRevenue = totalIncome,
-            TotalPayout = totalGtv,
+            TotalPayout = totalPrice,
             MonthlyData = chartData
         };
 

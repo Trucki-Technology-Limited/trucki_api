@@ -67,4 +67,9 @@ public class OrderService: IOrderService
         var res = await _orderRepository.Pay40Percent(model);
         return res;
     }
+    public async Task<ApiResponseModel<OrderResponseModelForMobile>> GetOrderByIdForMobile(string orderId)
+    {
+        var res = await _orderRepository.GetOrderByIdForMobile(orderId);
+        return res;
+    }
 }
