@@ -574,4 +574,69 @@ public class OrderRepository:IOrderRepository
             StatusCode = 200,
         };
     }
+    public async Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model)
+{
+    // Find the order by the provided orderId
+    var order = await _context.Orders.Include(o => o.Truck).FirstOrDefaultAsync(o => o.Id == model.orderId);
+    
+    if (order == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Order not found",
+            StatusCode = 404
+        };
+    }
+
+    // Check if the order has a truck assigned
+    if (order.Truck == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "No truck assigned to this order",
+            StatusCode = 400
+        };
+    }
+
+    // Check if the driverId matches the driver assigned to the truck (assuming Truck has a DriverId)
+    if (order.Truck.DriverId != model.driverId)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "This driver is not assigned to the truck for this order",
+            StatusCode = 400
+        };
+    }
+
+    // If the driver is assigned to the truck, update the order status
+    if (model.status == "accepted")
+    {
+        order.OrderStatus = OrderStatus.Accepted;
+    }else if(model.status == "declined"){
+        order.OrderStatus = OrderStatus.Declined;
+    }
+    else
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Invalid status update",
+            StatusCode = 400
+        };
+    }
+
+    // Save changes to the database
+    await _context.SaveChangesAsync();
+
+    return new ApiResponseModel<bool>
+    {
+        IsSuccessful = true,
+        Message = "Order status updated successfully",
+        StatusCode = 200,
+    };
+}
+
 }

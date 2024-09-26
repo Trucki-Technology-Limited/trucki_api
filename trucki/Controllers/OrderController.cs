@@ -98,4 +98,11 @@ public class OrderController: ControllerBase
         var response = await _orderService.GetOrderByIdForMobile(orderId);
         return StatusCode(response.StatusCode, response);
     }
+      [HttpPost("AcceptOrderRequest")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> AcceptOrderRequest([FromBody]AcceptOrderRequestModel model)
+    {
+        var response = await _orderService.AcceptOrderRequest(model);
+        return StatusCode(response.StatusCode, response);
+    }
 }

@@ -188,7 +188,7 @@ public class SeedData
         {
             var userManagerService = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             var roleManagerService = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var roles = new[] { "admin","finance", "manager", "driver", "cargo owner", "transporter", "hr", "field officer", "safety officer" };
+            var roles = new[] { "admin","finance", "chiefmanager","manager", "driver", "cargo owner", "transporter", "hr", "field officer", "safety officer" };
             foreach (var roleName in roles)
             {
                 if (!await roleManagerService.RoleExistsAsync(roleName))
@@ -249,6 +249,31 @@ public class SeedData
                     if (result.Succeeded)
                     {
                         await userManagerService.AddToRoleAsync(user, "finance");
+                    }
+                }
+                  if (await userManagerService.FindByEmailAsync("si@trucki.co") == null)
+                {
+                    var user = new User
+                    {
+                        Id = "ChiefManager",
+                        UserName = "si@trucki.co",
+                        NormalizedUserName = "si@trucki.co".ToUpper(),
+                        Email = "si@trucki.co",
+                        NormalizedEmail = "si@trucki.co".ToUpper(),
+                        EmailConfirmed = true,
+                        PasswordHash =
+                            new PasswordHasher<User>().HashPassword(null,
+                                "Admin@1234"), // Change to your desired password
+                        SecurityStamp = string.Empty,
+                        firstName = "Chief",
+                        lastName = "Manager",
+                        IsActive = true,
+                    };
+
+                    var result = await userManagerService.CreateAsync(user);
+                    if (result.Succeeded)
+                    {
+                        await userManagerService.AddToRoleAsync(user, "chiefmanager");
                     }
                 }
         }

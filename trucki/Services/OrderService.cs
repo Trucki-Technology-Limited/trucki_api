@@ -72,4 +72,9 @@ public class OrderService: IOrderService
         var res = await _orderRepository.GetOrderByIdForMobile(orderId);
         return res;
     }
+     public async Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model)
+    {
+        var res = await _orderRepository.AcceptOrderRequest(model);
+        return res;
+    }
 }

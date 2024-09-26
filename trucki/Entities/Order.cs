@@ -39,7 +39,9 @@
         Destination,
         Delivered,
         Flagged,
-        Archived
+        Archived,
+        Accepted,
+        Declined
 
     }
 }
