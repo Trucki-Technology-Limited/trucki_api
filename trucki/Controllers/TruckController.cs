@@ -46,14 +46,14 @@ public class TruckController: ControllerBase
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("SearchTrucks")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,chiefmanager")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> SearchTruck(string? searchWords)
         {
             var response = await _truckService.SearchTruck(searchWords);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetAllTrucks")]
-        [Authorize(Roles = "admin,manager,field officer")]
+        [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> GetAllTrucks()
         {
             var response = await _truckService.GetAllTrucks();
@@ -75,7 +75,7 @@ public class TruckController: ControllerBase
         }
 
         [HttpPost("UpdateTruckStatus")]
-        [Authorize(Roles = "admin,manager")]
+        [Authorize(Roles = "admin,manager,chiefmanager")]
         public async Task<ActionResult<ApiResponseModel<string>>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
         {
             var response = await _truckService.UpdateTruckStatus(truckId, model);

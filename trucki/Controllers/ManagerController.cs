@@ -64,14 +64,14 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetManagerDashboardData")]
-    [Authorize(Roles = "manager,finance")]
+    [Authorize(Roles = "manager,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetManagerDashboardSummary(string managerId)
     {
         var response = await _managerService.GetManagerDashboardData(managerId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionsByManager")]
-    [Authorize(Roles = "manager,finance")]
+    [Authorize(Roles = "manager,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<List<TransactionResponseModel>>>> GetTransactionsByManager()
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -83,7 +83,7 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionSummaryResponseModel")]
-    [Authorize(Roles = "manager,finance")]
+    [Authorize(Roles = "manager,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<TransactionSummaryResponseModel>>> GetTransactionSummaryResponseModel()
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

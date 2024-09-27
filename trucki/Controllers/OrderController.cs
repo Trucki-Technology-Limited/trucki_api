@@ -18,7 +18,7 @@ public class OrderController: ControllerBase
     }
     
     [HttpPost("CreateOrder")]
-    [Authorize(Roles = "admin,manager,field officer")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
     {
         //var userId = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
@@ -28,28 +28,28 @@ public class OrderController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("UpdateOrder")]
-    [Authorize(Roles = "admin,manager,field officer")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<string>>> EditOrder([FromBody] EditOrderRequestModel model)
     {
         var response = await _orderService.EditOrder(model);
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("AssignTruckToOrder")]
-    [Authorize(Roles = "admin,manager,field officer")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<string>>> AssignTruckToOrders([FromBody] AssignTruckRequestModel model)
     {
         var response = await _orderService.AssignTruckToOrder(model);
         return response;
     }
     [HttpGet("GetAllOrders")]
-    [Authorize(Roles = "admin,manager,field officer,finance")]
+    [Authorize(Roles = "admin,manager,field officer,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
     {
         var response = await _orderService.GetAllOrders();
         return StatusCode(response.StatusCode, response);   
     }
     [HttpGet("GetOrderById")]
-    [Authorize(Roles = "admin,manager,finance,driver")]
+    [Authorize(Roles = "admin,manager,finance,driver,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<OrderResponseModel>>> GetOrderById(string orderId)
     {
         var response = await _orderService.GetOrderById(orderId);
@@ -57,21 +57,21 @@ public class OrderController: ControllerBase
     }
      
     [HttpPost("UploadOrderDocuments")]
-    [Authorize(Roles = "manager,field officer")]
+    [Authorize(Roles = "manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromBody]UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadOrderManifest(model);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetOrdersByStatus")]
-    [Authorize(Roles = "admin,manager,field officer,finance")]
+    [Authorize(Roles = "admin,manager,field officer,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetOrdersByStatus([FromQuery] OrderStatus status)
     {
         var response = await _orderService.GetOrdersByStatus(status);
         return StatusCode(response.StatusCode, response);   
     }
     [HttpPost("uploadDeliveryManifest")]
-    [Authorize(Roles = "manager,field officer")]
+    [Authorize(Roles = "manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadDeliveryManifest([FromBody]UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadDeliveryManifest(model);

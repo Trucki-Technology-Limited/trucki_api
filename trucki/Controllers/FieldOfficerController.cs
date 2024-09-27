@@ -25,7 +25,7 @@ public class FieldOfficerController: ControllerBase
     }
 
     [HttpGet("GetAllFieldOfficers")]
-    [Authorize(Roles = "admin,manager,field officer")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>>> GetAllFieldOfficers(int page, int size)
     {
         var response = await _fieldOfficerService.GetAllFieldOfficers(page, size);

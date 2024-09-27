@@ -19,7 +19,7 @@ public class CustomerController: ControllerBase
     
 
     [HttpPost("AddNewCustomer")]
-    [Authorize(Roles = "admin,manager")]
+    [Authorize(Roles = "admin,manager,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<string>>> AddNewCustomer([FromBody] AddCustomerRequestModel model)
     {
         var response = await _customerService.AddNewCustomer(model);
@@ -27,7 +27,7 @@ public class CustomerController: ControllerBase
     }
 
     [HttpPost("EditCustomer")]
-    [Authorize(Roles = "admin,manager")]
+    [Authorize(Roles = "admin,manager,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<string>>> EditCustomer([FromBody] EditCustomerRequestModel model)
     {
         var response = await _customerService.EditCustomer(model);
@@ -43,7 +43,7 @@ public class CustomerController: ControllerBase
     }
 
     [HttpGet("GetAllCustomers")]
-    [Authorize(Roles = "admin,manager,field officer")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<List<AllCustomerResponseModel>>>> GetAllCustomers()
     {
         var response = await _customerService.GetAllCustomers();
@@ -58,7 +58,7 @@ public class CustomerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("SearchCustomers")]
-    [Authorize(Roles = "admin,manager")]
+    [Authorize(Roles = "admin,manager,chiefmanager")]
     public async Task<ActionResult<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords)
     {
         var response = await _customerService.SearchCustomers(searchWords);

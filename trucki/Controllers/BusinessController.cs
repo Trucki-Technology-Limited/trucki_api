@@ -26,7 +26,7 @@ public class BusinessController : ControllerBase
     }
 
     [HttpGet("GetAllBusiness")]
-    [Authorize(Roles = "admin,manager")]
+    [Authorize(Roles = "admin,manager,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
     {
         var business = await _businessService.GetAllBusiness();
@@ -98,14 +98,14 @@ public class BusinessController : ControllerBase
     }
     
     [HttpGet("SearchBusinesses")]
-    [Authorize(Roles = "admin,manager")]
+    [Authorize(Roles = "admin,manager,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchBusinesses(string searchWords)
     {
         var response = await _businessService.SearchBusinesses(searchWords);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetRoutesByBusinessId")]
-    [Authorize(Roles = "admin,manager,field officer")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> GetRoutesByBusinessId(string businessId)
     {
         var response = await _businessService.GetRoutesByBusinessId(businessId);
