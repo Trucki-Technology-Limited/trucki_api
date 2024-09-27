@@ -188,7 +188,7 @@ public class ManagerRepository: IManagerRepository
                 StatusCode = 404 // Not Found
             };
         }
-        // Fetch orders related to the manager
+        // Fetch orders related to the selected manager
         var orders = await _context.Orders
             .Where(o => o.ManagerId == managerId)
             .ToListAsync();
