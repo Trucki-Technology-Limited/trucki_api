@@ -61,4 +61,9 @@ public class DriverService: IDriverService
         return res;
     }
 
+ public async Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model)
+    {
+        var res = await _driverRepository.CreateDriverAccount(model);
+        return res;
+    }
 }

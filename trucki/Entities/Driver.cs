@@ -16,9 +16,9 @@ namespace trucki.Entities
         public string? TruckId { get; set; }
         public Truck? Truck { get; set; }
 
-        public string DriversLicence { get; set; }
+        public string? DriversLicence { get; set; }
 
-        public string PassportFile { get; set; }
+        public string? PassportFile { get; set; }
         public bool IsActive { get; set; } = true;
         [ForeignKey("User")] 
         public string? UserId { get; set; } 

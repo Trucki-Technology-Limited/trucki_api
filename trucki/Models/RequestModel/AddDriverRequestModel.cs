@@ -18,3 +18,12 @@ public class EditDriverRequestModel
     public string Number { get; set; }
     public String? ProfilePicture { get; set; }
 }
+
+public class CreateDriverRequestModel
+{
+    public string Name { set; get; }
+    public string Email { set; get; }
+    public string Number { set; get; }
+    public string address { set; get; }
+    public string password { set; get; }
+}

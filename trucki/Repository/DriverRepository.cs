@@ -340,4 +340,69 @@ public class DriverRepository:IDriverRepository
             StatusCode = 200
         };
     }
+         public async Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model)
+    {
+        var existingManager = await _context.Drivers
+            .FirstOrDefaultAsync(m => m.EmailAddress == model.Email || m.Phone == model.Number);
+
+        if (existingManager != null)
+        {
+            if (existingManager.EmailAddress == model.Email)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Email address already exists",
+                    StatusCode = 400 // Bad Request
+                };
+            }
+            else
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Phone number already exists",
+                    StatusCode = 400 // Bad Request
+                };
+            }
+        }
+
+        var newDriver = new Driver
+        {
+            Name = model.Name,
+            Phone = model.Number,
+            EmailAddress = model.Email,
+            //PassportFile = "",
+            //DriversLicence = ""
+        };
+        _context.Drivers.Add(newDriver);
+        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,newDriver.Phone,
+            "driver", model.password);
+        //TODO:: Email password to user
+        if (res.StatusCode == 201)
+        {
+            var user = await _userManager.FindByEmailAsync(newDriver.EmailAddress);
+            newDriver.UserId = user.Id;
+            newDriver.User = user;
+            var emailSubject = "Account Created";
+            // await _emailSender.SendEmailAsync(newDriver.EmailAddress, emailSubject, password);
+            // **Save changes to database**
+            await _context.SaveChangesAsync();
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = true,
+                Message = "Driver created successfully",
+                StatusCode = 201,
+                Data =""
+            };
+        }
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = false,
+            Message = "An error occurred while creating the manager",
+            StatusCode = 400, // Bad Request
+        };
+    }
+
 }
