@@ -65,5 +65,19 @@ public class TruckOwnerController: ControllerBase
         var response = await _truckOwnerService.SearchTruckOwners(searchWords);
         return StatusCode(response.StatusCode, response);
     }
-
+     [HttpPost("CreateTransporter")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> CreateTransporter(
+        [FromBody] AddTruckOwnerRequestBody model)
+    {
+        var response = await _truckOwnerService.CreateNewTruckOwner(model);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpPost("AddNewTransporter")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> AddNewTransporter(
+        [FromBody] AddTransporterRequestBody model)
+    {
+        var response = await _truckOwnerService.AddNewTransporter(model);
+        return StatusCode(response.StatusCode, response);
+    }
 }

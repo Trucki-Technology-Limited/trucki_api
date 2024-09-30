@@ -50,4 +50,9 @@ public class TruckOwnerService: ITruckOwnerService
         var res = await _ownerRepository.SearchTruckOwners(searchWords);
         return res;
     }
+      public async Task<ApiResponseModel<bool>> AddNewTransporter(AddTransporterRequestBody model)
+    {
+        var res = await _ownerRepository.AddNewTransporter(model);
+        return res;
+    }
 }

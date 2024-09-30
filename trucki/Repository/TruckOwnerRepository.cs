@@ -223,6 +223,47 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             StatusCode = 200,
         };
     }
+     public async Task<ApiResponseModel<bool>> AddNewTransporter(AddTransporterRequestBody model)
+    {
+        await _context.SaveChangesAsync();
+        var newOwner = new TruckOwner
+        {
+            Name = model.Name,
+            EmailAddress = model.EmailAddress,
+            Phone = model.Phone,
+            Address = model.Address,
+        };
 
+        // Add owner to context and save changes
+        _context.TruckOwners.Add(newOwner);
+         var res = await _authService.AddNewUserAsync(newOwner.Name, newOwner.EmailAddress,newOwner.Phone,
+            "transporter", model.password);
+        //TODO:: Email password to user
+        if (res.StatusCode == 201)
+        {
+            var user = await _userManager.FindByEmailAsync(newOwner.EmailAddress);
+            newOwner.UserId = user.Id;
+            newOwner.User = user;
+            var emailSubject = "Account Created";
+            // await _emailSender.SendEmailAsync(newOwner.EmailAddress, emailSubject, model.password);
+            // **Save changes to database**
+            await _context.SaveChangesAsync();
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "Transporter created successfully",
+                StatusCode = 201,
+            };
+        }
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Transporter created successfully",
+            StatusCode = 201,
+            Data = true
+        };
+    }
     
 }

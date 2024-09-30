@@ -11,5 +11,6 @@ public interface ITruckOwnerRepository
     Task<ApiResponseModel<bool>> DeleteTruckOwner(string id);
     Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners();
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
+    Task<ApiResponseModel<bool>> AddNewTransporter(AddTransporterRequestBody model);
 
 }

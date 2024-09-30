@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240930054139_AddListOfDriversToTruckOwner")]
+    partial class AddListOfDriversToTruckOwner
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -648,14 +650,9 @@ namespace trucki.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BankDetailsId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("TruckOwners");
                 });
@@ -922,13 +919,7 @@ namespace trucki.Migrations
                         .WithMany()
                         .HasForeignKey("BankDetailsId");
 
-                    b.HasOne("trucki.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
                     b.Navigation("BankDetails");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("trucki.Entities.Business", b =>
