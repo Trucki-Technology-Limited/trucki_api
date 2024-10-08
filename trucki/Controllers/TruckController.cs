@@ -17,7 +17,7 @@ public class TruckController: ControllerBase
     }
     
         [HttpPost("AddNewTruck")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,transporter")]
         public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck([FromBody] AddTruckRequestModel model)
         {
             var response = await _truckService.AddNewTruck(model);
@@ -79,6 +79,13 @@ public class TruckController: ControllerBase
         public async Task<ActionResult<ApiResponseModel<string>>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
         {
             var response = await _truckService.UpdateTruckStatus(truckId, model);
+            return StatusCode(response.StatusCode, response);
+        }
+         [HttpGet("GetTrucksByOwnersId")]
+        [Authorize(Roles = "transporter")]
+        public async Task<ActionResult<ApiResponseModel<List<AllTruckResponseModel>>>> GetTrucksByOwnersId(string ownersId)
+        {
+            var response = await _truckService.GetTrucksByOwnersId(ownersId);
             return StatusCode(response.StatusCode, response);
         }
         

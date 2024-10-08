@@ -9,6 +9,7 @@ public class AddDriverRequestModel
     public string Number { set; get; }
     public string address { set; get; }
     public string? TruckId { set; get; }
+    public string? TruckOwnerId { get; set; }  // Add this property
 }
 
 public class EditDriverRequestModel 

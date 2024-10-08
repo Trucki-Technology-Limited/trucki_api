@@ -66,4 +66,9 @@ public class DriverService: IDriverService
         var res = await _driverRepository.CreateDriverAccount(model);
         return res;
     }
+     public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
+    {
+        var res = await _driverRepository.GetDriversByTruckOwnerId(truckOwnerId);
+        return res;
+    }
 }

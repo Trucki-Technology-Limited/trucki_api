@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
@@ -78,6 +79,19 @@ public class TruckOwnerController: ControllerBase
         [FromBody] AddTransporterRequestBody model)
     {
         var response = await _truckOwnerService.AddNewTransporter(model);
+        return StatusCode(response.StatusCode, response);
+    }
+     [HttpGet("GetDriverProfileById")]
+    [Authorize(Roles = "transporter")]
+    public async Task<ActionResult<ApiResponseModel<TruckOwnerResponseModel>>> GetDriverProfileById()
+    {
+        
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var response = await _truckOwnerService.GetDriverProfileById(userId);
         return StatusCode(response.StatusCode, response);
     }
 }

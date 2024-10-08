@@ -55,4 +55,10 @@ public class TruckOwnerService: ITruckOwnerService
         var res = await _ownerRepository.AddNewTransporter(model);
         return res;
     }
+    public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetDriverProfileById(string id)
+    {
+        var res = await _ownerRepository.GetDriverProfileById(id);
+        return res;
+    }
+
 }

@@ -12,5 +12,6 @@ public interface ITruckOwnerRepository
     Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners();
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
     Task<ApiResponseModel<bool>> AddNewTransporter(AddTransporterRequestBody model);
+    Task<ApiResponseModel<TruckOwnerResponseModel>> GetDriverProfileById(string transporterId);
 
 }
