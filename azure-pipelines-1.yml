@@ -52,9 +52,10 @@ stages:
         scriptLocation: 'inlineScript'
         inlineScript: |
           # Update the web app's container image tag
-          az webapp config container set --name trucki-api-staging \
-                                        --resource-group Trucki-Apps-Prod \
-                                        --docker-custom-image-name $(containerRegistry)/$(imageRepository):$(tag) \
-                                        --docker-registry-server-url https://$(containerRegistry) \
-                                        --docker-registry-server-user $(dockerRegistryServiceConnection) \
-                                        --docker-registry-server-password $(dockerRegistryServiceConnection)
+          az webapp config container set --name trucki \
+                               --resource-group Trucki-Apps-Prod \
+                               --slot trucki-api-staging \
+                               --docker-custom-image-name $(containerRegistry)/$(imageRepository):$(tag) \
+                               --docker-registry-server-url https://$(containerRegistry) \
+                               --docker-registry-server-user $(dockerRegistryServiceConnection) \
+                               --docker-registry-server-password $(dockerRegistryServiceConnection)
