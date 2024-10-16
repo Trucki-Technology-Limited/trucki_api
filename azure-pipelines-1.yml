@@ -1,9 +1,5 @@
-# Docker
-# Build and push an image to Azure Container Registry
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
-- main
+- trucki-staging
 
 resources:
 - repo: self
@@ -28,6 +24,7 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    # Build and push the Docker image to the container registry
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
@@ -37,3 +34,27 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+
+- stage: UpdateTag
+  displayName: Update Image Tag on Web App
+  dependsOn: Build  # Ensure the build completes before updating the tag
+  jobs:
+  - job: UpdateTag
+    displayName: Update Web App Deployment Image Tag
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: AzureCLI@2
+      displayName: Update web app container image tag
+      inputs:
+        azureSubscription: 'azdev2containerapps'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Update the web app's container image tag
+          az webapp config container set --name trucki-api-staging \
+                                        --resource-group Trucki-Apps-Prod \
+                                        --docker-custom-image-name $(containerRegistry)/$(imageRepository):$(tag) \
+                                        --docker-registry-server-url https://$(containerRegistry) \
+                                        --docker-registry-server-user $(dockerRegistryServiceConnection) \
+                                        --docker-registry-server-password $(dockerRegistryServiceConnection)
