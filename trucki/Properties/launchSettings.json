@@ -23,7 +23,7 @@
       "commandName": "Project",
       "launchBrowser": false,
       "launchUrl": "swagger",
-      "applicationUrl": "https://trucki-web-api.azurewebsites.net;http://trucki-web-api.azurewebsites.net",
+      "applicationUrl": "https://trucki.azurewebsites.net;http://trucki.azurewebsites.net",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Prod"
       },
@@ -33,7 +33,7 @@
       "commandName": "Project",
       "launchBrowser": false,
       "launchUrl": "swagger",
-      "applicationUrl": "https://admin.trucki.co;http://admin.trucki.co",
+      "applicationUrl": "https://trucki-trucki-api-staging.azurewebsites.net;http://trucki-trucki-api-staging.azurewebsites.net",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging"
       },
