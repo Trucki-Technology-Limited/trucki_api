@@ -265,5 +265,45 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Data = true
         };
     }
+    public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetDriverProfileById(string transporterId)
+{
+    var owner = await _context.TruckOwners
+        .Include(e => e.User)
+        .Include(e => e.BankDetails)
+        .FirstOrDefaultAsync(d => d.UserId == transporterId);
+
+    if (owner == null)
+    {
+        return new ApiResponseModel<TruckOwnerResponseModel>
+        {
+            IsSuccessful = false,
+            Message = "Transporter not found",
+            StatusCode = 404
+        };
+    }
+
+    // Check if the account is approved
+    bool isAccountApproved = false;
+
+    // Check if profile is complete (you can adjust these conditions as needed)
+    bool isProfileSetupComplete = !string.IsNullOrEmpty(owner.ProfilePictureUrl)
+        && !string.IsNullOrEmpty(owner.IdCardUrl)
+        && owner.BankDetails != null;
+
+    // Map the response model
+    var mappedDriver = _mapper.Map<TruckOwnerResponseModel>(owner);
+
+    // Set the flags for profile completion and approval
+    mappedDriver.IsAccountApproved = isAccountApproved;
+    mappedDriver.IsProfileSetupComplete = isProfileSetupComplete;
+
+    return new ApiResponseModel<TruckOwnerResponseModel>
+    {
+        IsSuccessful = true,
+        Data = mappedDriver,
+        StatusCode = 200
+    };
+}
+
     
 }

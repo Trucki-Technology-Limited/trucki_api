@@ -14,4 +14,5 @@ public interface ITruckService
     Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId);
     Task<ApiResponseModel<bool>> AssignDriverToTruck(AssignDriverToTruckRequestModel model);
     Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model);
+    Task<ApiResponseModel<List<AllTruckResponseModel>>> GetTrucksByOwnersId(string ownersId);
 }

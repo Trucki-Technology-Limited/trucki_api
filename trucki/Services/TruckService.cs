@@ -65,4 +65,9 @@ public class TruckService: ITruckService
         var res = await _truckRepository.UpdateTruckStatus(truckId, model);
         return res;
     }
+    public async Task<ApiResponseModel<List<AllTruckResponseModel>>> GetTrucksByOwnersId(string ownersId)
+    {
+        var res = await _truckRepository.GetTrucksByOwnersId(ownersId);
+        return res;
+    }
 }

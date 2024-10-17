@@ -18,7 +18,7 @@ public class DriverController: ControllerBase
     }
     
     [HttpPost("AddDriver")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,transporter")]
     public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromBody] AddDriverRequestModel model)
     {
         var response = await _driverService.AddDriver(model);
@@ -95,6 +95,13 @@ public class DriverController: ControllerBase
     public async Task<ActionResult<ApiResponseModel<bool>>> CreateDriverAccount([FromBody] CreateDriverRequestModel model)
     {
         var response = await _driverService.CreateDriverAccount(model);
+        return StatusCode(response.StatusCode, response);
+    }
+     [HttpGet("GetDriversByTruckOwnerId")]
+    [Authorize(Roles = "transporter")]
+    public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
+    {
+        var response = await _driverService.GetDriversByTruckOwnerId(truckOwnerId);
         return StatusCode(response.StatusCode, response);
     }
 

@@ -15,7 +15,8 @@ namespace trucki.Entities
         [ForeignKey("TruckId")]
         public string? TruckId { get; set; }
         public Truck? Truck { get; set; }
-
+        public string? TruckOwnerId { get; set; }
+        public TruckOwner? TruckOwner { get; set; }
         public string? DriversLicence { get; set; }
 
         public string? PassportFile { get; set; }

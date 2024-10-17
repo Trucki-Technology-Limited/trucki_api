@@ -386,5 +386,56 @@ public class TruckRepository:ITruckRepository
         };
     }
 
-    
+    public async Task<ApiResponseModel<List<AllTruckResponseModel>>> GetTrucksByOwnersId(string ownersId)
+    {
+        // Retrieve all trucks for the specified owner
+        var trucks = await _context.Trucks.Where(x => x.TruckOwnerId == ownersId).ToListAsync();
+
+        // Check if any trucks were found
+        if (trucks == null || !trucks.Any())
+        {
+            return new ApiResponseModel<List<AllTruckResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "No trucks found for this owner",
+                StatusCode = 404,
+                Data = new List<AllTruckResponseModel>()
+            };
+        }
+
+        // Prepare the response model list
+        var truckResponses = new List<AllTruckResponseModel>();
+
+        foreach (var truck in trucks)
+        {
+            var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
+            var truckOwner = await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
+
+            var truckToReturn = new AllTruckResponseModel
+            {
+                Id = truck.Id,
+                Documents = truck.Documents,
+                PlateNumber = truck.PlateNumber,
+                TruckCapacity = truck.TruckCapacity,
+                DriverId = truck.DriverId,
+                DriverName = driver?.Name, // Safe navigation in case driver is null
+                TruckOwnerId = truck.TruckOwnerId,
+                TruckOwnerName = truckOwner?.Name, // Safe navigation in case truckOwner is null
+                TruckType = truck.TruckType,
+                TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
+                RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
+                InsuranceExpiryDate = truck.InsuranceExpiryDate
+            };
+
+            truckResponses.Add(truckToReturn);
+        }
+
+        return new ApiResponseModel<List<AllTruckResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Trucks found",
+            StatusCode = 200,
+            Data = truckResponses
+        };
+    }
 }

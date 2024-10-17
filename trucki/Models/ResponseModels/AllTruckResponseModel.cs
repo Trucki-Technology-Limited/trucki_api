@@ -18,5 +18,6 @@ namespace trucki.Models.ResponseModels
         public string TruckLicenseExpiryDate { get; set; }
         public string RoadWorthinessExpiryDate { get; set; }
         public string InsuranceExpiryDate { get; set; }
+        public string TruckNumber { get; set; }
     }
 }
