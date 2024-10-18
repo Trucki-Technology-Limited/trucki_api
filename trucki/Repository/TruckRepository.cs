@@ -66,8 +66,10 @@ public class TruckRepository:ITruckRepository
             DriverId = model.DriverId,
             //Capacity = model.Capacity,
             TruckOwnerId = model.TruckOwnerId,
+            TruckStatus = TruckStatus.Available,
             TruckOwner = truckOwner,
             TruckType = model.TruckType,
+            TruckName =model.TruckName,
             TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
             RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
             InsuranceExpiryDate = model.InsuranceExpiryDate
@@ -122,6 +124,7 @@ public class TruckRepository:ITruckRepository
         //truck.Capacity = model.Capacity;
         truck.TruckOwnerId = model.TruckOwnerId;
         truck.TruckOwner = truckOwner;
+        truck.TruckName = model.TruckName;
         truck.TruckType = model.TruckType;
         truck.TruckLicenseExpiryDate = model.TruckLicenseExpiryDate;
         truck.RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate;
@@ -201,6 +204,8 @@ public class TruckRepository:ITruckRepository
             TruckCapacity = truck.TruckCapacity,
             DriverId = truck.DriverId,
             DriverName = driver?.Name,
+            TruckName = truck.TruckName,
+            TruckStatus = truck.TruckStatus,
             //Capacity = truck.Capacity,
             TruckOwnerId = truck.TruckOwnerId,
             TruckOwnerName = truckOwner.Name,
@@ -418,6 +423,8 @@ public class TruckRepository:ITruckRepository
                 PlateNumber = truck.PlateNumber,
                 TruckCapacity = truck.TruckCapacity,
                 DriverId = truck.DriverId,
+                TruckName = truck.TruckName,
+                TruckStatus = truck.TruckStatus,
                 DriverName = driver?.Name, // Safe navigation in case driver is null
                 TruckOwnerId = truck.TruckOwnerId,
                 TruckOwnerName = truckOwner?.Name, // Safe navigation in case truckOwner is null
@@ -436,6 +443,48 @@ public class TruckRepository:ITruckRepository
             Message = "Trucks found",
             StatusCode = 200,
             Data = truckResponses
+        };
+    }
+    public async Task<ApiResponseModel<TruckStatusCountResponseModel>> GetTruckStatusCountByOwnerId(string ownerId)
+    {
+        // Group trucks by status for the specified owner
+        var trucksGroupedByStatus = await _context.Trucks
+            .Where(x => x.TruckOwnerId == ownerId)
+            .GroupBy(x => x.TruckStatus)
+            .Select(group => new 
+            {
+                Status = group.Key,
+                Count = group.Count()
+            })
+            .ToListAsync();
+
+        // Prepare the response with default values for statuses
+        var truckStatusCount = new TruckStatusCountResponseModel
+        {
+            EnRouteCount = trucksGroupedByStatus.FirstOrDefault(x => x.Status == TruckStatus.EnRoute)?.Count ?? 0,
+            AvailableCount = trucksGroupedByStatus.FirstOrDefault(x => x.Status == TruckStatus.Available)?.Count ?? 0,
+            OutOfServiceCount = trucksGroupedByStatus.FirstOrDefault(x => x.Status == TruckStatus.OutOfService)?.Count ?? 0
+        };
+
+        // If no trucks found for the owner
+        if (!trucksGroupedByStatus.Any())
+        {
+            return new ApiResponseModel<TruckStatusCountResponseModel>
+            {
+                IsSuccessful = false,
+                Message = "No trucks found for this owner",
+                StatusCode = 404,
+                Data = truckStatusCount
+            };
+        }
+
+        // Return successful response with truck status counts
+        return new ApiResponseModel<TruckStatusCountResponseModel>
+        {
+            IsSuccessful = true,
+            Message = "Truck status counts found",
+            StatusCode = 200,
+            Data = truckStatusCount
         };
     }
 }

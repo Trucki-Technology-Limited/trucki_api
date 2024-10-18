@@ -7,11 +7,13 @@ public class Truck : BaseClass
     public List<string> Documents { get; set; }
     //public string CertOfOwnerShip { get; set; }
     public string PlateNumber { get; set; }
+    public string? TruckName { get; set; }
     public string TruckCapacity { get; set; }
     [ForeignKey("DriverId")]
     public string? DriverId { get; set; }
     public Driver? Driver { get; set; }
     public string? TruckOwnerId { get; set; }
+    public string? TruckiNumber { get; set; }
     public TruckOwner? TruckOwner { get; set; }
     public TruckiType TruckType { get; set; }
     public string TruckLicenseExpiryDate { get; set; }
