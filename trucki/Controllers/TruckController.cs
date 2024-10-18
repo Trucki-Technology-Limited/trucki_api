@@ -39,7 +39,7 @@ public class TruckController: ControllerBase
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("GetTruckById")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,transporter")]
         public async Task<ActionResult<ApiResponseModel<AllTruckResponseModel>>> GetTruckById(string truckId)
         {
             var response = await _truckService.GetTruckById(truckId);
@@ -75,7 +75,7 @@ public class TruckController: ControllerBase
         }
 
         [HttpPost("UpdateTruckStatus")]
-        [Authorize(Roles = "admin,manager,chiefmanager")]
+        [Authorize(Roles = "admin,manager,chiefmanager,transporter")]
         public async Task<ActionResult<ApiResponseModel<string>>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
         {
             var response = await _truckService.UpdateTruckStatus(truckId, model);
@@ -86,6 +86,13 @@ public class TruckController: ControllerBase
         public async Task<ActionResult<ApiResponseModel<List<AllTruckResponseModel>>>> GetTrucksByOwnersId(string ownersId)
         {
             var response = await _truckService.GetTrucksByOwnersId(ownersId);
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetTruckStatusCountByOwnerId")]
+        [Authorize(Roles = "transporter")]
+        public async Task<ActionResult<ApiResponseModel<TruckStatusCountResponseModel>>> GetTruckStatusCountByOwnerId(string ownersId)
+        {
+            var response = await _truckService.GetTruckStatusCountByOwnerId(ownersId);
             return StatusCode(response.StatusCode, response);
         }
         
