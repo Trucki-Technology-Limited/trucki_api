@@ -240,6 +240,7 @@ public class OrderRepository:IOrderRepository
                 OrderStatus = order.OrderStatus,
                 Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
+                CreatedAt = order.CreatedAt
             });
 
             return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
