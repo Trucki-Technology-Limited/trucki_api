@@ -44,6 +44,7 @@ public class OrderRepository:IOrderRepository
             ManagerId = business.managerId,
             BusinessId = business.Id,
             OrderStatus = OrderStatus.Pending,
+            CreatedAt = DateTime.Now
         };
 
         _context.Orders.Add(order);
