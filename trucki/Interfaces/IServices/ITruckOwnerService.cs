@@ -12,5 +12,11 @@ public interface ITruckOwnerService
     Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners();
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
     Task<ApiResponseModel<bool>> AddNewTransporter(AddTransporterRequestBody model);
-    Task<ApiResponseModel<TruckOwnerResponseModel>> GetDriverProfileById(string transporterId);
+    Task<ApiResponseModel<TruckOwnerResponseModel>> GetTransporterProfileById(string transporterId);
+    Task<ApiResponseModel<bool>> ApproveTruckOwner(string truckOwnerId);
+    Task<ApiResponseModel<bool>> NotApproveTruckOwner(string truckOwnerId);
+    Task<ApiResponseModel<bool>> BlockTruckOwner(string truckOwnerId);
+    Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId);
+    Task<ApiResponseModel<bool>> UploadIdCardAndProfilePicture(string truckOwnerId, string idCardUrl, string profilePictureUrl);
+    Task<ApiResponseModel<bool>> UpdateBankDetails(UpdateBankDetailsRequestBody model);
 }

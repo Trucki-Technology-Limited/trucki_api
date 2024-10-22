@@ -30,3 +30,18 @@ public class EditTruckOwnerRequestBody
     public string Address { set; get; }
     public string? IdCard  { set; get; }
 }
+
+ public class UploadIdCardAndProfilePictureRequestBody
+    {
+        public string Id { set; get; }
+        public string IdCardUrl { get; set; }
+        public string ProfilePictureUrl { get; set; }
+    }
+
+    public class UpdateBankDetailsRequestBody
+    {
+        public string Id { set; get; }
+        public string BankName { get; set; }
+        public string BankAccountNumber { get; set; }
+        public string BankAccountName { get; set; }
+    }

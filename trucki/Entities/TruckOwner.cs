@@ -18,5 +18,14 @@ public class TruckOwner : BaseClass
     public string? UserId { get; set; } 
 
     public User? User { get; set; }
+    public OwnersStatus OwnersStatus { get; set; }   
 }
 
+public enum OwnersStatus
+{
+    Pending,
+
+    Approved, 
+    NotApproved,
+    Blocked,
+}

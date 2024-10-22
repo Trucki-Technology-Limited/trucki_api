@@ -19,7 +19,8 @@ public class Truck : BaseClass
     public string TruckLicenseExpiryDate { get; set; }
     public string RoadWorthinessExpiryDate { get; set; }
     public string InsuranceExpiryDate { get; set; }
-    public TruckStatus TruckStatus { get; set; }    
+    public TruckStatus TruckStatus { get; set; }  
+    public ApprovalStatus ApprovalStatus { get; set; }  
 }
 
 public enum TruckiType
@@ -37,4 +38,11 @@ public enum TruckStatus
     EnRoute,
     Available, 
     OutOfService,
+}
+
+public enum ApprovalStatus
+{
+    Approved,
+    NotApproved, 
+    Blocked,
 }
