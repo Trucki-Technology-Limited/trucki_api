@@ -15,6 +15,7 @@ namespace trucki.Models.ResponseModels
         public RouteResponseModel? Routes { get; set; }
         public AllCustomerResponseModel Customer { get; set; }
         public AllBusinessResponseModel? Business { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class OrderResponseModel
@@ -43,6 +44,7 @@ namespace trucki.Models.ResponseModels
         public string?  TruckOwnerBankAccountNumber { get; set; }
         public bool is60Paid { get; set; } 
         public bool is40Paid { get; set; }
+        public DateTime CreatedAt { get; set; }
 
     }
     public class OrderStatsResponse
@@ -84,6 +86,7 @@ namespace trucki.Models.ResponseModels
         public string?  TruckOwnerBankAccountNumber { get; set; }
         public bool is60Paid { get; set; } 
         public bool is40Paid { get; set; }
+        public DateTime CreatedAt { get; set; }
 
     }
 }

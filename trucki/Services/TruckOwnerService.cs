@@ -55,9 +55,45 @@ public class TruckOwnerService: ITruckOwnerService
         var res = await _ownerRepository.AddNewTransporter(model);
         return res;
     }
-    public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetDriverProfileById(string id)
+    public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetTransporterProfileById(string id)
     {
-        var res = await _ownerRepository.GetDriverProfileById(id);
+        var res = await _ownerRepository.GetTransporterProfileById(id);
+        return res;
+    }
+     // New methods for managing TruckOwner status
+    public async Task<ApiResponseModel<bool>> ApproveTruckOwner(string truckOwnerId)
+    {
+        var res = await _ownerRepository.ApproveTruckOwner(truckOwnerId);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> NotApproveTruckOwner(string truckOwnerId)
+    {
+        var res = await _ownerRepository.NotApproveTruckOwner(truckOwnerId);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> BlockTruckOwner(string truckOwnerId)
+    {
+        var res = await _ownerRepository.BlockTruckOwner(truckOwnerId);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId)
+    {
+        var res = await _ownerRepository.UnblockTruckOwner(truckOwnerId);
+        return res;
+    }
+
+     public async Task<ApiResponseModel<bool>> UploadIdCardAndProfilePicture(string truckOwnerId, string idCardUrl, string profilePictureUrl)
+    {
+        var res = await _ownerRepository.UploadIdCardAndProfilePicture(truckOwnerId, idCardUrl, profilePictureUrl);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> UpdateBankDetails(UpdateBankDetailsRequestBody model)
+    {
+        var res = await _ownerRepository.UpdateBankDetails(model.Id, model);
         return res;
     }
 
