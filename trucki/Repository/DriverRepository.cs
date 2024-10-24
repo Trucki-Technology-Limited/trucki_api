@@ -91,7 +91,7 @@ public class DriverRepository:IDriverRepository
 
         _context.Drivers.Add(newDriver);
         var password = HelperClass.GenerateRandomPassword();
-        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress, newDriver.Phone, "driver", password);
+        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress, newDriver.Phone, "driver", password, false);
         
         //TODO:: Email password to user
         if (res.StatusCode == 201)
@@ -391,7 +391,7 @@ public class DriverRepository:IDriverRepository
         };
         _context.Drivers.Add(newDriver);
         var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,newDriver.Phone,
-            "driver", model.password);
+            "driver", model.password, true);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {

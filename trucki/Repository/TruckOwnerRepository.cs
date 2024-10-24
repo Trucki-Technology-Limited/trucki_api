@@ -238,7 +238,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         // Add owner to context and save changes
         _context.TruckOwners.Add(newOwner);
          var res = await _authService.AddNewUserAsync(newOwner.Name, newOwner.EmailAddress,newOwner.Phone,
-            "transporter", model.password);
+            "transporter", model.password, true);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {

@@ -62,7 +62,7 @@ public class AuthService : IAuthService
                 RefreshToken = tokenResponse.RefreshToken,
                 PhoneNumber = user.PhoneNumber,
                 EmailAddress = user.Email,
-                //isPasswordChanged = user.IsPasswordChanged,
+                isPasswordChanged = user.HasChangedPassword,
                 isEmailConfirmed = user.EmailConfirmed,
                 isPhoneNumberConfirmed = user.PhoneNumberConfirmed,
                 LastLoginDate = DateTime.Now
@@ -103,7 +103,7 @@ public class AuthService : IAuthService
 
         }
         
-        public async Task<ApiResponseModel<bool>> AddNewUserAsync(string name, string email, string phone, string role, string password)
+        public async Task<ApiResponseModel<bool>> AddNewUserAsync(string name, string email, string phone, string role, string password, bool hasChangedPassword)
         {
             var user = new User
             {
@@ -117,6 +117,7 @@ public class AuthService : IAuthService
                     new PasswordHasher<User>().HashPassword(null,
                         password),
                 SecurityStamp = string.Empty,
+                HasChangedPassword = hasChangedPassword,
                 firstName = name,
                 lastName = name,
                 IsActive = true,
@@ -206,6 +207,18 @@ public class AuthService : IAuthService
                     StatusCode = 400
                 };
             }
+                        // Update HasChangedPassword to true
+            user.HasChangedPassword = false;
+            var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "Failed to update user details",
+                    StatusCode = 400
+                };
+            }
 
             return new ApiResponseModel<bool>
             {
@@ -214,5 +227,74 @@ public class AuthService : IAuthService
                 StatusCode = 200
             };
         }
+    public async Task<ApiResponseModel<bool>> UpdateUserPassword(string userId, UpdateUsersPasswordRequestModel requestModel)
+{
+    // Find the user by their ID
+    var user = await _userManager.FindByIdAsync(userId);
+
+    if (user == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "User not found",
+            StatusCode = 404
+        };
+    }
+
+    // Check if the old password is valid
+    var isOldPasswordValid = await _userManager.CheckPasswordAsync(user, requestModel.OldPassword);
+    if (!isOldPasswordValid)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Old password is incorrect",
+            StatusCode = 400
+        };
+    }
+
+    // Check if the new password and confirm password match
+    if (requestModel.NewPassword != requestModel.ConfirmNewPassword)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "New password and confirm password do not match",
+            StatusCode = 400
+        };
+    }
+
+    // Change the password using UserManager's ChangePasswordAsync method
+    var result = await _userManager.ChangePasswordAsync(user, requestModel.OldPassword, requestModel.NewPassword);
+    if (!result.Succeeded)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = result.Errors.FirstOrDefault()?.Description ?? "Failed to update password",
+            StatusCode = 400
+        };
+    }
+     // Update HasChangedPassword to true
+    user.HasChangedPassword = true;
+    var updateResult = await _userManager.UpdateAsync(user);
+     if (!updateResult.Succeeded)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Failed to update user details",
+            StatusCode = 400
+        };
+    }
+
+    return new ApiResponseModel<bool>
+    {
+        IsSuccessful = true,
+        Message = "Password updated successfully",
+        StatusCode = 200
+    };
+}
 
 }
