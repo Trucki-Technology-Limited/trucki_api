@@ -98,7 +98,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Address = owner.Address,
             IdCardUrl = owner.IdCardUrl,
             ProfilePictureUrl = owner.ProfilePictureUrl,
-            noOfTrucks = owner.trucks.Count.ToString(),  
+            noOfTrucks = owner.trucks.Count.ToString(),
             BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
             CreatedAt = owner.CreatedAt,
             UpdatedAt = owner.UpdatedAt
