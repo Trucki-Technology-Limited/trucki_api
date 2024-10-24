@@ -62,85 +62,89 @@ public class AdminRepository : IAdminRepository
     }
 
 
-    public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate,
-        DateTime endDate)
+    public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate, DateTime endDate)
+{
+    // validate startDate and endDate
+    if (startDate > endDate)
     {
-        // validate startDate and endDate
-        if (startDate > endDate)
+        return new ApiResponseModel<GtvDashboardSummary>
         {
-            return new ApiResponseModel<GtvDashboardSummary>
-            {
-                Data = null,
-                IsSuccessful = false,
-                Message = "Start date must be less than or equal to end date",
-                StatusCode = 400
-            };
-        }
+            Data = null,
+            IsSuccessful = false,
+            Message = "Start date must be less than or equal to end date",
+            StatusCode = 400
+        };
+    }
 
-        // Get orders within the date range
-        List<Order> orders = await _context.Orders.Include(e => e.Routes)
-            .Where(o => o.OrderStatus == OrderStatus.Delivered)
-            .Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
-            .ToListAsync();
+    // Get orders within the date range
+    List<Order> orders = await _context.Orders.Include(e => e.Routes)
+        .Where(o => o.OrderStatus == OrderStatus.Delivered)
+        .Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
+        .ToListAsync();
 
-        // Initialize dictionary to hold monthly data
-        Dictionary<string, (float income, float revenue,float payout)> monthlyData = new Dictionary<string, (float, float,float)>();
+    // Initialize dictionary to hold monthly data
+    Dictionary<string, (float income, float revenue, float payout)> monthlyData = new Dictionary<string, (float, float, float)>();
 
-        // Process orders and group by month
-        foreach (var order in orders)
+    // Generate all months between the startDate and endDate
+    DateTime currentDate = new DateTime(startDate.Year, startDate.Month, 1);
+    DateTime endMonth = new DateTime(endDate.Year, endDate.Month, 1);
+    
+    while (currentDate <= endMonth)
+    {
+        string monthName = currentDate.ToString("MMM");
+        monthlyData[monthName] = (0, 0, 0); // Initialize with zeros for income, revenue, and payout
+        currentDate = currentDate.AddMonths(1); // Move to the next month
+    }
+
+    // Process orders and group by month
+    foreach (var order in orders)
+    {
+        string monthName = order.StartDate.ToString("MMM"); // Get short month name
+
+        if (monthlyData.ContainsKey(monthName))
         {
-            string monthName = order.StartDate.ToString("MMM"); // Get short month name
-
-            if (!monthlyData.ContainsKey(monthName))
-            {
-                monthlyData[monthName] = (0, 0,0);
-            }
-
             float orderGtv = order.Routes?.Gtv ?? 0;
             float orderRevenue = order.Routes?.Price ?? 0;
 
             monthlyData[monthName] = (
                 income: monthlyData[monthName].income + orderGtv,
-                revenue:orderGtv - monthlyData[monthName].revenue + orderRevenue,
+                revenue: orderGtv - monthlyData[monthName].revenue + orderRevenue,
                 payout: monthlyData[monthName].payout + orderRevenue
             );
         }
-
-        // Convert dictionary to list for chart data
-        var chartData = monthlyData.Select(m => new LineChartEntry
-        {
-            Name = m.Key,
-            Income = m.Value.income,
-            Revenue = m.Value.revenue,
-            Payout = m.Value.payout
-        }).ToList();
-
-        // // Calculate total GTV and revenue
-        // float totalGtv = orders.Sum(m => m.Routes.Gtv);
-        // float totalRevenue = monthlyData.Sum(m => m.Value.revenue);
-        // float totalPayout = monthlyData.Sum(m => m.Value.payout);
-        
-        var totalGtv = orders.Sum(o => o.Routes != null ? o.Routes.Gtv : 0);
-        var totalPrice =  orders.Sum(o => o.Routes != null ? o.Routes.Price : 0);
-        var totalIncome = orders.Sum(o => (o.Routes != null ? o.Routes.Gtv : 0) - (o.Routes != null ? o.Routes.Price : 0));
-
-
-        var summary = new GtvDashboardSummary
-        {
-            TotalGtv = totalGtv,
-            TotalRevenue = totalIncome,
-            TotalPayout = totalPrice,
-            MonthlyData = chartData
-        };
-
-        return new ApiResponseModel<GtvDashboardSummary>
-        {
-            Data = summary,
-            IsSuccessful = true,
-            Message = "Dashboard data",
-            StatusCode = 200
-        };
     }
+
+    // Convert dictionary to list for chart data, ensuring it's in the correct order
+    var chartData = monthlyData.Select(m => new LineChartEntry
+    {
+        Name = m.Key,
+        Income = m.Value.income,
+        Revenue = m.Value.revenue,
+        Payout = m.Value.payout
+    }).ToList();
+
+    // Calculate total GTV, revenue, and payout
+    var totalGtv = orders.Sum(o => o.Routes != null ? o.Routes.Gtv : 0);
+    var totalPrice = orders.Sum(o => o.Routes != null ? o.Routes.Price : 0);
+    var totalIncome = orders.Sum(o => (o.Routes != null ? o.Routes.Gtv : 0) - (o.Routes != null ? o.Routes.Price : 0));
+
+    var summary = new GtvDashboardSummary
+    {
+        TotalGtv = totalGtv,
+        TotalRevenue = totalIncome,
+        TotalPayout = totalPrice,
+        MonthlyData = chartData
+    };
+
+    return new ApiResponseModel<GtvDashboardSummary>
+    {
+        Data = summary,
+        IsSuccessful = true,
+        Message = "Dashboard data",
+        StatusCode = 200
+    };
+}
+
 
     public async Task<ApiResponseModel<TruckDahsBoardData>> GetTruckDashboardData(string truckId)
     {
