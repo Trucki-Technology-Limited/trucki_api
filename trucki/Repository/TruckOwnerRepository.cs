@@ -98,7 +98,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Address = owner.Address,
             IdCardUrl = owner.IdCardUrl,
             ProfilePictureUrl = owner.ProfilePictureUrl,
-            noOfTrucks = owner.trucks.Count.ToString(),  
+            noOfTrucks = owner.trucks.Count.ToString(),
             BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
             CreatedAt = owner.CreatedAt,
             UpdatedAt = owner.UpdatedAt
@@ -238,7 +238,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         // Add owner to context and save changes
         _context.TruckOwners.Add(newOwner);
          var res = await _authService.AddNewUserAsync(newOwner.Name, newOwner.EmailAddress,newOwner.Phone,
-            "transporter", model.password);
+            "transporter", model.password, true);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {

@@ -1,3 +1,5 @@
+using trucki.Entities;
+
 namespace trucki.Models.ResponseModels;
 
 public class AllTruckOwnerResponseModel
@@ -33,4 +35,5 @@ public class TruckOwnerResponseModel
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
+    public OwnersStatus OwnersStatus { get; set; }  
 }

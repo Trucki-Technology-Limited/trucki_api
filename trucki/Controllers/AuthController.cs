@@ -47,4 +47,17 @@ public class AuthController: ControllerBase
         var result = await _authService.ChangePasswordAsync(requestModel.userId, requestModel.password);
         return StatusCode(result.StatusCode, result);
     }
+     [HttpPost("UpdateUserPassword")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUserPassword([FromBody] UpdateUsersPasswordRequestModel requestModel)
+    {
+          
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var result = await _authService.UpdateUserPassword(userId, requestModel);
+        return StatusCode(result.StatusCode, result);
+    }
 }
