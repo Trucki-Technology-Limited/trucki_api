@@ -99,6 +99,8 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             IdCardUrl = owner.IdCardUrl,
             ProfilePictureUrl = owner.ProfilePictureUrl,
             noOfTrucks = owner.trucks.Count.ToString(),
+            IsAccountApproved = owner.OwnersStatus == OwnersStatus.Approved,
+            IsProfileSetupComplete = owner.IdCardUrl != null && owner.ProfilePictureUrl != null,
             BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
             CreatedAt = owner.CreatedAt,
             UpdatedAt = owner.UpdatedAt
