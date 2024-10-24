@@ -15,4 +15,5 @@ public interface IDriverService
     Task<ApiResponseModel<OrderCountByDriver>> GetOrderCountByDriver(string driverId);
     Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrderAssignedToDriver(string driverId);
     Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model);
+    Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId);
 }

@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241017185819_AddTruckiNumberToTruck")]
+    partial class AddTruckiNumberToTruck
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -562,9 +564,6 @@ namespace trucki.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<int>("ApprovalStatus")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -645,9 +644,6 @@ namespace trucki.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("OwnersStatus")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("text");
@@ -690,9 +686,6 @@ namespace trucki.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("HasChangedPassword")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsActive")

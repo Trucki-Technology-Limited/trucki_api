@@ -44,6 +44,7 @@ public class OrderRepository:IOrderRepository
             ManagerId = business.managerId,
             BusinessId = business.Id,
             OrderStatus = OrderStatus.Pending,
+            CreatedAt = DateTime.Now
         };
 
         _context.Orders.Add(order);
@@ -183,6 +184,8 @@ public class OrderRepository:IOrderRepository
                 OrderStatus = order.OrderStatus,
                 Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
+                Customer = _mapper.Map<AllCustomerResponseModel>(order.Customer),
+                CreatedAt = order.CreatedAt,
             });
 
             return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
@@ -240,6 +243,7 @@ public class OrderRepository:IOrderRepository
                 OrderStatus = order.OrderStatus,
                 Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
+                CreatedAt = order.CreatedAt
             });
 
             return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>

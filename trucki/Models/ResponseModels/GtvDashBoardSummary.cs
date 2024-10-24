@@ -25,6 +25,7 @@
 
     public class ManagerDashboardData
     {
+        public GtvDashboardSummary GtvSummary {get; set;}
         public int CompletedOrders { get; set; }
         public int FlaggedOrders { get; set; }
         public decimal TotalOrderPrice { get; set; }

@@ -14,9 +14,18 @@ namespace trucki.Models.ResponseModels
         public string Capacity { get; set; }
         public string TruckOwnerId { get; set; }
         public string TruckOwnerName { get; set; }
+        public string TruckName { get; set; }
         public TruckiType TruckType { get; set; }
         public string TruckLicenseExpiryDate { get; set; }
         public string RoadWorthinessExpiryDate { get; set; }
         public string InsuranceExpiryDate { get; set; }
+        public string TruckNumber { get; set; }
+        public TruckStatus TruckStatus { get; set; }
+    }
+    public class TruckStatusCountResponseModel
+    {
+        public int EnRouteCount { get; set; }
+        public int AvailableCount { get; set; }
+        public int OutOfServiceCount { get; set; }
     }
 }

@@ -10,6 +10,7 @@ namespace trucki.Models.RequestModel
         public string TruckCapacity { get; set; }
         public string? DriverId { get; set; }
         //public string Capacity { get; set; }
+        public string TruckName { get; set; }
         public string TruckOwnerId { get; set; }
         public TruckiType TruckType { get; set; }
         public string TruckLicenseExpiryDate { get; set; }
@@ -26,6 +27,7 @@ namespace trucki.Models.RequestModel
         public string TruckCapacity { get; set; }
         public string? DriverId { get; set; }
         public string Capacity { get; set; }
+        public string? TruckName { get; set; }
         public string TruckOwnerId { get; set; }
         public TruckiType TruckType { get; set; }
         public string TruckLicenseExpiryDate { get; set; }

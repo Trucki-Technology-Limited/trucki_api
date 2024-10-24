@@ -50,7 +50,8 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Phone = model.Phone,
             Address = model.Address,
             BankDetailsId = bankDetails.Id, // Associate the new owner with the created bank details
-            BankDetails = bankDetails
+            BankDetails = bankDetails,
+            OwnersStatus = OwnersStatus.Pending
         };
 
         // Add owner to context and save changes
@@ -97,7 +98,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Address = owner.Address,
             IdCardUrl = owner.IdCardUrl,
             ProfilePictureUrl = owner.ProfilePictureUrl,
-            noOfTrucks = owner.trucks.Count.ToString(),  
+            noOfTrucks = owner.trucks.Count.ToString(),
             BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
             CreatedAt = owner.CreatedAt,
             UpdatedAt = owner.UpdatedAt
@@ -237,7 +238,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         // Add owner to context and save changes
         _context.TruckOwners.Add(newOwner);
          var res = await _authService.AddNewUserAsync(newOwner.Name, newOwner.EmailAddress,newOwner.Phone,
-            "transporter", model.password);
+            "transporter", model.password, true);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
@@ -265,5 +266,218 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             Data = true
         };
     }
+    public async Task<ApiResponseModel<TruckOwnerResponseModel>> GetTransporterProfileById(string transporterId)
+{
+    var owner = await _context.TruckOwners
+        .Include(e => e.User)
+        .Include(e => e.BankDetails)
+        .FirstOrDefaultAsync(d => d.UserId == transporterId);
+
+    if (owner == null)
+    {
+        return new ApiResponseModel<TruckOwnerResponseModel>
+        {
+            IsSuccessful = false,
+            Message = "Transporter not found",
+            StatusCode = 404
+        };
+    }
+
+    // Check if the account is approved
+    bool isAccountApproved = false;
+
+    // Check if profile is complete (you can adjust these conditions as needed)
+    bool isProfileSetupComplete = !string.IsNullOrEmpty(owner.ProfilePictureUrl)
+        && !string.IsNullOrEmpty(owner.IdCardUrl)
+        && owner.BankDetails != null;
+
+    // Map the response model
+    var mappedDriver = _mapper.Map<TruckOwnerResponseModel>(owner);
+
+    // Set the flags for profile completion and approval
+    mappedDriver.IsAccountApproved = isAccountApproved;
+    mappedDriver.IsProfileSetupComplete = isProfileSetupComplete;
+
+    return new ApiResponseModel<TruckOwnerResponseModel>
+    {
+        IsSuccessful = true,
+        Data = mappedDriver,
+        StatusCode = 200
+    };
+}
+
+public async Task<ApiResponseModel<bool>> ApproveTruckOwner(string truckOwnerId)
+{
+    var owner = await _context.TruckOwners.FindAsync(truckOwnerId);
+
+    if (owner == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Truck owner not found",
+            StatusCode = 404,
+            Data = false
+        };
+    }
+
+    owner.OwnersStatus = OwnersStatus.Approved;
+    await _context.SaveChangesAsync();
+
+    return new ApiResponseModel<bool>
+    {
+        IsSuccessful = true,
+        Message = "Truck owner approved successfully",
+        StatusCode = 200,
+        Data = true
+    };
+}
+
+public async Task<ApiResponseModel<bool>> NotApproveTruckOwner(string truckOwnerId)
+{
+    var owner = await _context.TruckOwners.FindAsync(truckOwnerId);
+
+    if (owner == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Truck owner not found",
+            StatusCode = 404,
+            Data = false
+        };
+    }
+
+    owner.OwnersStatus = OwnersStatus.NotApproved;
+    await _context.SaveChangesAsync();
+
+    return new ApiResponseModel<bool>
+    {
+        IsSuccessful = true,
+        Message = "Truck owner not approved",
+        StatusCode = 200,
+        Data = true
+    };
+}
+
+public async Task<ApiResponseModel<bool>> BlockTruckOwner(string truckOwnerId)
+{
+    var owner = await _context.TruckOwners.FindAsync(truckOwnerId);
+
+    if (owner == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Truck owner not found",
+            StatusCode = 404,
+            Data = false
+        };
+    }
+
+    owner.OwnersStatus = OwnersStatus.Blocked;
+    await _context.SaveChangesAsync();
+
+    return new ApiResponseModel<bool>
+    {
+        IsSuccessful = true,
+        Message = "Truck owner blocked successfully",
+        StatusCode = 200,
+        Data = true
+    };
+}
+
+public async Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId)
+{
+    var owner = await _context.TruckOwners.FindAsync(truckOwnerId);
+
+    if (owner == null)
+    {
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = false,
+            Message = "Truck owner not found",
+            StatusCode = 404,
+            Data = false
+        };
+    }
+
+    owner.OwnersStatus = OwnersStatus.Approved; // Assuming you want to unblock by setting status to Approved
+    await _context.SaveChangesAsync();
+
+    return new ApiResponseModel<bool>
+    {
+        IsSuccessful = true,
+        Message = "Truck owner unblocked successfully",
+        StatusCode = 200,
+        Data = true
+    };
+}
+
+ public async Task<ApiResponseModel<bool>> UploadIdCardAndProfilePicture(string truckOwnerId, string idCardUrl, string profilePictureUrl)
+    {
+        var owner = await _context.TruckOwners.FindAsync(truckOwnerId);
+        if (owner == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Truck owner not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        owner.IdCardUrl = idCardUrl;
+        owner.ProfilePictureUrl = profilePictureUrl;
+
+        _context.TruckOwners.Update(owner);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Documents uploaded successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> UpdateBankDetails(string truckOwnerId, UpdateBankDetailsRequestBody model)
+    {
+        var owner = await _context.TruckOwners.Include(o => o.BankDetails).FirstOrDefaultAsync(o => o.Id == truckOwnerId);
+        if (owner == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Truck owner not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Update bank details
+        if (owner.BankDetails == null)
+        {
+            owner.BankDetails = new BankDetails();
+        }
+
+        owner.BankDetails.BankName = model.BankName;
+        owner.BankDetails.BankAccountNumber = model.BankAccountNumber;
+        owner.BankDetails.BankAccountName = model.BankAccountName;
+
+        _context.BankDetails.Update(owner.BankDetails);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Bank details updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
     
 }
