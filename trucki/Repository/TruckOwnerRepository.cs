@@ -103,7 +103,8 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             IsProfileSetupComplete = owner.IdCardUrl != null && owner.ProfilePictureUrl != null,
             BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
             CreatedAt = owner.CreatedAt,
-            UpdatedAt = owner.UpdatedAt
+            UpdatedAt = owner.UpdatedAt,
+            OwnersStatus = owner.OwnersStatus
         };
 
         return new ApiResponseModel<TruckOwnerResponseModel>
