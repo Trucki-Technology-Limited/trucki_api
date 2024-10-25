@@ -169,38 +169,91 @@ public class AdminRepository : IAdminRepository
             { Data = stats, IsSuccessful = true, Message = "Dashboard data", StatusCode = 200 };
     }
 
-    public async Task<ApiResponseModel<OrderStatsResponse>> GetOrderStatistics()
+    public async Task<ApiResponseModel<OrderStatsResponse>> GetOrderStatistics(DateTime startDate, DateTime endDate)
+{
+    // Validate date range
+    if (startDate > endDate)
     {
-        // Total Completed Orders
-        var completedOrders = await _context.Orders
-            .CountAsync(o => o.OrderStatus == OrderStatus.Delivered);
-
-        // Total Flagged Orders
-        var flaggedOrders = await _context.Orders
-            .CountAsync(o => o.OrderStatus == OrderStatus.Flagged);
-
-        // Total Orders in Transit
-        var inTransitOrders = await _context.Orders
-            .CountAsync(o => o.OrderStatus == OrderStatus.InTransit);
-
-        //Total Number of Orders
-        var totalOrder = await _context.Orders
-            .CountAsync();
-
-        var stats = new OrderStatsResponse
-        {
-            CompletedOrders = completedOrders,
-            FlaggedOrders = flaggedOrders,
-            InTransitOrders = inTransitOrders,
-            TotalOrders = totalOrder
-        };
-
         return new ApiResponseModel<OrderStatsResponse>
         {
-            Data = stats,
-            IsSuccessful = true,
-            Message = "Order statistics",
-            StatusCode = 200
+            Data = null,
+            IsSuccessful = false,
+            Message = "Start date must be less than or equal to end date",
+            StatusCode = 400
         };
     }
+
+    // Filter orders within the date range
+    var orders = await _context.Orders
+        .Where(o => o.StartDate >= startDate && o.EndDate <= endDate)
+        .ToListAsync();
+
+    // Initialize dictionary to hold monthly data
+    Dictionary<string, (int completed, int flagged, int inTransit, int total)> monthlyData = new Dictionary<string, (int, int, int, int)>();
+
+    // Generate all months between the startDate and endDate
+    DateTime currentDate = new DateTime(startDate.Year, startDate.Month, 1);
+    DateTime endMonth = new DateTime(endDate.Year, endDate.Month, 1);
+
+    while (currentDate <= endMonth)
+    {
+        string monthName = currentDate.ToString("MMM yyyy"); // Use "MMM yyyy" for year inclusion
+        monthlyData[monthName] = (0, 0, 0, 0); // Initialize with zeros
+        currentDate = currentDate.AddMonths(1);
+    }
+
+    // Process orders and group by month
+    foreach (var order in orders)
+    {
+        string monthName = order.StartDate.ToString("MMM yyyy");
+
+        if (monthlyData.ContainsKey(monthName))
+        {
+            int completedCount = order.OrderStatus == OrderStatus.Delivered ? 1 : 0;
+            int flaggedCount = order.OrderStatus == OrderStatus.Flagged ? 1 : 0;
+            int inTransitCount = order.OrderStatus == OrderStatus.InTransit ? 1 : 0;
+
+            monthlyData[monthName] = (
+                completed: monthlyData[monthName].completed + completedCount,
+                flagged: monthlyData[monthName].flagged + flaggedCount,
+                inTransit: monthlyData[monthName].inTransit + inTransitCount,
+                total: monthlyData[monthName].total + 1 // Total orders
+            );
+        }
+    }
+
+    // Convert dictionary to list for chart data, ensuring it's in the correct order
+    var monthlyStats = monthlyData.Select(m => new MonthlyOrderStats
+    {
+        Month = m.Key,
+        CompletedOrders = m.Value.completed,
+        FlaggedOrders = m.Value.flagged,
+        InTransitOrders = m.Value.inTransit,
+        TotalOrders = m.Value.total
+    }).ToList();
+
+    // Calculate total stats for the entire range
+    var totalCompletedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+    var totalFlaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
+    var totalInTransitOrders = orders.Count(o => o.OrderStatus == OrderStatus.InTransit);
+    var totalOrders = orders.Count();
+
+    var stats = new OrderStatsResponse
+    {
+        CompletedOrders = totalCompletedOrders,
+        FlaggedOrders = totalFlaggedOrders,
+        InTransitOrders = totalInTransitOrders,
+        TotalOrders = totalOrders,
+        MonthlyData = monthlyStats // Add monthly data to response
+    };
+
+    return new ApiResponseModel<OrderStatsResponse>
+    {
+        Data = stats,
+        IsSuccessful = true,
+        Message = "Order statistics by month",
+        StatusCode = 200
+    };
+}
+
 }

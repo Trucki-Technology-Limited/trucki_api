@@ -31,18 +31,18 @@ namespace trucki.Models.ResponseModels
         public string RouteTo { get; set; }
         public string StartDate { get; set; }
         public string EndDate { get; set; }
-        public float? Price {  get; set; }
+        public float? Price { get; set; }
         public string Driver { get; set; }
-        
+
         public string Customer { get; set; }
-        
+
         public string DeliveryLocation { get; set; }
-        public List<string> Documents { get; set; } 
-        public List<string> DeliveryDocuments { get; set; } 
-        public string?  TruckOwnerName{ get; set; }
-        public string?  TruckOwnerBankName { get; set; }
-        public string?  TruckOwnerBankAccountNumber { get; set; }
-        public bool is60Paid { get; set; } 
+        public List<string> Documents { get; set; }
+        public List<string> DeliveryDocuments { get; set; }
+        public string? TruckOwnerName { get; set; }
+        public string? TruckOwnerBankName { get; set; }
+        public string? TruckOwnerBankAccountNumber { get; set; }
+        public bool is60Paid { get; set; }
         public bool is40Paid { get; set; }
         public DateTime CreatedAt { get; set; }
 
@@ -52,9 +52,19 @@ namespace trucki.Models.ResponseModels
         public int CompletedOrders { get; set; }
         public int FlaggedOrders { get; set; }
         public int InTransitOrders { get; set; }
-        public int TotalOrders { get; set;}
+        public int TotalOrders { get; set; }
+        public List<MonthlyOrderStats> MonthlyData { get; set; } // Monthly data breakdown
     }
-    
+
+
+    public class MonthlyOrderStats
+    {
+        public string Month { get; set; }
+        public int CompletedOrders { get; set; }
+        public int FlaggedOrders { get; set; }
+        public int InTransitOrders { get; set; }
+        public int TotalOrders { get; set; }
+    }
     public class OrderResponseModelForMobile
     {
         public string Id { get; set; }
@@ -73,18 +83,18 @@ namespace trucki.Models.ResponseModels
         public string RouteTo { get; set; }
         public string StartDate { get; set; }
         public string EndDate { get; set; }
-        public float? Price {  get; set; }
+        public float? Price { get; set; }
         public string Driver { get; set; }
-        
+
         public string Customer { get; set; }
-        
+
         public string DeliveryLocation { get; set; }
-        public List<string> Documents { get; set; } 
-        public List<string> DeliveryDocuments { get; set; } 
-        public string?  TruckOwnerName{ get; set; }
-        public string?  TruckOwnerBankName { get; set; }
-        public string?  TruckOwnerBankAccountNumber { get; set; }
-        public bool is60Paid { get; set; } 
+        public List<string> Documents { get; set; }
+        public List<string> DeliveryDocuments { get; set; }
+        public string? TruckOwnerName { get; set; }
+        public string? TruckOwnerBankName { get; set; }
+        public string? TruckOwnerBankAccountNumber { get; set; }
+        public bool is60Paid { get; set; }
         public bool is40Paid { get; set; }
         public DateTime CreatedAt { get; set; }
 

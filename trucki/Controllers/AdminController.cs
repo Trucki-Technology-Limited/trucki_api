@@ -45,9 +45,9 @@ namespace trucki.Controllers
         
         [HttpGet("GetOrderStatistics")]
         [Authorize(Roles = "admin,finance")]
-        public async Task<ActionResult<ApiResponseModel<OrderStatsResponse>>> GetOrderStatistics()
+        public async Task<ActionResult<ApiResponseModel<OrderStatsResponse>>> GetOrderStatistics(DateTime startDate, DateTime endDate)
         {
-            var response = await _adminService.GetOrderStatistics();
+            var response = await _adminService.GetOrderStatistics(startDate, endDate);
             return StatusCode(response.StatusCode, response);
         }
     }

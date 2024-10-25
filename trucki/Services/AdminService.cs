@@ -34,9 +34,10 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetTruckDashboardData(truckId);
         return res;
     }
-    public async Task<ApiResponseModel<OrderStatsResponse>> GetOrderStatistics()
+    public async Task<ApiResponseModel<OrderStatsResponse>> GetOrderStatistics(DateTime startDate,
+        DateTime endDate)
     {
-        var res = await _adminRepository.GetOrderStatistics();
+        var res = await _adminRepository.GetOrderStatistics(startDate, endDate);
         return res;
     }
 
