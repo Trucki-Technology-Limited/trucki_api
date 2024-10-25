@@ -11,7 +11,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class TruckRepository:ITruckRepository
+public class TruckRepository : ITruckRepository
 {
     private readonly TruckiDBContext _context;
     private readonly UserManager<User> _userManager;
@@ -30,8 +30,8 @@ public class TruckRepository:ITruckRepository
         _emailSender = emailSender;
         _userManager = userManager;
     }
-    
-    
+
+
     public async Task<ApiResponseModel<string>> AddNewTruck(AddTruckRequestModel model)
     {
         var existingTruck = await _context.Trucks.Where(x => x.PlateNumber == model.PlateNumber).FirstOrDefaultAsync();
@@ -69,13 +69,13 @@ public class TruckRepository:ITruckRepository
             TruckStatus = TruckStatus.Available,
             TruckOwner = truckOwner,
             TruckType = model.TruckType,
-            TruckName =model.TruckName,
+            TruckName = model.TruckName,
             TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
             RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
             InsuranceExpiryDate = model.InsuranceExpiryDate
         };
 
-        
+
 
         newTruck.Documents = model.Documents;
 
@@ -451,7 +451,7 @@ public class TruckRepository:ITruckRepository
         var trucksGroupedByStatus = await _context.Trucks
             .Where(x => x.TruckOwnerId == ownerId)
             .GroupBy(x => x.TruckStatus)
-            .Select(group => new 
+            .Select(group => new
             {
                 Status = group.Key,
                 Count = group.Count()
@@ -485,6 +485,39 @@ public class TruckRepository:ITruckRepository
             Message = "Truck status counts found",
             StatusCode = 200,
             Data = truckStatusCount
+        };
+    }
+    public async Task<ApiResponseModel<string>> UpdateApprovalStatusAsync(string truckId, ApprovalStatus approvalStatus)
+    {
+        var truck = await _context.Trucks.FindAsync(truckId);
+        if (truck == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Truck not found",
+                StatusCode = 404
+            };
+        }
+
+        truck.ApprovalStatus = approvalStatus;
+        _context.Trucks.Update(truck);
+        await _context.SaveChangesAsync();
+
+        string statusMessage = approvalStatus switch
+        {
+            ApprovalStatus.Approved => "Truck approved successfully",
+            ApprovalStatus.NotApproved => "Truck marked as not approved",
+            ApprovalStatus.Blocked => "Truck blocked successfully",
+            _ => "Status updated successfully"
+        };
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = statusMessage,
+            StatusCode = 200,
+            Data = truck.Id
         };
     }
 }

@@ -1,3 +1,4 @@
+using trucki.Entities;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 
@@ -16,4 +17,5 @@ public interface ITruckService
     Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model);
     Task<ApiResponseModel<List<AllTruckResponseModel>>> GetTrucksByOwnersId(string ownersId);
     Task<ApiResponseModel<TruckStatusCountResponseModel>> GetTruckStatusCountByOwnerId(string ownerId);
+    Task<ApiResponseModel<string>> UpdateApprovalStatusAsync(string truckId, ApprovalStatus approvalStatus);
 }

@@ -1,3 +1,4 @@
+using trucki.Entities;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
@@ -5,7 +6,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class TruckService: ITruckService
+public class TruckService : ITruckService
 {
     private readonly ITruckRepository _truckRepository;
     public TruckService(ITruckRepository truckRepository)
@@ -13,9 +14,9 @@ public class TruckService: ITruckService
         _truckRepository = truckRepository;
 
     }
-    
- 
-  
+
+
+
     public async Task<ApiResponseModel<string>> AddNewTruck(AddTruckRequestModel model)
     {
         var res = await _truckRepository.AddNewTruck(model);
@@ -70,8 +71,13 @@ public class TruckService: ITruckService
         var res = await _truckRepository.GetTrucksByOwnersId(ownersId);
         return res;
     }
-    public async Task<ApiResponseModel<TruckStatusCountResponseModel>> GetTruckStatusCountByOwnerId(string ownersId){
-         var res = await _truckRepository.GetTruckStatusCountByOwnerId(ownersId);
+    public async Task<ApiResponseModel<TruckStatusCountResponseModel>> GetTruckStatusCountByOwnerId(string ownersId)
+    {
+        var res = await _truckRepository.GetTruckStatusCountByOwnerId(ownersId);
         return res;
+    }
+    public async Task<ApiResponseModel<string>> UpdateApprovalStatusAsync(string truckId, ApprovalStatus approvalStatus)
+    {
+        return await _truckRepository.UpdateApprovalStatusAsync(truckId, approvalStatus);
     }
 }
