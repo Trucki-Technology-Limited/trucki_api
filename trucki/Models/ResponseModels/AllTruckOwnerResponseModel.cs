@@ -30,6 +30,7 @@ public class TruckOwnerResponseModel
 
     public bool IsProfileSetupComplete { set; get; }
     public bool IsAccountApproved { set; get; }
+    public bool HasBankDetails { set; get; }
     public BankDetailsResponseModel BankDetails { set; get; }
     
     public DateTime CreatedAt { get; set; }

@@ -287,12 +287,13 @@ public class TruckOwnerRepository:ITruckOwnerRepository
     }
 
     // Check if the account is approved
-    bool isAccountApproved = false;
+    bool isAccountApproved = owner.OwnersStatus == OwnersStatus.Approved;
 
     // Check if profile is complete (you can adjust these conditions as needed)
     bool isProfileSetupComplete = !string.IsNullOrEmpty(owner.ProfilePictureUrl)
-        && !string.IsNullOrEmpty(owner.IdCardUrl)
-        && owner.BankDetails != null;
+        && !string.IsNullOrEmpty(owner.IdCardUrl);
+
+    bool hasBankDetails = owner.BankDetails != null;
 
     // Map the response model
     var mappedDriver = _mapper.Map<TruckOwnerResponseModel>(owner);
@@ -300,6 +301,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
     // Set the flags for profile completion and approval
     mappedDriver.IsAccountApproved = isAccountApproved;
     mappedDriver.IsProfileSetupComplete = isProfileSetupComplete;
+    mappedDriver.HasBankDetails = hasBankDetails;
 
     return new ApiResponseModel<TruckOwnerResponseModel>
     {
