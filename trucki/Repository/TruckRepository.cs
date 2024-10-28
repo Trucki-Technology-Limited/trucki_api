@@ -466,18 +466,6 @@ public class TruckRepository : ITruckRepository
             OutOfServiceCount = trucksGroupedByStatus.FirstOrDefault(x => x.Status == TruckStatus.OutOfService)?.Count ?? 0
         };
 
-        // If no trucks found for the owner
-        if (!trucksGroupedByStatus.Any())
-        {
-            return new ApiResponseModel<TruckStatusCountResponseModel>
-            {
-                IsSuccessful = false,
-                Message = "No trucks found for this owner",
-                StatusCode = 404,
-                Data = truckStatusCount
-            };
-        }
-
         // Return successful response with truck status counts
         return new ApiResponseModel<TruckStatusCountResponseModel>
         {
