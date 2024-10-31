@@ -18,4 +18,5 @@ public interface IOrderService
     Task<ApiResponseModel<bool>> Pay60Percent(string orderId);
     Task<ApiResponseModel<OrderResponseModelForMobile>> GetOrderByIdForMobile(string orderId);
     Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model);
+    Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter);
 }

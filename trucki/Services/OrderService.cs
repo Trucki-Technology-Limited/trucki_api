@@ -6,7 +6,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class OrderService: IOrderService
+public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
     public OrderService(IOrderRepository orderRepository)
@@ -14,7 +14,7 @@ public class OrderService: IOrderService
         _orderRepository = orderRepository;
 
     }
-    
+
     public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
     {
         var res = await _orderRepository.CreateNewOrder(model);
@@ -56,7 +56,7 @@ public class OrderService: IOrderService
         var res = await _orderRepository.UploadDeliveryManifest(model);
         return res;
     }
-    
+
     public async Task<ApiResponseModel<bool>> Pay60Percent(string model)
     {
         var res = await _orderRepository.Pay60Percent(model);
@@ -72,9 +72,14 @@ public class OrderService: IOrderService
         var res = await _orderRepository.GetOrderByIdForMobile(orderId);
         return res;
     }
-     public async Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model)
+    public async Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model)
     {
         var res = await _orderRepository.AcceptOrderRequest(model);
         return res;
+    }
+
+    public async Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter)
+    {
+        return await _orderRepository.SearchOrders(filter);
     }
 }

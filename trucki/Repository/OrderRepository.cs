@@ -10,7 +10,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class OrderRepository:IOrderRepository
+public class OrderRepository : IOrderRepository
 {
     private readonly TruckiDBContext _context;
     private readonly IMapper _mapper;
@@ -28,13 +28,13 @@ public class OrderRepository:IOrderRepository
         _emailSender = emailSender;
 
     }
-        public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
+    public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
     {
         string orderId = GenerateOrderId();
         var business = await _context.Businesses.Where(x => x.Id == model.CompanyId).FirstOrDefaultAsync();
         if (business == null)
             return new ApiResponseModel<string>
-                { IsSuccessful = false, Message = "Business not found or Inactive", StatusCode = 400 };
+            { IsSuccessful = false, Message = "Business not found or Inactive", StatusCode = 400 };
 
         var order = new Order
         {
@@ -322,7 +322,7 @@ public class OrderRepository:IOrderRepository
             Data = orderResponseModel
         };
     }
-    
+
     public async Task<ApiResponseModel<OrderResponseModelForMobile>> GetOrderByIdForMobile(string orderId)
     {
         var order = await _context.Orders
@@ -391,7 +391,7 @@ public class OrderRepository:IOrderRepository
         string randomNumber = random.Next(1000, 9999).ToString(); // Generate a random 4-digit number
         return "TR" + randomNumber;
     }
-    
+
     public async Task<ApiResponseModel<bool>> UploadOrderManifest(UploadOrderManifestRequestModel model)
     {
         var order = await _context.Orders.FindAsync(model.orderId);
@@ -431,7 +431,7 @@ public class OrderRepository:IOrderRepository
         // }
 
         // 3. Upload to Cloudinary and Get URLs
-    
+
 
         // 4. Update Order
         if (order.Documents == null)
@@ -456,7 +456,7 @@ public class OrderRepository:IOrderRepository
             StatusCode = 200,
         };
     }
-       public async Task<ApiResponseModel<bool>> Pay60Percent(string orderId)
+    public async Task<ApiResponseModel<bool>> Pay60Percent(string orderId)
     {
         var order = await _context.Orders.Include(e => e.Business).Include(a => a.Truck).Where(e => e.Id == orderId).FirstOrDefaultAsync();
         if (order == null)
@@ -479,9 +479,9 @@ public class OrderRepository:IOrderRepository
         };
 
         _context.Transactions.Add(transaction);
-        
-            order.is60Paid = true;
-            order.OrderStatus = OrderStatus.InTransit;
+
+        order.is60Paid = true;
+        order.OrderStatus = OrderStatus.InTransit;
 
         await _context.SaveChangesAsync();
 
@@ -504,7 +504,7 @@ public class OrderRepository:IOrderRepository
                 StatusCode = 404
             };
         }
-        
+
         var transaction = new Transaction
         {
             OrderId = orderId,
@@ -528,7 +528,7 @@ public class OrderRepository:IOrderRepository
             StatusCode = 200,
         };
     }
-       public async Task<ApiResponseModel<bool>> UploadDeliveryManifest(UploadOrderManifestRequestModel model)
+    public async Task<ApiResponseModel<bool>> UploadDeliveryManifest(UploadOrderManifestRequestModel model)
     {
         var order = await _context.Orders.FindAsync(model.orderId);
         if (order == null)
@@ -551,9 +551,9 @@ public class OrderRepository:IOrderRepository
                 StatusCode = 400
             };
         }
-        
+
         // 3. Upload to Cloudinary and Get URLs
-     
+
         // 4. Update Order
         // 4. Update Order
         if (order.Documents == null)
@@ -579,68 +579,100 @@ public class OrderRepository:IOrderRepository
         };
     }
     public async Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model)
-{
-    // Find the order by the provided orderId
-    var order = await _context.Orders.Include(o => o.Truck).FirstOrDefaultAsync(o => o.Id == model.orderId);
-    
-    if (order == null)
     {
+        // Find the order by the provided orderId
+        var order = await _context.Orders.Include(o => o.Truck).FirstOrDefaultAsync(o => o.Id == model.orderId);
+
+        if (order == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Order not found",
+                StatusCode = 404
+            };
+        }
+
+        // Check if the order has a truck assigned
+        if (order.Truck == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "No truck assigned to this order",
+                StatusCode = 400
+            };
+        }
+
+        // Check if the driverId matches the driver assigned to the truck (assuming Truck has a DriverId)
+        if (order.Truck.DriverId != model.driverId)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "This driver is not assigned to the truck for this order",
+                StatusCode = 400
+            };
+        }
+
+        // If the driver is assigned to the truck, update the order status
+        if (model.status == "accepted")
+        {
+            order.OrderStatus = OrderStatus.Accepted;
+        }
+        else if (model.status == "declined")
+        {
+            order.OrderStatus = OrderStatus.Declined;
+        }
+        else
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Invalid status update",
+                StatusCode = 400
+            };
+        }
+
+        // Save changes to the database
+        await _context.SaveChangesAsync();
+
         return new ApiResponseModel<bool>
         {
-            IsSuccessful = false,
-            Message = "Order not found",
-            StatusCode = 404
+            IsSuccessful = true,
+            Message = "Order status updated successfully",
+            StatusCode = 200,
         };
     }
 
-    // Check if the order has a truck assigned
-    if (order.Truck == null)
-    {
-        return new ApiResponseModel<bool>
+     public async Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter)
         {
-            IsSuccessful = false,
-            Message = "No truck assigned to this order",
-            StatusCode = 400
-        };
-    }
+            var query = _context.Orders.AsQueryable();
 
-    // Check if the driverId matches the driver assigned to the truck (assuming Truck has a DriverId)
-    if (order.Truck.DriverId != model.driverId)
-    {
-        return new ApiResponseModel<bool>
-        {
-            IsSuccessful = false,
-            Message = "This driver is not assigned to the truck for this order",
-            StatusCode = 400
-        };
-    }
+            if (filter.StartDate.HasValue && filter.EndDate.HasValue)
+                query = query.Where(o => o.StartDate >= filter.StartDate && o.EndDate <= filter.EndDate);
+            
+            if (!string.IsNullOrEmpty(filter.TruckNo))
+                query = query.Where(o => o.TruckNo == filter.TruckNo);
+            
+            if (filter.Status.HasValue)
+                query = query.Where(o => o.OrderStatus == filter.Status);
 
-    // If the driver is assigned to the truck, update the order status
-    if (model.status == "accepted")
-    {
-        order.OrderStatus = OrderStatus.Accepted;
-    }else if(model.status == "declined"){
-        order.OrderStatus = OrderStatus.Declined;
-    }
-    else
-    {
-        return new ApiResponseModel<bool>
-        {
-            IsSuccessful = false,
-            Message = "Invalid status update",
-            StatusCode = 400
-        };
-    }
+            if (!string.IsNullOrEmpty(filter.Quantity))
+                query = query.Where(o => o.Quantity == filter.Quantity);
 
-    // Save changes to the database
-    await _context.SaveChangesAsync();
+            if (filter.CreatedAt.HasValue)
+                query = query.Where(o => o.CreatedAt.Date == filter.CreatedAt.Value.Date);
 
-    return new ApiResponseModel<bool>
-    {
-        IsSuccessful = true,
-        Message = "Order status updated successfully",
-        StatusCode = 200,
-    };
-}
+            var orders = await query.ToListAsync();
+
+            return new ApiResponseModel<List<Order>>
+            {
+                IsSuccessful = true,
+                Message = "Orders retrieved successfully",
+                StatusCode = 200,
+                Data = orders
+            };
+        }
 
 }

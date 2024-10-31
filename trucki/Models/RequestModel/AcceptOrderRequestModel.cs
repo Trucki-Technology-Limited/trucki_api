@@ -1,3 +1,5 @@
+using trucki.Entities;
+
 namespace trucki.Models.RequestModel;
 
 public class AcceptOrderRequestModel
@@ -6,3 +8,13 @@ public class AcceptOrderRequestModel
     public string driverId { get; set; }
     public string status { get; set; }
 }
+
+ public class SearchOrderRequestModel
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? TruckNo { get; set; }
+        public OrderStatus? Status { get; set; }
+        public string? Quantity { get; set; }
+        public DateTime? CreatedAt { get; set; }
+    }

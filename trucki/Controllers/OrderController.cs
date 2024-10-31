@@ -8,7 +8,7 @@ using trucki.Models.ResponseModels;
 namespace trucki.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class OrderController: ControllerBase
+public class OrderController : ControllerBase
 {
     private readonly IOrderService _orderService;
 
@@ -16,7 +16,7 @@ public class OrderController: ControllerBase
     {
         _orderService = orderService;
     }
-    
+
     [HttpPost("CreateOrder")]
     [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOrder([FromBody] CreateOrderRequestModel model)
@@ -46,7 +46,7 @@ public class OrderController: ControllerBase
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
     {
         var response = await _orderService.GetAllOrders();
-        return StatusCode(response.StatusCode, response);   
+        return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetOrderById")]
     [Authorize(Roles = "admin,manager,finance,driver,chiefmanager")]
@@ -55,10 +55,10 @@ public class OrderController: ControllerBase
         var response = await _orderService.GetOrderById(orderId);
         return StatusCode(response.StatusCode, response);
     }
-     
+
     [HttpPost("UploadOrderDocuments")]
     [Authorize(Roles = "manager,field officer,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromBody]UploadOrderManifestRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromBody] UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadOrderManifest(model);
         return StatusCode(response.StatusCode, response);
@@ -68,11 +68,11 @@ public class OrderController: ControllerBase
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetOrdersByStatus([FromQuery] OrderStatus status)
     {
         var response = await _orderService.GetOrdersByStatus(status);
-        return StatusCode(response.StatusCode, response);   
+        return StatusCode(response.StatusCode, response);
     }
     [HttpPost("uploadDeliveryManifest")]
     [Authorize(Roles = "manager,field officer,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadDeliveryManifest([FromBody]UploadOrderManifestRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadDeliveryManifest([FromBody] UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadDeliveryManifest(model);
         return StatusCode(response.StatusCode, response);
@@ -82,14 +82,14 @@ public class OrderController: ControllerBase
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> Pay40Percent([FromBody] string status)
     {
         var response = await _orderService.Pay40Percent(status);
-        return StatusCode(response.StatusCode, response);   
+        return StatusCode(response.StatusCode, response);
     }
     [HttpPost("pay60Percent")]
     [Authorize(Roles = "finance")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> Pay60Percent([FromBody] string status)
     {
         var response = await _orderService.Pay60Percent(status);
-        return StatusCode(response.StatusCode, response);   
+        return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetOrderByIdForMobile")]
     [Authorize(Roles = "driver")]
@@ -98,11 +98,18 @@ public class OrderController: ControllerBase
         var response = await _orderService.GetOrderByIdForMobile(orderId);
         return StatusCode(response.StatusCode, response);
     }
-      [HttpPost("AcceptOrderRequest")]
+    [HttpPost("AcceptOrderRequest")]
     [Authorize(Roles = "driver")]
-    public async Task<ActionResult<ApiResponseModel<bool>>> AcceptOrderRequest([FromBody]AcceptOrderRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<bool>>> AcceptOrderRequest([FromBody] AcceptOrderRequestModel model)
     {
         var response = await _orderService.AcceptOrderRequest(model);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpPost("SearchOrders")]
+    [Authorize(Roles = "manager,field officer,chiefmanager")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> SearchOrders([FromBody] SearchOrderRequestModel model)
+    {
+        var response = await _orderService.SearchOrders(model);
         return StatusCode(response.StatusCode, response);
     }
 }
