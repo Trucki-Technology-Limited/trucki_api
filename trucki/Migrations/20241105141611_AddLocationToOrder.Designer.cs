@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241105141611_AddLocationToOrder")]
+    partial class AddLocationToOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -493,12 +495,6 @@ namespace trucki.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FromRouteLat")
-                        .HasColumnType("text");
-
-                    b.Property<string>("FromRouteLng")
-                        .HasColumnType("text");
-
                     b.Property<float>("Gtv")
                         .HasColumnType("real");
 
@@ -518,12 +514,6 @@ namespace trucki.Migrations
 
                     b.Property<string>("ToRoute")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ToRouteLat")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ToRouteLng")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")

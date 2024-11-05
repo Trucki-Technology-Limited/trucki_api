@@ -16,6 +16,9 @@ namespace trucki.Models.ResponseModels
         public AllCustomerResponseModel Customer { get; set; }
         public AllBusinessResponseModel? Business { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? DeliveryLocationLat { get; set; }
+        public string? DeliveryLocationLong { get; set; }
+        public string? Consignment { get; set; }
     }
 
     public class OrderResponseModel
@@ -45,6 +48,9 @@ namespace trucki.Models.ResponseModels
         public bool is60Paid { get; set; }
         public bool is40Paid { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? DeliveryLocationLat { get; set; }
+        public string? DeliveryLocationLong { get; set; }
+        public string? Consignment { get; set; }
 
     }
     public class OrderStatsResponse
@@ -97,6 +103,9 @@ namespace trucki.Models.ResponseModels
         public bool is60Paid { get; set; }
         public bool is40Paid { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? DeliveryLocationLat { get; set; }
+        public string? DeliveryLocationLong { get; set; }
+        public string? Consignment { get; set; }
 
     }
 }

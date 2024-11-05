@@ -16,9 +16,9 @@
         public string? TruckId { get; set; }
         public Truck? Truck { get; set; }
         public string? BusinessId { get; set; }
-        public Business? Business { get; set; } 
+        public Business? Business { get; set; }
         public string? RoutesId { get; set; }
-        public Routes? Routes { get; set; }    
+        public Routes? Routes { get; set; }
         public string? ManagerId { get; set; }
         public Manager? Manager { get; set; }
         public string? CustomerId { get; set; }
@@ -26,8 +26,11 @@
         public string? DeliveryAddress { get; set; }
         public bool is60Paid { get; set; } = false;
         public bool is40Paid { get; set; } = false;
-        public List<string>? Documents { get; set; } = new(); 
-        public List<string>? DeliveryDocuments { get; set; } = new(); 
+        public List<string>? Documents { get; set; } = new();
+        public List<string>? DeliveryDocuments { get; set; } = new();
+        public string? DeliveryLocationLat { get; set; }
+        public string? DeliveryLocationLong { get; set; }
+        public string? Consignment { get; set; }
     }
 
     public enum OrderStatus

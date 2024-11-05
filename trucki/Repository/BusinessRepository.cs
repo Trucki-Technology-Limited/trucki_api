@@ -95,7 +95,11 @@ public class BusinessRepository : IBusinessRepository
                 Ntons = i.Ntons,
                 Price = i.Price,
                 IsActive = i.IsActive,
-                Gtv = i.Gtv
+                Gtv = i.Gtv,
+                FromRouteLat = i.FromRouteLat,
+                FromRouteLng = i.FromRouteLng,
+                ToRouteLat = i.ToRouteLat,
+                ToRouteLng = i.ToRouteLng
             };
 
             // Add the route to the business

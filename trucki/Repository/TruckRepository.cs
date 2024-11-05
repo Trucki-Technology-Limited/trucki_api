@@ -281,7 +281,10 @@ public class TruckRepository : ITruckRepository
             if (truck.DriverId != null)
             {
                 var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
-                truck.DriverName = driver.Name;
+                if (driver != null)
+                {
+                    truck.DriverName = driver.Name;
+                }
             }
 
             if (truck.TruckOwnerId != null)

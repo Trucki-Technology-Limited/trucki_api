@@ -36,6 +36,18 @@ public class OrderRepository : IOrderRepository
             return new ApiResponseModel<string>
             { IsSuccessful = false, Message = "Business not found or Inactive", StatusCode = 400 };
 
+
+        var routes = await _context.RoutesEnumerable.Where(x => x.Id == model.RouteId).FirstOrDefaultAsync();
+        if (routes == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Route not found",
+                StatusCode = 404
+            };
+        }
+
         var order = new Order
         {
             OrderId = orderId,
@@ -46,7 +58,18 @@ public class OrderRepository : IOrderRepository
             OrderStatus = OrderStatus.Pending,
             CreatedAt = DateTime.Now
         };
+        string startDate = model.StartDate;
+        order.RoutesId = routes.Id;
 
+        order.Price = routes.Gtv;
+
+        order.CustomerId = model.CustomerId;
+        order.StartDate = DateTime.Parse(startDate);
+        order.EndDate = DateTime.Parse(startDate).AddHours(24);
+        order.DeliveryAddress = model.DeliveryAddress;
+        order.DeliveryLocationLat = model.DeliveryLocationLat;
+        order.DeliveryLocationLong = model.DeliveryLocationLong;
+        order.Consignment = model.Consignment;
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
 
@@ -72,16 +95,7 @@ public class OrderRepository : IOrderRepository
             };
         }
 
-        var routes = await _context.RoutesEnumerable.Where(x => x.Id == model.RouteId).FirstOrDefaultAsync();
-        if (routes == null)
-        {
-            return new ApiResponseModel<string>
-            {
-                IsSuccessful = false,
-                Message = "Route not found",
-                StatusCode = 404
-            };
-        }
+
         var truck = await _context.Trucks.Where(x => x.Id == model.TruckId).FirstOrDefaultAsync();
         if (truck == null)
         {
@@ -92,18 +106,8 @@ public class OrderRepository : IOrderRepository
                 StatusCode = 404
             };
         }
-
-        string startDate = model.StartDate;
-        order.RoutesId = routes.Id;
         order.TruckId = model.TruckId;
         order.Truck = truck;
-
-        order.Price = routes.Gtv;
-
-        order.CustomerId = model.CustomerId;
-        order.StartDate = DateTime.Parse(startDate);
-        order.EndDate = DateTime.Parse(startDate).AddHours(24);
-        order.DeliveryAddress = model.DeliveryAddress;
         order.OrderStatus = OrderStatus.Assigned;
         // var emailSubject = "Order Created";
         // await _emailSender.SendOrderEmailAsync(newManager.EmailAddress, emailSubject, password);
@@ -185,6 +189,9 @@ public class OrderRepository : IOrderRepository
                 Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
                 Customer = _mapper.Map<AllCustomerResponseModel>(order.Customer),
+                Consignment = order.Consignment,
+                DeliveryLocationLat = order.DeliveryLocationLat,
+                DeliveryLocationLong = order.DeliveryLocationLong,
                 CreatedAt = order.CreatedAt,
             });
 
@@ -243,6 +250,9 @@ public class OrderRepository : IOrderRepository
                 OrderStatus = order.OrderStatus,
                 Routes = _mapper.Map<RouteResponseModel>(order.Routes),
                 Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
+                Consignment = order.Consignment,
+                DeliveryLocationLat = order.DeliveryLocationLat,
+                DeliveryLocationLong = order.DeliveryLocationLong,
                 CreatedAt = order.CreatedAt
             });
 
@@ -311,7 +321,10 @@ public class OrderRepository : IOrderRepository
             TruckOwnerBankName = order.Truck?.TruckOwner?.BankDetails?.BankName ?? "",
             TruckOwnerBankAccountNumber = order.Truck?.TruckOwner?.BankDetails?.BankAccountNumber ?? "",
             is60Paid = order.is60Paid,
-            is40Paid = order.is40Paid
+            is40Paid = order.is40Paid,
+            Consignment = order.Consignment,
+            DeliveryLocationLat = order.DeliveryLocationLat,
+            DeliveryLocationLong = order.DeliveryLocationLong,
         };
 
         return new ApiResponseModel<OrderResponseModel>
@@ -373,7 +386,10 @@ public class OrderRepository : IOrderRepository
             TruckOwnerBankName = order.Truck?.TruckOwner?.BankDetails?.BankName ?? "",
             TruckOwnerBankAccountNumber = order.Truck?.TruckOwner?.BankDetails?.BankAccountNumber ?? "",
             is60Paid = order.is60Paid,
-            is40Paid = order.is40Paid
+            is40Paid = order.is40Paid,
+            Consignment = order.Consignment,
+            DeliveryLocationLat = order.DeliveryLocationLat,
+            DeliveryLocationLong = order.DeliveryLocationLong,
         };
 
         return new ApiResponseModel<OrderResponseModelForMobile>
@@ -645,34 +661,42 @@ public class OrderRepository : IOrderRepository
         };
     }
 
-     public async Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter)
+    public async Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter)
+    {
+        // Start with a base query
+        var query = _context.Orders.Include(o => o.Truck).AsQueryable();
+
+        // Filter by start and end date if both are provided
+        if (filter.StartDate.HasValue && filter.EndDate.HasValue)
+            query = query.Where(o => o.StartDate >= filter.StartDate && o.EndDate <= filter.EndDate);
+
+        // Filter by truck plate number if provided
+        if (!string.IsNullOrEmpty(filter.TruckNo))
+            query = query.Where(o => o.Truck != null && o.Truck.PlateNumber == filter.TruckNo);
+
+        // Filter by status if provided
+        if (filter.Status.HasValue)
+            query = query.Where(o => o.OrderStatus == filter.Status);
+
+        // Filter by quantity if provided
+        if (!string.IsNullOrEmpty(filter.Quantity))
+            query = query.Where(o => o.Quantity == filter.Quantity);
+
+        // Filter by created date if provided
+        if (filter.CreatedAt.HasValue)
+            query = query.Where(o => o.CreatedAt.Date == filter.CreatedAt.Value.Date);
+
+        // Execute the query and get the results
+        var orders = await query.ToListAsync();
+
+        return new ApiResponseModel<List<Order>>
         {
-            var query = _context.Orders.AsQueryable();
+            IsSuccessful = true,
+            Message = "Orders retrieved successfully",
+            StatusCode = 200,
+            Data = orders
+        };
+    }
 
-            if (filter.StartDate.HasValue && filter.EndDate.HasValue)
-                query = query.Where(o => o.StartDate >= filter.StartDate && o.EndDate <= filter.EndDate);
-            
-            if (!string.IsNullOrEmpty(filter.TruckNo))
-                query = query.Where(o => o.TruckNo == filter.TruckNo);
-            
-            if (filter.Status.HasValue)
-                query = query.Where(o => o.OrderStatus == filter.Status);
-
-            if (!string.IsNullOrEmpty(filter.Quantity))
-                query = query.Where(o => o.Quantity == filter.Quantity);
-
-            if (filter.CreatedAt.HasValue)
-                query = query.Where(o => o.CreatedAt.Date == filter.CreatedAt.Value.Date);
-
-            var orders = await query.ToListAsync();
-
-            return new ApiResponseModel<List<Order>>
-            {
-                IsSuccessful = true,
-                Message = "Orders retrieved successfully",
-                StatusCode = 200,
-                Data = orders
-            };
-        }
 
 }
