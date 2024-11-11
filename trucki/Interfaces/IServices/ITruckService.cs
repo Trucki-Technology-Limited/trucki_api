@@ -11,7 +11,7 @@ public interface ITruckService
     Task<ApiResponseModel<string>> DeleteTruck(string truckId);
     Task<ApiResponseModel<AllTruckResponseModel>> GetTruckById(string truckId);
     Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruck(string? searchWords);
-    Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks();
+    Task<ApiResponseModel<List<AllTruckResponseModel>>> GetAllTrucks();
     Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId);
     Task<ApiResponseModel<bool>> AssignDriverToTruck(AssignDriverToTruckRequestModel model);
     Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model);

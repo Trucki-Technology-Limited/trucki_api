@@ -260,13 +260,17 @@ public class TruckRepository : ITruckRepository
         };
     }
 
-    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks()
+    public async Task<ApiResponseModel<List<AllTruckResponseModel>>> GetAllTrucks()
     {
-        var trucks = await _context.Trucks.ToListAsync();
+
+        var trucks = await _context.Trucks
+           .Include(t => t.Driver)
+           .Include(t => t.TruckOwner)
+           .ToListAsync();
 
         if (!trucks.Any())
         {
-            return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+            return new ApiResponseModel<List<AllTruckResponseModel>>
             {
                 Data = new List<AllTruckResponseModel> { },
                 IsSuccessful = false,
@@ -275,27 +279,36 @@ public class TruckRepository : ITruckRepository
             };
         }
 
-        var data = _mapper.Map<IEnumerable<AllTruckResponseModel>>(trucks);
-        foreach (var truck in data)
-        {
-            if (truck.DriverId != null)
-            {
-                var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
-                if (driver != null)
-                {
-                    truck.DriverName = driver.Name;
-                }
-            }
+        var data = new List<AllTruckResponseModel>();
 
-            if (truck.TruckOwnerId != null)
+        foreach (var truck in trucks)
+        {
+            // Manually map each Truck to AllTruckResponseModel
+            var responseModel = new AllTruckResponseModel
             {
-                var truckOwner =
-                    await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
-                truck.TruckOwnerName = truckOwner.Name; // Check for null before accessing Name
-            }
+                Id = truck.Id,
+                Documents = truck.Documents ?? new List<string>(), // Ensure Documents is not null
+                PlateNumber = truck.PlateNumber,
+                TruckCapacity = truck.TruckCapacity,
+                DriverId = truck.DriverId,
+                DriverName = truck.Driver?.Name, // Handle null Driver
+                Capacity = truck.TruckCapacity,
+                TruckOwnerId = truck.TruckOwnerId,
+                TruckOwnerName = truck.TruckOwner?.Name, // Handle null TruckOwner
+                TruckName = truck.TruckName,
+                TruckType = truck.TruckType,
+                TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
+                RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
+                InsuranceExpiryDate = truck.InsuranceExpiryDate,
+                TruckNumber = truck.TruckiNumber,
+                TruckStatus = truck.TruckStatus
+            };
+
+            data.Add(responseModel);
         }
 
-        return new ApiResponseModel<IEnumerable<AllTruckResponseModel>>
+
+        return new ApiResponseModel<List<AllTruckResponseModel>>
         {
             Data = data,
             IsSuccessful = true,
@@ -303,6 +316,7 @@ public class TruckRepository : ITruckRepository
             StatusCode = 200,
         };
     }
+
 
     public async Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId)
     {

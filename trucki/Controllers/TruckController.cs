@@ -55,7 +55,7 @@ public class TruckController : ControllerBase
     }
     [HttpGet("GetAllTrucks")]
     [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckResponseModel>>>> GetAllTrucks()
+    public async Task<ActionResult<ApiResponseModel<List<AllTruckResponseModel>>>> GetAllTrucks()
     {
         var response = await _truckService.GetAllTrucks();
         return StatusCode(response.StatusCode, response);

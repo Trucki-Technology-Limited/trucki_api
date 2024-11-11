@@ -43,7 +43,7 @@ public class TruckService : ITruckService
         return res;
     }
 
-    public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> GetAllTrucks()
+    public async Task<ApiResponseModel<List<AllTruckResponseModel>>> GetAllTrucks()
     {
         var res = await _truckRepository.GetAllTrucks();
         return res;
