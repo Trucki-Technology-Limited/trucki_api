@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Entities;
@@ -45,7 +46,17 @@ public class OrderController : ControllerBase
     [Authorize(Roles = "admin,manager,field officer,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
     {
-        var response = await _orderService.GetAllOrders();
+
+        var roles = User.Claims
+                      .Where(c => c.Type == ClaimTypes.Role)
+                      .Select(c => c.Value)
+                      .ToList();
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var response = await _orderService.GetAllOrders(roles, userId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetOrderById")]

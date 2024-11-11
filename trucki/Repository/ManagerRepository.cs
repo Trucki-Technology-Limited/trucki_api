@@ -12,7 +12,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class ManagerRepository: IManagerRepository
+public class ManagerRepository : IManagerRepository
 {
     private readonly TruckiDBContext _context;
     private readonly UserManager<User> _userManager;
@@ -31,7 +31,7 @@ public class ManagerRepository: IManagerRepository
         _emailSender = emailSender;
         _userManager = userManager;
     }
-        public async Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model)
+    public async Task<ApiResponseModel<string>> AddManager(AddManagerRequestModel model)
     {
         var existingManager = await _context.Managers
             .FirstOrDefaultAsync(m => m.EmailAddress == model.EmailAddress || m.Phone == model.Phone);
@@ -79,7 +79,7 @@ public class ManagerRepository: IManagerRepository
 
         _context.Managers.Add(newManager);
         var password = HelperClass.GenerateRandomPassword();
-        var res = await _authService.AddNewUserAsync(newManager.Name, newManager.EmailAddress,newManager.Phone,
+        var res = await _authService.AddNewUserAsync(newManager.Name, newManager.EmailAddress, newManager.Phone,
             newManager.ManagerType == 0 ? "manager" : "finance", password, false);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
@@ -129,7 +129,9 @@ public class ManagerRepository: IManagerRepository
         if (manager == null)
             return new ApiResponseModel<AllManagerResponseModel>
             {
-                Data = new AllManagerResponseModel { }, IsSuccessful = false, Message = "No manager found",
+                Data = new AllManagerResponseModel { },
+                IsSuccessful = false,
+                Message = "No manager found",
                 StatusCode = 404
             };
 
@@ -192,7 +194,7 @@ public class ManagerRepository: IManagerRepository
         var orders = await _context.Orders
             .Where(o => o.ManagerId == managerId)
             .ToListAsync();
-    
+
         // Set ManagerId to null in all orders
         foreach (var order in orders)
         {
@@ -201,14 +203,14 @@ public class ManagerRepository: IManagerRepository
         }
         // Get attached businesses
         var businesses = manager.Company.ToList();
-        
+
         // Remove manager from businesses
         foreach (var business in businesses)
         {
             business.Manager = null;
             business.managerId = null;
         }
-        
+
         if (manager.UserId != null)
         {
             var user = await _userManager.FindByIdAsync(manager.UserId);
@@ -219,9 +221,9 @@ public class ManagerRepository: IManagerRepository
         }
         // Remove manager
         _context.Managers.Remove(manager);
-        
+
         await _context.SaveChangesAsync();
-        
+
         return new ApiResponseModel<bool>
         {
             IsSuccessful = true,
@@ -265,7 +267,7 @@ public class ManagerRepository: IManagerRepository
             StatusCode = 200,
         };
     }
-    
+
 
 
     public async Task<string> GetManagerIdAsync(string? userId)
@@ -291,22 +293,79 @@ public class ManagerRepository: IManagerRepository
 
         return ManagerId;
     }
-    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
+    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(List<string> userRoles,
+string userId)
     {
-        var orders = await _context.Orders
-            .Include(o => o.Manager)
-            .Where(o => o.ManagerId == managerId)
-            .ToListAsync();
+
+        // Determine if the user has high-level roles
+        bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+        bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
+
+
+        // Initialize the query for orders
+        IQueryable<Order> ordersQuery = _context.Orders
+            .Include(o => o.Routes);
+
+        if (isManager || isFieldOfficer)
+        {
+            // Map userId to ManagerId
+            var manager = await _context.Managers
+                .FirstOrDefaultAsync(m => m.UserId == userId && m.IsActive);
+
+            if (manager == null)
+            {
+                return new ApiResponseModel<ManagerDashboardData>
+                {
+                    Data = null,
+                    IsSuccessful = false,
+                    Message = "Manager not found for the given user.",
+                    StatusCode = 404
+                };
+            }
+
+            // Retrieve Business IDs managed by this manager
+            var managedBusinessIds = await _context.Businesses
+                .Where(b => b.managerId == manager.Id && b.isActive)
+                .Select(b => b.Id)
+                .ToListAsync();
+
+            if (managedBusinessIds == null || !managedBusinessIds.Any())
+            {
+                // No businesses managed by this manager
+                return new ApiResponseModel<ManagerDashboardData>
+                {
+                    Data = new ManagerDashboardData
+                    {
+                        CompletedOrders = 0,
+                        FlaggedOrders = 0,
+                        InTransitOrders = 0,
+                        TotalOrder = 0
+                    },
+                    IsSuccessful = true,
+                    Message = "No businesses managed by this manager.",
+                    StatusCode = 200
+                };
+            }
+
+            // Filter orders based on managed businesses
+            ordersQuery = ordersQuery.Where(o => managedBusinessIds.Contains(o.BusinessId));
+        }
+        // Else, if user is Chief Manager or Finance, retrieve all orders within date range (no additional filter)
+
+        // Execute the query
+        List<Order> orders = await ordersQuery.ToListAsync();
 
         int completedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
         int flaggedOrders = orders.Count(o => o.OrderStatus == OrderStatus.Flagged);
-        decimal totalOrderPrice = orders.Sum(o => decimal.Parse(o.Routes?.Price.ToString() ?? "0"));
+        int inTransitCount = orders.Count(o => o.OrderStatus == OrderStatus.InTransit);
+        int totalOrder = orders.Count;
 
         var stats = new ManagerDashboardData
         {
             CompletedOrders = completedOrders,
             FlaggedOrders = flaggedOrders,
-            TotalOrderPrice = totalOrderPrice
+            InTransitOrders = inTransitCount,
+            TotalOrder = totalOrder
         };
 
         return new ApiResponseModel<ManagerDashboardData>
@@ -317,7 +376,7 @@ public class ManagerRepository: IManagerRepository
             StatusCode = 200
         };
     }
-    
+
     public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(string userId)
     {
         var manager = await _context.Managers.Include(e => e.Company).Where(e => e.UserId == userId).FirstOrDefaultAsync();
@@ -338,7 +397,7 @@ public class ManagerRepository: IManagerRepository
 
         // Retrieve transactions that belong to those businesses
         var transactions = _context.Transactions
-            .Where(t => managedBusinesses.Contains(t.BusinessId)) 
+            .Where(t => managedBusinesses.Contains(t.BusinessId))
             .Include(t => t.Order)
             .Include(t => t.Truck).ThenInclude(e => e.TruckOwner)
             .Include(t => t.Business) // If you want to include the Business details
@@ -354,9 +413,9 @@ public class ManagerRepository: IManagerRepository
             OrderStatus = t.Order.OrderStatus,
             BusinessId = t.Business.Id,
             BusinessName = t.Business.Name,
-            truckOwner =t.Truck.TruckOwner.Name,
+            truckOwner = t.Truck.TruckOwner.Name,
             TruckId = t.Truck?.Id, // Use null-conditional operator to handle potential null
-            TruckNo = t.Truck?.PlateNumber 
+            TruckNo = t.Truck?.PlateNumber
         }).ToList();
         return new ApiResponseModel<List<TransactionResponseModel>>
         {
@@ -386,7 +445,7 @@ public class ManagerRepository: IManagerRepository
 
         // Retrieve transactions that belong to those businesses
         var transactions = await _context.Transactions
-            .Where(t => managedBusinesses.Contains(t.BusinessId)) 
+            .Where(t => managedBusinesses.Contains(t.BusinessId))
             .Include(t => t.Order)
             .ThenInclude(o => o.Routes) // This will now include the Routes for each Order
             .ToListAsync();
@@ -415,8 +474,8 @@ public class ManagerRepository: IManagerRepository
             StatusCode = 200
         };
     }
-    
-      public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByFinancialManager(string userId)
+
+    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByFinancialManager(string userId)
     {
         var manager = await _context.Managers.Include(e => e.Company).Where(e => e.UserId == userId).FirstOrDefaultAsync();
         if (manager == null)
@@ -451,9 +510,9 @@ public class ManagerRepository: IManagerRepository
             OrderStatus = t.Order.OrderStatus,
             BusinessId = t.Business.Id,
             BusinessName = t.Business.Name,
-            truckOwner =t.Truck.TruckOwner.Name,
+            truckOwner = t.Truck.TruckOwner.Name,
             TruckId = t.Truck?.Id, // Use null-conditional operator to handle potential null
-            TruckNo = t.Truck?.PlateNumber 
+            TruckNo = t.Truck?.PlateNumber
         }).ToList();
         return new ApiResponseModel<List<TransactionResponseModel>>
         {
@@ -511,6 +570,143 @@ public class ManagerRepository: IManagerRepository
             StatusCode = 200
         };
     }
-    
+
+    public async Task<ApiResponseModel<GtvDashboardSummary>> GetManagerGtvDashBoardSummary(DateTime startDate, DateTime endDate, List<string> userRoles,
+string userId)
+    {
+        // validate startDate and endDate
+        if (startDate > endDate)
+        {
+            return new ApiResponseModel<GtvDashboardSummary>
+            {
+                Data = null,
+                IsSuccessful = false,
+                Message = "Start date must be less than or equal to end date",
+                StatusCode = 400
+            };
+        }
+
+        // Determine if the user has high-level roles
+        bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+        bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
+
+
+        // Initialize the query for orders
+        IQueryable<Order> ordersQuery = _context.Orders
+            .Include(o => o.Routes)
+            .Where(o => o.OrderStatus == OrderStatus.Delivered)
+            .Where(o => o.StartDate >= startDate && o.EndDate <= endDate);
+
+        if (isManager || isFieldOfficer)
+        {
+            // Map userId to ManagerId
+            var manager = await _context.Managers
+                .FirstOrDefaultAsync(m => m.UserId == userId && m.IsActive);
+
+            if (manager == null)
+            {
+                return new ApiResponseModel<GtvDashboardSummary>
+                {
+                    Data = null,
+                    IsSuccessful = false,
+                    Message = "Manager not found for the given user.",
+                    StatusCode = 404
+                };
+            }
+
+            // Retrieve Business IDs managed by this manager
+            var managedBusinessIds = await _context.Businesses
+                .Where(b => b.managerId == manager.Id && b.isActive)
+                .Select(b => b.Id)
+                .ToListAsync();
+
+            if (managedBusinessIds == null || !managedBusinessIds.Any())
+            {
+                // No businesses managed by this manager
+                return new ApiResponseModel<GtvDashboardSummary>
+                {
+                    Data = new GtvDashboardSummary
+                    {
+                        TotalGtv = 0,
+                        TotalRevenue = 0,
+                        TotalPayout = 0,
+                        MonthlyData = new List<LineChartEntry>()
+                    },
+                    IsSuccessful = true,
+                    Message = "No businesses managed by this manager.",
+                    StatusCode = 200
+                };
+            }
+
+            // Filter orders based on managed businesses
+            ordersQuery = ordersQuery.Where(o => managedBusinessIds.Contains(o.BusinessId));
+        }
+        // Else, if user is Chief Manager or Finance, retrieve all orders within date range (no additional filter)
+
+        // Execute the query
+        List<Order> orders = await ordersQuery.ToListAsync();
+
+        // Initialize dictionary to hold monthly data
+        Dictionary<string, (float income, float revenue, float payout)> monthlyData = new Dictionary<string, (float, float, float)>();
+
+        // Generate all months between the startDate and endDate
+        DateTime currentDate = new DateTime(startDate.Year, startDate.Month, 1);
+        DateTime endMonth = new DateTime(endDate.Year, endDate.Month, 1);
+
+        while (currentDate <= endMonth)
+        {
+            string monthName = currentDate.ToString("MMM");
+            monthlyData[monthName] = (0, 0, 0); // Initialize with zeros for income, revenue, and payout
+            currentDate = currentDate.AddMonths(1); // Move to the next month
+        }
+
+        // Process orders and group by month
+        foreach (var order in orders)
+        {
+            string monthName = order.StartDate.ToString("MMM"); // Get short month name
+
+            if (monthlyData.ContainsKey(monthName))
+            {
+                float orderGtv = order.Routes?.Gtv ?? 0;
+                float orderRevenue = order.Routes?.Price ?? 0;
+
+                monthlyData[monthName] = (
+                    income: monthlyData[monthName].income + orderGtv,
+                    revenue: orderGtv - monthlyData[monthName].revenue + orderRevenue,
+                    payout: monthlyData[monthName].payout + orderRevenue
+                );
+            }
+        }
+
+        // Convert dictionary to list for chart data, ensuring it's in the correct order
+        var chartData = monthlyData.Select(m => new LineChartEntry
+        {
+            Name = m.Key,
+            Income = m.Value.income,
+            Revenue = m.Value.revenue,
+            Payout = m.Value.payout
+        }).ToList();
+
+        // Calculate total GTV, revenue, and payout
+        var totalGtv = orders.Sum(o => o.Routes != null ? o.Routes.Gtv : 0);
+        var totalPrice = orders.Sum(o => o.Routes != null ? o.Routes.Price : 0);
+        var totalIncome = orders.Sum(o => (o.Routes != null ? o.Routes.Gtv : 0) - (o.Routes != null ? o.Routes.Price : 0));
+
+        var summary = new GtvDashboardSummary
+        {
+            TotalGtv = totalGtv,
+            TotalRevenue = totalIncome,
+            TotalPayout = totalPrice,
+            MonthlyData = chartData
+        };
+
+        return new ApiResponseModel<GtvDashboardSummary>
+        {
+            Data = summary,
+            IsSuccessful = true,
+            Message = "Dashboard data",
+            StatusCode = 200
+        };
+    }
 
 }

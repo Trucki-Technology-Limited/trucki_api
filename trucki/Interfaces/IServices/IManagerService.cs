@@ -11,10 +11,13 @@ public interface IManagerService
     Task<ApiResponseModel<bool>> DeactivateManager(string managerId);
     Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager();
     Task<string> GetManagerIdAsync(string? userId);
-    Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId);
+   Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(List<string> userRoles,
+string userId);
     Task<ApiResponseModel<AllManagerResponseModel>> GetManagerById(string id);
     Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(string userId);
     Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(string userId);
     Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByFinancialManager(string userId);
     Task<ApiResponseModel<TransactionSummaryResponseModel>> GetFinancialTransactionSummaryResponseModel(string userId);
+      Task<ApiResponseModel<GtvDashboardSummary>> GetManagerGtvDashBoardSummary(DateTime startDate, DateTime endDate, List<string> userRoles,
+string userId);
 }

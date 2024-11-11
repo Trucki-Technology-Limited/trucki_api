@@ -155,17 +155,67 @@ public class OrderRepository : IOrderRepository
         };
     }
 
-    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders()
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders(List<string> userRoles,
+string userId)
     {
         try
         {
-            var ordersWithDetails = await _context.Orders
+            // Determine if the user has high-level roles
+            bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+            bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
+
+            // Initialize the query for orders
+            IQueryable<Order> ordersQuery = _context.Orders
                 .Include(o => o.Business)
                 .Include(o => o.Manager)
                 .Include(o => o.Truck)
                 .Include(o => o.Routes)
                 .Include(o => o.Customer)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (isManager || isFieldOfficer)
+            {
+                // Map userId to ManagerId
+                var manager = await _context.Managers
+                    .FirstOrDefaultAsync(m => m.UserId == userId && m.IsActive);
+
+                if (manager == null)
+                {
+                    return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+                    {
+                        Data = null,
+                        IsSuccessful = false,
+                        Message = "Manager not found for the given user.",
+                        StatusCode = 404
+                    };
+                }
+
+                // Retrieve Business IDs managed by this manager
+                var managedBusinessIds = await _context.Businesses
+                    .Where(b => b.managerId == manager.Id && b.isActive)
+                    .Select(b => b.Id)
+                    .ToListAsync();
+
+                if (managedBusinessIds == null || !managedBusinessIds.Any())
+                {
+                    // No businesses managed by this manager
+                    return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+                    {
+                        Data = new List<AllOrderResponseModel>(),
+                        IsSuccessful = true,
+                        Message = "No businesses managed by this manager.",
+                        StatusCode = 200
+                    };
+                }
+
+                // Filter orders based on managed businesses
+                ordersQuery = ordersQuery.Where(o => managedBusinessIds.Contains(o.BusinessId));
+            }
+            // Else, if user is Chief Manager or Finance, retrieve all orders (no additional filter)
+
+            // Execute the query
+            List<Order> ordersWithDetails = await ordersQuery.ToListAsync();
+
             if (ordersWithDetails == null || !ordersWithDetails.Any())
             {
                 return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>

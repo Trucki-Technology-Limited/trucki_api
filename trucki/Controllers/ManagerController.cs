@@ -8,7 +8,7 @@ using trucki.Models.ResponseModels;
 namespace trucki.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class ManagerController: ControllerBase
+public class ManagerController : ControllerBase
 {
     private readonly IManagerService _managerService;
 
@@ -16,7 +16,7 @@ public class ManagerController: ControllerBase
     {
         _managerService = managerService;
     }
-    
+
     [HttpPost("AddManager")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<bool>>> AddManager([FromBody] AddManagerRequestModel model)
@@ -64,10 +64,19 @@ public class ManagerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetManagerDashboardData")]
-    [Authorize(Roles = "manager,finance,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<TruckDahsBoardData>>> GetManagerDashboardSummary(string managerId)
+    [Authorize(Roles = "manager,finance,chiefmanager,field officer")]
+    public async Task<ActionResult<ApiResponseModel<ManagerDashboardData>>> GetManagerDashboardSummary()
     {
-        var response = await _managerService.GetManagerDashboardData(managerId);
+        var roles = User.Claims
+                      .Where(c => c.Type == ClaimTypes.Role)
+                      .Select(c => c.Value)
+                      .ToList();
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var response = await _managerService.GetManagerDashboardData(roles, userId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionsByManager")]
@@ -116,6 +125,22 @@ public class ManagerController: ControllerBase
             return Unauthorized();
         }
         var response = await _managerService.GetFinancialTransactionSummaryResponseModel(userId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetManagerGtvDashBoardSummary")]
+    [Authorize(Roles = "manager,finance,chiefmanager,field officer")]
+    public async Task<ActionResult<ApiResponseModel<GtvDashboardSummary>>> GetManagerGtvDashBoardSummary(DateTime startDate, DateTime endDate)
+    {
+        var roles = User.Claims
+                       .Where(c => c.Type == ClaimTypes.Role)
+                       .Select(c => c.Value)
+                       .ToList();
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var response = await _managerService.GetManagerGtvDashBoardSummary(startDate, endDate, roles, userId);
         return StatusCode(response.StatusCode, response);
     }
 

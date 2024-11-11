@@ -31,9 +31,10 @@ public class OrderService : IOrderService
         return res;
     }
 
-    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders()
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders(List<string> userRoles,
+string userId)
     {
-        var res = await _orderRepository.GetAllOrders();
+        var res = await _orderRepository.GetAllOrders(userRoles, userId);
         return res;
     }
     public async Task<ApiResponseModel<OrderResponseModel>> GetOrderById(string orderId)

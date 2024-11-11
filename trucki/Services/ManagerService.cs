@@ -5,7 +5,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class ManagerService: IManagerService
+public class ManagerService : IManagerService
 {
     private readonly IManagerRepository _managerRepository;
     public ManagerService(IManagerRepository managerRepository)
@@ -18,7 +18,7 @@ public class ManagerService: IManagerService
         var res = await _managerRepository.AddManager(model);
         return res;
     }
-     
+
     public async Task<ApiResponseModel<List<AllManagerResponseModel>>> GetAllManager()
     {
         var responseModel = await _managerRepository.GetAllManager();
@@ -26,7 +26,9 @@ public class ManagerService: IManagerService
         {
             return new ApiResponseModel<List<AllManagerResponseModel>>
             {
-                IsSuccessful = responseModel.IsSuccessful, Message = responseModel.Message, StatusCode = responseModel.StatusCode,
+                IsSuccessful = responseModel.IsSuccessful,
+                Message = responseModel.Message,
+                StatusCode = responseModel.StatusCode,
                 Data = responseModel.Data
             };
         }
@@ -64,9 +66,10 @@ public class ManagerService: IManagerService
         var res = await _managerRepository.GetManagerIdAsync(userId);
         return res;
     }
-    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(string managerId)
+    public async Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(List<string> userRoles,
+string userId)
     {
-        var res = await _managerRepository.GetManagerDashboardData(managerId);
+        var res = await _managerRepository.GetManagerDashboardData(userRoles, userId);
         return res;
     }
 
@@ -88,6 +91,12 @@ public class ManagerService: IManagerService
     public async Task<ApiResponseModel<TransactionSummaryResponseModel>> GetFinancialTransactionSummaryResponseModel(string userId)
     {
         var res = await _managerRepository.GetFinancialTransactionSummaryResponseModel(userId);
+        return res;
+    }
+    public async Task<ApiResponseModel<GtvDashboardSummary>> GetManagerGtvDashBoardSummary(DateTime startDate, DateTime endDate, List<string> userRoles,
+string userId)
+    {
+        var res = await _managerRepository.GetManagerGtvDashBoardSummary(startDate, endDate, userRoles, userId);
         return res;
     }
 }
