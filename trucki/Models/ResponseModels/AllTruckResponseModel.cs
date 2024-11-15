@@ -21,6 +21,7 @@ namespace trucki.Models.ResponseModels
         public string InsuranceExpiryDate { get; set; }
         public string TruckNumber { get; set; }
         public TruckStatus TruckStatus { get; set; }
+         public DateTime CreatedAt { get; set; }
     }
     public class TruckStatusCountResponseModel
     {

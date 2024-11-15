@@ -212,7 +212,8 @@ public class TruckRepository : ITruckRepository
             TruckType = truck.TruckType,
             TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
             RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
-            InsuranceExpiryDate = truck.InsuranceExpiryDate
+            InsuranceExpiryDate = truck.InsuranceExpiryDate,
+            CreatedAt = truck.CreatedAt
         };
 
         return new ApiResponseModel<AllTruckResponseModel>
@@ -301,7 +302,8 @@ public class TruckRepository : ITruckRepository
                 RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
                 InsuranceExpiryDate = truck.InsuranceExpiryDate,
                 TruckNumber = truck.TruckiNumber,
-                TruckStatus = truck.TruckStatus
+                TruckStatus = truck.TruckStatus,
+                CreatedAt = truck.CreatedAt
             };
 
             data.Add(responseModel);
@@ -448,7 +450,8 @@ public class TruckRepository : ITruckRepository
                 TruckType = truck.TruckType,
                 TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
                 RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
-                InsuranceExpiryDate = truck.InsuranceExpiryDate
+                InsuranceExpiryDate = truck.InsuranceExpiryDate,
+                CreatedAt = truck.CreatedAt
             };
 
             truckResponses.Add(truckToReturn);
