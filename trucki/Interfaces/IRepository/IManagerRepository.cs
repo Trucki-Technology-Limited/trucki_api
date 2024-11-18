@@ -20,4 +20,5 @@ string userId);
     Task<ApiResponseModel<TransactionSummaryResponseModel>> GetFinancialTransactionSummaryResponseModel(string userId);
     Task<ApiResponseModel<GtvDashboardSummary>> GetManagerGtvDashBoardSummary(DateTime startDate, DateTime endDate, List<string> userRoles,
 string userId);
+    Task<ApiResponseModel<string>> EditAssignedBusinesses(EditAssignedBusinessesRequestModel model);
 }

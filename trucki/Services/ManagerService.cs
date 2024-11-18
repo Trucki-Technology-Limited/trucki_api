@@ -99,4 +99,8 @@ string userId)
         var res = await _managerRepository.GetManagerGtvDashBoardSummary(startDate, endDate, userRoles, userId);
         return res;
     }
+     public async Task<ApiResponseModel<string>> EditAssignedBusinesses(EditAssignedBusinessesRequestModel model)
+    {
+        return await _managerRepository.EditAssignedBusinesses(model);
+    }
 }

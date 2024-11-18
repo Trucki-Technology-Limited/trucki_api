@@ -143,5 +143,18 @@ public class ManagerController : ControllerBase
         var response = await _managerService.GetManagerGtvDashBoardSummary(startDate, endDate, roles, userId);
         return StatusCode(response.StatusCode, response);
     }
+    [HttpPut("EditAssignedBusinesses")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> EditAssignedBusinesses([FromBody] EditAssignedBusinessesRequestModel model)
+    {
+        var response = await _managerService.EditAssignedBusinesses(model);
+
+        if (response.IsSuccessful)
+        {
+            return Ok(response);
+        }
+
+        return StatusCode(response.StatusCode, response);
+    }
 
 }

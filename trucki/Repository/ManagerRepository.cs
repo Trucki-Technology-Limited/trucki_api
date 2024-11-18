@@ -708,5 +708,51 @@ string userId)
             StatusCode = 200
         };
     }
+    public async Task<ApiResponseModel<string>> EditAssignedBusinesses(EditAssignedBusinessesRequestModel model)
+    {
+        var manager = await _context.Managers
+            .Include(m => m.Company)
+            .FirstOrDefaultAsync(m => m.Id == model.ManagerId);
+
+        if (manager == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Manager not found",
+                StatusCode = 404 // Not Found
+            };
+        }
+
+        // Step 1: Clear existing businesses and update manager reference in Business entities
+        foreach (var business in manager.Company)
+        {
+            business.managerId = null; // Remove manager reference
+            business.Manager = null;
+        }
+        manager.Company.Clear();
+
+        // Step 2: Assign new businesses to the manager and update the Business entity
+        foreach (var companyId in model.CompanyIds)
+        {
+            var business = await _context.Businesses.FindAsync(companyId);
+            if (business != null)
+            {
+                business.managerId = model.ManagerId.ToString(); // Update manager reference
+                business.Manager = manager;
+                manager.Company.Add(business);
+            }
+        }
+
+        // Step 3: Save changes
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = "Businesses updated successfully",
+            StatusCode = 200 // OK
+        };
+    }
 
 }

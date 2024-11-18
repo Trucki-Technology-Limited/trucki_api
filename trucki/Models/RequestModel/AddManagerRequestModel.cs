@@ -10,3 +10,9 @@ public class AddManagerRequestModel
     public List<string> CompanyId { get; set; }
     public ManagerType ManagerType { get; set; }
 }
+
+public class EditAssignedBusinessesRequestModel
+{
+    public string ManagerId { get; set; } // Manager's ID
+    public List<string> CompanyIds { get; set; } // List of business IDs
+}
