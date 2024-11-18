@@ -30,7 +30,7 @@ public class BusinessRepository : IBusinessRepository
         _emailSender = emailSender;
         _userManager = userManager;
     }
-     public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
+    public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
     {
         var newBusiness = new Business
         {
@@ -295,7 +295,8 @@ public class BusinessRepository : IBusinessRepository
     public async Task<ApiResponseModel<bool>> EditRoute(EditRouteRequestModel model)
     {
         // Retrieve the route to be edited
-        var route = await _context.RoutesEnumerable.FindAsync(model.Id);
+        var route = await _context.RoutesEnumerable
+            .FirstOrDefaultAsync(r => r.Id == model.Id);
 
         if (route == null)
         {
@@ -311,7 +312,11 @@ public class BusinessRepository : IBusinessRepository
         // Update route properties
         route.Name = model.Name;
         route.FromRoute = model.FromRoute;
+        route.FromRouteLat = model.FromRouteLat;
+        route.FromRouteLng = model.FromRouteLng;
         route.ToRoute = model.ToRoute;
+        route.ToRouteLat = model.ToRouteLat;
+        route.ToRouteLng = model.ToRouteLng;
         route.Ntons = model.Ntons;
         route.Price = model.Price;
         route.IsActive = model.IsActive;
