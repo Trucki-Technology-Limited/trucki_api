@@ -96,7 +96,7 @@ public class BusinessController : ControllerBase
         var response = await _businessService.DeleteRoute(routeId);
         return StatusCode(response.StatusCode, response);
     }
-    
+
     [HttpGet("SearchBusinesses")]
     [Authorize(Roles = "admin,manager,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllManagerResponseModel>>>> SearchBusinesses(string searchWords)
@@ -109,6 +109,13 @@ public class BusinessController : ControllerBase
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> GetRoutesByBusinessId(string businessId)
     {
         var response = await _businessService.GetRoutesByBusinessId(businessId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetBusinessGtvDashboardSummary")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult<ApiResponseModel<BusinessGtvDashboardSummary>>> GetBusinessGtvDashboardSummary(DateTime startDate, DateTime endDate, string businessId)
+    {
+        var response = await _businessService.GetBusinessGtvDashboardSummary(startDate, endDate, businessId);
         return StatusCode(response.StatusCode, response);
     }
 

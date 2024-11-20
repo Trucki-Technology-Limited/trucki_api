@@ -1,5 +1,18 @@
 ﻿namespace trucki.Models.ResponseModels
 {
+      public class BusinessGtvDashboardSummary
+    {
+        public float TotalGtv { get; set; }
+        public float TotalPayout { get; set; }
+        public float TotalRevenue { get; set; }
+        public int CompletedOrders { get; set; }
+        public int PendingOrders { get; set; }
+        public int InTransitOrders { get; set; }
+        public int TotalOrders { get; set; }
+        public int TotalCustomers { get; set; }
+  
+        public List<LineChartEntry> MonthlyData { get; set; }
+    }
     public class GtvDashboardSummary
     {
         public float TotalGtv { get; set; }

@@ -5,7 +5,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class BusinessService: IBusinessService
+public class BusinessService : IBusinessService
 {
     private readonly IBusinessRepository _businessRepository;
 
@@ -14,7 +14,7 @@ public class BusinessService: IBusinessService
         _businessRepository = businessRepository;
 
     }
-        public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
+    public async Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel model)
     {
         var createBusiness = await _businessRepository.CreateNewBusiness(model);
         if (createBusiness.IsSuccessful)
@@ -30,7 +30,9 @@ public class BusinessService: IBusinessService
         {
             return new ApiResponseModel<List<AllBusinessResponseModel>>
             {
-                IsSuccessful = getBusinesses.IsSuccessful, Message = getBusinesses.Message, StatusCode = getBusinesses.StatusCode,
+                IsSuccessful = getBusinesses.IsSuccessful,
+                Message = getBusinesses.Message,
+                StatusCode = getBusinesses.StatusCode,
                 Data = getBusinesses.Data
             };
         }
@@ -52,7 +54,9 @@ public class BusinessService: IBusinessService
         {
             return new ApiResponseModel<BusinessResponseModel>
             {
-                IsSuccessful = getBusiness.IsSuccessful, Message = getBusiness.Message, StatusCode = getBusiness.StatusCode,
+                IsSuccessful = getBusiness.IsSuccessful,
+                Message = getBusiness.Message,
+                StatusCode = getBusiness.StatusCode,
                 Data = getBusiness.Data
             };
         }
@@ -103,5 +107,10 @@ public class BusinessService: IBusinessService
         var res = await _businessRepository.GetRoutesByBusinessId(businessId);
         return res;
     }
-    
+    public async Task<ApiResponseModel<BusinessGtvDashboardSummary>> GetBusinessGtvDashboardSummary(DateTime startDate, DateTime endDate, string businessId)
+    {
+        var res = await _businessRepository.GetBusinessGtvDashboardSummary(startDate, endDate, businessId);
+        return res;
+    }
+
 }

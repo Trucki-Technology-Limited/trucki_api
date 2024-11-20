@@ -17,4 +17,6 @@ public interface IBusinessService
     Task<ApiResponseModel<bool>> DeleteRoute(string id);
     Task<ApiResponseModel<IEnumerable<AllBusinessResponseModel>>> SearchBusinesses(string searchWords);
     Task<ApiResponseModel<List<RouteResponseModel>>> GetRoutesByBusinessId(string businessId);
+    Task<ApiResponseModel<BusinessGtvDashboardSummary>> GetBusinessGtvDashboardSummary(
+DateTime startDate, DateTime endDate, string businessId);
 }
