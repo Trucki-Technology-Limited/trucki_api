@@ -26,7 +26,7 @@ public class BusinessController : ControllerBase
     }
 
     [HttpGet("GetAllBusiness")]
-    [Authorize(Roles = "admin,manager,chiefmanager")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
     {
         var business = await _businessService.GetAllBusiness();
