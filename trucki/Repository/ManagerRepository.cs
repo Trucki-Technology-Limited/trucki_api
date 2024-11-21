@@ -450,7 +450,7 @@ string userId)
             OrderStatus = t.Order.OrderStatus,
             BusinessId = t.Business.Id,
             BusinessName = t.Business.Name,
-            truckOwner = t.Truck.TruckOwner.Name,
+            truckOwner = t.Truck?.TruckOwner?.Name,
             TruckId = t.Truck?.Id, // Use null-conditional operator to handle potential null
             TruckNo = t.Truck?.PlateNumber
         }).ToList();

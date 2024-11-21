@@ -10,7 +10,7 @@ public class TransactionResponseModel
     public decimal Amount { get; set; }
 
     // Order Details
-    public string OrderId { get; set; }
+    public string? OrderId { get; set; }
     public string CargoType { get; set; } 
     public string Quantity { get; set; }
     public DateTime StartDate { get; set; }
@@ -18,9 +18,9 @@ public class TransactionResponseModel
     public OrderStatus OrderStatus { get; set; }
 
     // Business Details
-    public string BusinessId { get; set; }
-    public string BusinessName { get; set; }
-    public string truckOwner { get; set; }
+    public string? BusinessId { get; set; }
+    public string? BusinessName { get; set; }
+    public string? truckOwner { get; set; }
 
     // Truck Details (Optional, include if relevant)
     public string? TruckId { get; set; }
