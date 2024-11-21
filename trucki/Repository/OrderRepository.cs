@@ -211,6 +211,44 @@ string userId)
                 // Filter orders based on managed businesses
                 ordersQuery = ordersQuery.Where(o => managedBusinessIds.Contains(o.BusinessId));
             }
+            if (isFieldOfficer)
+            {
+                // Map userId to ManagerId
+                var officer = await _context.Officers
+                    .FirstOrDefaultAsync(m => m.Id == userId);
+
+                if (officer == null)
+                {
+                    return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+                    {
+                        Data = null,
+                        IsSuccessful = false,
+                        Message = "officer not found for the given user.",
+                        StatusCode = 404
+                    };
+                }
+
+                // Retrieve Business IDs managed by this manager
+                var managedBusinessIds = await _context.Businesses
+                    .Where(b => b.Id == officer.CompanyId && b.isActive)
+                    .Select(b => b.Id)
+                    .ToListAsync();
+
+                if (managedBusinessIds == null || !managedBusinessIds.Any())
+                {
+                    // No businesses managed by this manager
+                    return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
+                    {
+                        Data = new List<AllOrderResponseModel>(),
+                        IsSuccessful = true,
+                        Message = "No businesses managed by this manager.",
+                        StatusCode = 200
+                    };
+                }
+
+                // Filter orders based on managed businesses
+                ordersQuery = ordersQuery.Where(o => managedBusinessIds.Contains(o.BusinessId));
+            }
             // Else, if user is Chief Manager or Finance, retrieve all orders (no additional filter)
 
             // Execute the query
