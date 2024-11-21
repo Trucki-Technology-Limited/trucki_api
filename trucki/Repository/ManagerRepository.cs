@@ -377,27 +377,64 @@ string userId)
         };
     }
 
-    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(string userId)
+    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(List<string> userRoles, string userId)
     {
-        var manager = await _context.Managers.Include(e => e.Company).Where(e => e.UserId == userId).FirstOrDefaultAsync();
-        if (manager == null)
+        bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+        bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
+
+        List<string> businessIds = new List<string>();
+
+        if (isManager)
         {
-            return new ApiResponseModel<List<TransactionResponseModel>>
+            // Get the manager
+            var manager = await _context.Managers.Include(e => e.Company).FirstOrDefaultAsync(e => e.UserId == userId);
+            if (manager == null)
             {
-                IsSuccessful = false,
-                Message = "Manager not found",
-                StatusCode = 404 // Not Found
-            };
+                return new ApiResponseModel<List<TransactionResponseModel>>
+                {
+                    IsSuccessful = false,
+                    Message = "Manager not found",
+                    StatusCode = 404 // Not Found
+                };
+            }
+
+            // Get the businesses managed by this manager
+            businessIds = await _context.Businesses
+                .Where(b => b.managerId == manager.Id)
+                .Select(b => b.Id)
+                .ToListAsync();
         }
-        // Get the businesses managed by this manager
-        var managedBusinesses = await _context.Businesses
-            .Where(b => b.managerId == manager.Id)
-            .Select(b => b.Id) // Get only the business IDs
-            .ToListAsync();
+        else if (isFieldOfficer)
+        {
+            // Get the officer
+            var officer = await _context.Officers.FirstOrDefaultAsync(e => e.UserId == userId);
+            if (officer == null)
+            {
+                return new ApiResponseModel<List<TransactionResponseModel>>
+                {
+                    IsSuccessful = false,
+                    Message = "Officer not found",
+                    StatusCode = 404 // Not Found
+                };
+            }
+
+            // Get the businesses under the officer's company
+            businessIds = await _context.Businesses
+                .Where(b => b.Id == officer.CompanyId)
+                .Select(b => b.Id)
+                .ToListAsync();
+        }
+        else
+        {
+            // If the user has no specific roles, fetch all businesses
+            businessIds = await _context.Businesses
+                .Select(b => b.Id)
+                .ToListAsync();
+        }
 
         // Retrieve transactions that belong to those businesses
         var transactions = _context.Transactions
-            .Where(t => managedBusinesses.Contains(t.BusinessId))
+            .Where(t => businessIds.Contains(t.BusinessId))
             .Include(t => t.Order)
             .Include(t => t.Truck).ThenInclude(e => e.TruckOwner)
             .Include(t => t.Business) // If you want to include the Business details

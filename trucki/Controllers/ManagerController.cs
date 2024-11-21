@@ -83,12 +83,16 @@ public class ManagerController : ControllerBase
     [Authorize(Roles = "manager,finance,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<List<TransactionResponseModel>>>> GetTransactionsByManager()
     {
+        var roles = User.Claims
+                      .Where(c => c.Type == ClaimTypes.Role)
+                      .Select(c => c.Value)
+                      .ToList();
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
-        var response = await _managerService.GetTransactionsByManager(userId);
+        var response = await _managerService.GetTransactionsByManager(roles, userId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionSummaryResponseModel")]

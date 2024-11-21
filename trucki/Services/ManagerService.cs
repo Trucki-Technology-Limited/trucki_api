@@ -73,9 +73,9 @@ string userId)
         return res;
     }
 
-    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(string userId)
+    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(List<string> userRoles,string userId)
     {
-        var res = await _managerRepository.GetTransactionsByManager(userId);
+        var res = await _managerRepository.GetTransactionsByManager(userRoles,userId);
         return res;
     }
     public async Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(string userId)

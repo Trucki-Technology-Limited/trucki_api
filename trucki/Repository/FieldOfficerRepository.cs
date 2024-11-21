@@ -12,7 +12,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class FieldOfficerRepository:IFieldOfficerRepository
+public class FieldOfficerRepository : IFieldOfficerRepository
 {
     private readonly TruckiDBContext _context;
     private readonly UserManager<User> _userManager;
@@ -31,7 +31,7 @@ public class FieldOfficerRepository:IFieldOfficerRepository
         _emailSender = emailSender;
         _userManager = userManager;
     }
-    
+
 
     public async Task<ApiResponseModel<string>> AddOfficer(AddOfficerRequestModel model)
     {
@@ -72,13 +72,15 @@ public class FieldOfficerRepository:IFieldOfficerRepository
 
         var password = HelperClass.GenerateRandomPassword();
         var res = await _authService.AddNewUserAsync(newOfficer.OfficerName,
-            newOfficer.EmailAddress, newOfficer.PhoneNumber,newOfficer.OfficerType == 0 ? "field officer" : "safety officer", password, false);
-        var emailSubject = "Account Created";
-        await _emailSender.SendEmailAsync(newOfficer.EmailAddress, emailSubject, password);
+            newOfficer.EmailAddress, newOfficer.PhoneNumber, newOfficer.OfficerType == 0 ? "field officer" : "safety officer", password, false);
+
         if (res.StatusCode == 201)
         {
+            var user = await _userManager.FindByEmailAsync(newOfficer.EmailAddress);
+            newOfficer.UserId = user.Id;
             await _context.SaveChangesAsync();
-
+            var emailSubject = "Account Created";
+            await _emailSender.SendEmailAsync(newOfficer.EmailAddress, emailSubject, password);
             return new ApiResponseModel<string>
             {
                 IsSuccessful = true,
@@ -149,7 +151,7 @@ public class FieldOfficerRepository:IFieldOfficerRepository
             Data = true
         };
     }
-    
+
     public async Task<ApiResponseModel<AllOfficerResponseModel>> GetOfficerById(string officerId)
     {
         var officer = await _context.Officers.FindAsync(officerId);

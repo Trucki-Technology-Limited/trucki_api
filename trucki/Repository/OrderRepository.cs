@@ -173,7 +173,7 @@ string userId)
                 .Include(o => o.Customer)
                 .AsQueryable();
 
-            if (isManager || isFieldOfficer)
+            if (isManager)
             {
                 // Map userId to ManagerId
                 var manager = await _context.Managers
@@ -215,7 +215,7 @@ string userId)
             {
                 // Map userId to ManagerId
                 var officer = await _context.Officers
-                    .FirstOrDefaultAsync(m => m.Id == userId);
+                    .FirstOrDefaultAsync(m => m.UserId == userId);
 
                 if (officer == null)
                 {

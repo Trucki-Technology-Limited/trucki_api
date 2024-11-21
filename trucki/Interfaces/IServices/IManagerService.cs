@@ -14,7 +14,7 @@ public interface IManagerService
    Task<ApiResponseModel<ManagerDashboardData>> GetManagerDashboardData(List<string> userRoles,
 string userId);
     Task<ApiResponseModel<AllManagerResponseModel>> GetManagerById(string id);
-    Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(string userId);
+    Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(List<string> userRoles, string userId);
     Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(string userId);
     Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByFinancialManager(string userId);
     Task<ApiResponseModel<TransactionSummaryResponseModel>> GetFinancialTransactionSummaryResponseModel(string userId);
