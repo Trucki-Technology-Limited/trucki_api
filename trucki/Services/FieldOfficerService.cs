@@ -5,7 +5,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class FieldOfficerService: IFieldOfficerService
+public class FieldOfficerService : IFieldOfficerService
 {
     private readonly IFieldOfficerRepository _fieldOfficerRepository;
     public FieldOfficerService(IFieldOfficerRepository fieldOfficerRepository)
@@ -44,6 +44,11 @@ public class FieldOfficerService: IFieldOfficerService
     public async Task<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>> SearchOfficer(string? searchWords)
     {
         var res = await _fieldOfficerRepository.SearchOfficer(searchWords);
+        return res;
+    }
+    public async Task<ApiResponseModel<string>> ReassignOfficerCompany(string officerId, string newCompanyId)
+    {
+        var res = await _fieldOfficerRepository.ReassignOfficerCompany(officerId, newCompanyId);
         return res;
     }
 }

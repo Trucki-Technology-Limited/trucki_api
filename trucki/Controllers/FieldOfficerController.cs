@@ -7,7 +7,7 @@ using trucki.Models.ResponseModels;
 namespace trucki.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class FieldOfficerController: ControllerBase
+public class FieldOfficerController : ControllerBase
 {
     private readonly IFieldOfficerService _fieldOfficerService;
 
@@ -15,7 +15,7 @@ public class FieldOfficerController: ControllerBase
     {
         _fieldOfficerService = fieldOfficerService;
     }
-    
+
     [HttpPost("CreateNewOfficer")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<string>>> CreateNewOfficer([FromBody] AddOfficerRequestModel model)
@@ -39,7 +39,7 @@ public class FieldOfficerController: ControllerBase
         var response = await _fieldOfficerService.EditOfficer(model);
         return StatusCode(response.StatusCode, response);
     }
-    
+
     [HttpGet("GetOfficerById")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<AllOfficerResponseModel>>> GetOfficerById(string officerId)
@@ -61,6 +61,13 @@ public class FieldOfficerController: ControllerBase
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>>> SearchOfficer(string? searchWords)
     {
         var response = await _fieldOfficerService.SearchOfficer(searchWords);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpPost("ReassignOfficerCompany")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult<ApiResponseModel<string>>> ReassignOfficerCompany(string officerId, string newCompanyId)
+    {
+        var response = await _fieldOfficerService.ReassignOfficerCompany(officerId, newCompanyId);
         return StatusCode(response.StatusCode, response);
     }
 

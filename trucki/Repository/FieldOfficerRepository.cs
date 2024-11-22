@@ -154,7 +154,8 @@ public class FieldOfficerRepository : IFieldOfficerRepository
 
     public async Task<ApiResponseModel<AllOfficerResponseModel>> GetOfficerById(string officerId)
     {
-        var officer = await _context.Officers.FindAsync(officerId);
+        var officer = await _context.Officers.Include(o => o.User)
+                                             .FirstOrDefaultAsync(o => o.Id == officerId);
 
         if (officer == null)
         {
@@ -166,15 +167,17 @@ public class FieldOfficerRepository : IFieldOfficerRepository
             };
         }
 
-        var officerToReturn = _mapper.Map<AllOfficerResponseModel>(officer);
+        var company = await _context.Businesses.FirstOrDefaultAsync(c => c.Id == officer.CompanyId);
 
-        //var documents = truck.Documents;
+        var officerToReturn = _mapper.Map<AllOfficerResponseModel>(officer);
+        officerToReturn.Company = company != null ? _mapper.Map<OfficerBusinessResponseModel>(company) : null;
+
         return new ApiResponseModel<AllOfficerResponseModel>
         {
             Data = officerToReturn,
             StatusCode = 200,
             IsSuccessful = true,
-            Message = "Officer retrived successfully"
+            Message = "Officer retrieved successfully"
         };
     }
 
@@ -237,5 +240,43 @@ public class FieldOfficerRepository : IFieldOfficerRepository
             StatusCode = 200,
         };
     }
+
+    public async Task<ApiResponseModel<string>> ReassignOfficerCompany(string officerId, string newCompanyId)
+    {
+        var officer = await _context.Officers.FirstOrDefaultAsync(o => o.Id == officerId);
+
+        if (officer == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                StatusCode = 404,
+                IsSuccessful = false,
+                Message = "Officer not found",
+            };
+        }
+
+        var newCompany = await _context.Businesses.FirstOrDefaultAsync(c => c.Id == newCompanyId);
+
+        if (newCompany == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                StatusCode = 404,
+                IsSuccessful = false,
+                Message = "New company not found",
+            };
+        }
+
+        officer.CompanyId = newCompanyId;
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            StatusCode = 200,
+            IsSuccessful = true,
+            Message = "Officer reassigned to the new company successfully",
+        };
+    }
+
 
 }
