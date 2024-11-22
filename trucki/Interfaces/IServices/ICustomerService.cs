@@ -11,4 +11,6 @@ public interface ICustomerService
     Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetAllCustomers();
     Task<ApiResponseModel<string>> DeleteCustomer(string customerId);
     Task<ApiResponseModel<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords);
+        Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetCustomersByBusinessId(string businessId);
+
 }

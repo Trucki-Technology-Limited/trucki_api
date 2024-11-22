@@ -7,16 +7,16 @@ using trucki.Models.ResponseModels;
 namespace trucki.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class CustomerController: ControllerBase
+public class CustomerController : ControllerBase
 {
-    
+
     private readonly ICustomerService _customerService;
 
     public CustomerController(ICustomerService customerService)
     {
         _customerService = customerService;
     }
-    
+
 
     [HttpPost("AddNewCustomer")]
     [Authorize(Roles = "admin,manager,chiefmanager")]
@@ -62,6 +62,13 @@ public class CustomerController: ControllerBase
     public async Task<ActionResult<IEnumerable<AllCustomerResponseModel>>> SearchCustomers(string searchWords)
     {
         var response = await _customerService.SearchCustomers(searchWords);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetCustomersByBusinessId")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
+    public async Task<ActionResult<ApiResponseModel<List<AllCustomerResponseModel>>>> GetCustomersByBusinessId(string businessId)
+    {
+        var response = await _customerService.GetCustomersByBusinessId(businessId);
         return StatusCode(response.StatusCode, response);
     }
 

@@ -5,7 +5,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class CustomerService: ICustomerService
+public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _customerRepository;
 
@@ -45,4 +45,10 @@ public class CustomerService: ICustomerService
         var res = await _customerRepository.SearchCustomers(searchWords);
         return res;
     }
+    public async Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetCustomersByBusinessId(string businessId)
+    {
+        var res = await _customerRepository.GetCustomersByBusinessId(businessId);
+        return res;
+    }
+
 }

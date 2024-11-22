@@ -12,7 +12,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class CustomerRepository:ICustomerRepository
+public class CustomerRepository : ICustomerRepository
 {
     private readonly TruckiDBContext _context;
     private readonly UserManager<User> _userManager;
@@ -31,8 +31,9 @@ public class CustomerRepository:ICustomerRepository
         _emailSender = emailSender;
         _userManager = userManager;
     }
-        
-    public async Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model){
+
+    public async Task<ApiResponseModel<string>> AddNewCustomer(AddCustomerRequestModel model)
+    {
         var business = await _context.Businesses
             .Include(b => b.Customers)
             .FirstOrDefaultAsync(b => b.Id == model.BusinessId);
@@ -190,7 +191,7 @@ public class CustomerRepository:ICustomerRepository
                 StatusCode = 404
             };
         }
-        
+
         _context.Customers.Remove(customer);
         await _context.SaveChangesAsync();
 
@@ -236,5 +237,48 @@ public class CustomerRepository:ICustomerRepository
             StatusCode = 200,
         };
     }
+    public async Task<ApiResponseModel<List<AllCustomerResponseModel>>> GetCustomersByBusinessId(string businessId)
+    {
+        // Check if the business exists
+        var businessExists = await _context.Businesses.AnyAsync(b => b.Id == businessId);
+        if (!businessExists)
+        {
+            return new ApiResponseModel<List<AllCustomerResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Business not found",
+                StatusCode = 404,
+                Data = new List<AllCustomerResponseModel>()
+            };
+        }
+
+        // Retrieve customers associated with the given business ID
+        var customers = await _context.Customers
+            .Where(c => c.BusinessId == businessId)
+            .ToListAsync();
+
+        if (!customers.Any())
+        {
+            return new ApiResponseModel<List<AllCustomerResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "No customers found for the specified business",
+                StatusCode = 404,
+                Data = new List<AllCustomerResponseModel>()
+            };
+        }
+
+        // Map the customers to the response model
+        var customersToReturn = _mapper.Map<List<AllCustomerResponseModel>>(customers);
+
+        return new ApiResponseModel<List<AllCustomerResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Customers retrieved successfully",
+            StatusCode = 200,
+            Data = customersToReturn
+        };
+    }
+
 
 }
