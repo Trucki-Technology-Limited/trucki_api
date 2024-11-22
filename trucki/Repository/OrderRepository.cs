@@ -229,12 +229,10 @@ string userId)
                 }
 
                 // Retrieve Business IDs managed by this manager
-                var managedBusinessIds = await _context.Businesses
-                    .Where(b => b.Id == officer.CompanyId && b.isActive)
-                    .Select(b => b.Id)
-                    .ToListAsync();
+                var managedBusiness = await _context.Businesses
+                    .FirstOrDefaultAsync(b => b.Id == officer.CompanyId && b.isActive);
 
-                if (managedBusinessIds == null || !managedBusinessIds.Any())
+                if (managedBusiness == null)
                 {
                     // No businesses managed by this manager
                     return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
@@ -247,7 +245,7 @@ string userId)
                 }
 
                 // Filter orders based on managed businesses
-                ordersQuery = ordersQuery.Where(o => managedBusinessIds.Contains(o.BusinessId));
+                ordersQuery = ordersQuery.Where(o => o.BusinessId == managedBusiness.Id);
             }
             // Else, if user is Chief Manager or Finance, retrieve all orders (no additional filter)
 

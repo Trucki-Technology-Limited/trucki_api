@@ -50,10 +50,40 @@ public class BusinessRepository : IBusinessRepository
         };
     }
 
-    public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness()
+    public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId)
     {
-        var businesses = await _context.Businesses.ToListAsync();
+        // Determine if the user has high-level roles
+        bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+        bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
 
+        List<Business> businesses;
+
+        if (isManager)
+        {
+            // Managers can access businesses they manage
+            businesses = await _context.Businesses
+                .Where(b => b.managerId == userId && b.isActive)
+                .ToListAsync();
+        }
+        else if (isFieldOfficer)
+        {
+            // Field officers can only access the single business they are assigned to
+            businesses = await _context.Businesses
+                .Where(b => b.Id == _context.Officers
+                    .Where(o => o.UserId == userId && o.IsActive)
+                    .Select(o => o.CompanyId)
+                    .FirstOrDefault() && b.isActive)
+                .ToListAsync();
+        }
+        else
+        {
+            // Other users can access all active businesses
+            businesses = await _context.Businesses
+                .Where(b => b.isActive)
+                .ToListAsync();
+        }
+
+        // Map the business entities to the response model
         var businessResponseModels = _mapper.Map<List<AllBusinessResponseModel>>(businesses);
 
         return new ApiResponseModel<List<AllBusinessResponseModel>>
@@ -64,6 +94,7 @@ public class BusinessRepository : IBusinessRepository
             Data = businessResponseModels
         };
     }
+
 
     public async Task<ApiResponseModel<bool>> AddRouteToBusiness(AddRouteToBusinessRequestModel model)
     {

@@ -23,9 +23,9 @@ public class BusinessService : IBusinessService
         }
         return new ApiResponseModel<bool> { IsSuccessful = createBusiness.IsSuccessful, Message = createBusiness.Message, StatusCode = createBusiness.StatusCode };
     }
-    public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness()
+    public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId)
     {
-        var getBusinesses = await _businessRepository.GetAllBusiness();
+        var getBusinesses = await _businessRepository.GetAllBusiness(userRoles, userId);
         if (getBusinesses.IsSuccessful)
         {
             return new ApiResponseModel<List<AllBusinessResponseModel>>

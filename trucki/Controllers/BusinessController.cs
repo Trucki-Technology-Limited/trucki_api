@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
@@ -29,7 +30,17 @@ public class BusinessController : ControllerBase
     [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
     public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
     {
-        var business = await _businessService.GetAllBusiness();
+
+        var roles = User.Claims
+                      .Where(c => c.Type == ClaimTypes.Role)
+                      .Select(c => c.Value)
+                      .ToList();
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        var business = await _businessService.GetAllBusiness(roles, userId);
         return StatusCode(business.StatusCode, business);
     }
 
