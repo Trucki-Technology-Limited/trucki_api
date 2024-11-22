@@ -79,7 +79,6 @@ public class BusinessRepository : IBusinessRepository
         {
             // Other users can access all active businesses
             businesses = await _context.Businesses
-                .Where(b => b.isActive)
                 .ToListAsync();
         }
 
