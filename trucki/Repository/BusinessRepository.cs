@@ -67,12 +67,22 @@ public class BusinessRepository : IBusinessRepository
         }
         else if (isFieldOfficer)
         {
+            // Map userId to ManagerId
+            var officer = await _context.Officers
+                .FirstOrDefaultAsync(m => m.UserId == userId);
+            if (officer == null)
+            {
+                return new ApiResponseModel<List<AllBusinessResponseModel>>
+                {
+                    Data = null,
+                    IsSuccessful = false,
+                    Message = "officer not found for the given user.",
+                    StatusCode = 404
+                };
+            }
             // Field officers can only access the single business they are assigned to
             businesses = await _context.Businesses
-                .Where(b => b.Id == _context.Officers
-                    .Where(o => o.UserId == userId && o.IsActive)
-                    .Select(o => o.CompanyId)
-                    .FirstOrDefault() && b.isActive)
+                .Where(b => b.Id == officer.CompanyId)
                 .ToListAsync();
         }
         else

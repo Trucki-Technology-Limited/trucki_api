@@ -192,7 +192,7 @@ string userId)
 
                 // Retrieve Business IDs managed by this manager
                 var managedBusinessIds = await _context.Businesses
-                    .Where(b => b.managerId == manager.Id && b.isActive)
+                    .Where(b => b.managerId == manager.Id)
                     .Select(b => b.Id)
                     .ToListAsync();
 
@@ -230,7 +230,7 @@ string userId)
 
                 // Retrieve Business IDs managed by this manager
                 var managedBusiness = await _context.Businesses
-                    .FirstOrDefaultAsync(b => b.Id == officer.CompanyId && b.isActive);
+                    .FirstOrDefaultAsync(b => b.Id == officer.CompanyId);
 
                 if (managedBusiness == null)
                 {
