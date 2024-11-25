@@ -60,9 +60,23 @@ public class BusinessRepository : IBusinessRepository
 
         if (isManager)
         {
+            // Map userId to ManagerId
+            var manager = await _context.Managers
+                .FirstOrDefaultAsync(m => m.UserId == userId && m.IsActive);
+
+            if (manager == null)
+            {
+                return new ApiResponseModel<List<AllBusinessResponseModel>>
+                {
+                    Data = null,
+                    IsSuccessful = false,
+                    Message = "Manager not found for the given user.",
+                    StatusCode = 404
+                };
+            }
             // Managers can access businesses they manage
             businesses = await _context.Businesses
-                .Where(b => b.managerId == userId && b.isActive)
+                .Where(b => b.managerId == manager.Id && b.isActive)
                 .ToListAsync();
         }
         else if (isFieldOfficer)
