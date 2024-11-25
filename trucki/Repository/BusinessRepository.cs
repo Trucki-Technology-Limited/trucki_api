@@ -76,7 +76,7 @@ public class BusinessRepository : IBusinessRepository
             }
             // Managers can access businesses they manage
             businesses = await _context.Businesses
-                .Where(b => b.managerId == manager.Id && b.isActive)
+                .Where(b => b.managerId == manager.Id)
                 .ToListAsync();
         }
         else if (isFieldOfficer)
