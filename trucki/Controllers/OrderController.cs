@@ -118,7 +118,7 @@ public class OrderController : ControllerBase
     }
     [HttpPost("SearchOrders")]
     [Authorize(Roles = "manager,field officer,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<bool>>> SearchOrders([FromBody] SearchOrderRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> SearchOrders([FromBody] SearchOrderRequestModel model)
     {
         var response = await _orderService.SearchOrders(model);
         return StatusCode(response.StatusCode, response);

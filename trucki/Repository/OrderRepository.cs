@@ -747,7 +747,7 @@ string userId)
         };
     }
 
-    public async Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter)
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> SearchOrders(SearchOrderRequestModel filter)
     {
         // Start with a base query
         var query = _context.Orders.Include(o => o.Truck).AsQueryable();
@@ -774,13 +774,29 @@ string userId)
 
         // Execute the query and get the results
         var orders = await query.ToListAsync();
-
-        return new ApiResponseModel<List<Order>>
+        var orderResponseList = orders.Select(order => new AllOrderResponseModel
+        {
+            Id = order.Id, // Assuming there's a property called Id in Order entity
+            OrderId = order.OrderId,
+            TruckNo = order.Truck?.PlateNumber ?? "",
+            Quantity = order.Quantity,
+            StartDate = order.StartDate,
+            EndDate = order.EndDate,
+            OrderStatus = order.OrderStatus,
+            Routes = _mapper.Map<RouteResponseModel>(order.Routes),
+            Business = _mapper.Map<AllBusinessResponseModel>(order.Business),
+            Customer = _mapper.Map<AllCustomerResponseModel>(order.Customer),
+            Consignment = order.Consignment,
+            DeliveryLocationLat = order.DeliveryLocationLat,
+            DeliveryLocationLong = order.DeliveryLocationLong,
+            CreatedAt = order.CreatedAt,
+        });
+        return new ApiResponseModel<IEnumerable<AllOrderResponseModel>>
         {
             IsSuccessful = true,
             Message = "Orders retrieved successfully",
             StatusCode = 200,
-            Data = orders
+            Data = orderResponseList
         };
     }
 

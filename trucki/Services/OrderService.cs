@@ -79,7 +79,7 @@ string userId)
         return res;
     }
 
-    public async Task<ApiResponseModel<List<Order>>> SearchOrders(SearchOrderRequestModel filter)
+    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> SearchOrders(SearchOrderRequestModel filter)
     {
         return await _orderRepository.SearchOrders(filter);
     }
