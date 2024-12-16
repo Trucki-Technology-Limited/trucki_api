@@ -10,7 +10,8 @@ public class AllTruckOwnerResponseModel
     public string Phone { set; get; }
     public string Address { set; get; }
     public string IdCardUrl { set; get; }
-    
+    public string ProfilePictureUrl { set; get; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
@@ -32,9 +33,9 @@ public class TruckOwnerResponseModel
     public bool IsAccountApproved { set; get; }
     public bool HasBankDetails { set; get; }
     public BankDetailsResponseModel BankDetails { set; get; }
-    
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
-    public OwnersStatus OwnersStatus { get; set; }  
+    public OwnersStatus OwnersStatus { get; set; }
 }

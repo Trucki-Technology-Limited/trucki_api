@@ -103,42 +103,16 @@ public class TruckRepository : ITruckRepository
                 StatusCode = 404
             };
         }
-
-        var truckOwner = await _context.TruckOwners.FindAsync(model.TruckOwnerId);
-
-        if (truckOwner == null)
-        {
-            // Handle error - Truck owner not found
-            return new ApiResponseModel<bool>
-            {
-                IsSuccessful = false,
-                Message = "Truck owner not found",
-                StatusCode = 400
-            };
-        }
-
         //truck.CertOfOwnerShip = model.CertOfOwnerShip;
         truck.PlateNumber = model.PlateNumber;
         truck.TruckCapacity = model.TruckCapacity;
         truck.DriverId = model.DriverId;
         //truck.Capacity = model.Capacity;
-        truck.TruckOwnerId = model.TruckOwnerId;
-        truck.TruckOwner = truckOwner;
         truck.TruckName = model.TruckName;
         truck.TruckType = model.TruckType;
         truck.TruckLicenseExpiryDate = model.TruckLicenseExpiryDate;
         truck.RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate;
         truck.InsuranceExpiryDate = model.InsuranceExpiryDate;
-
-        // Upload documents
-        if (model.Documents != null)
-        {
-            foreach (var document in model.Documents)
-            {
-                var uploadedDocument = await _uploadService.UploadFile(document, $"{truck.PlateNumber}");
-                truck.Documents.Add(uploadedDocument);
-            }
-        }
 
         // Save changes to the database
         _context.Trucks.Update(truck);

@@ -138,6 +138,9 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         owner.Phone = model.Phone;
         owner.Address = model.Address;
 
+        owner.IdCardUrl = model.IdCard;
+        owner.ProfilePictureUrl = model.ProfilePicture;
+
         // Save changes to database
         await _context.SaveChangesAsync();
 
