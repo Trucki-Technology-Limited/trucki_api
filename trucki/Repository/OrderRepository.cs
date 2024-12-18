@@ -544,10 +544,10 @@ string userId)
         order.Documents.AddRange(model.Documents);
 
         // Update order status if this is the first document being uploaded
-        if (order.Documents.Count == model.Documents.Count)
-        {
+        // if (order.Documents.Count == model.Documents.Count)
+        // {
             order.OrderStatus = OrderStatus.Loaded;
-        }
+        // }
 
         await _context.SaveChangesAsync();
 
@@ -666,10 +666,10 @@ string userId)
         order.DeliveryDocuments.AddRange(model.Documents);
 
         // Update order status if this is the first document being uploaded
-        if (order.DeliveryDocuments.Count == model.Documents.Count)
-        {
+        // if (order.DeliveryDocuments.Count == model.Documents.Count)
+        // {
             order.OrderStatus = OrderStatus.Destination;
-        }
+        // }
 
         await _context.SaveChangesAsync();
 
