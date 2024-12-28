@@ -30,7 +30,7 @@ public class OrderRepository : IOrderRepository
     }
     public async Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model)
     {
-        string orderId = GenerateOrderId();
+        var orderId = await GenerateUniqueOrderIdAsync();
         var business = await _context.Businesses.Where(x => x.Id == model.CompanyId).FirstOrDefaultAsync();
         if (business == null)
             return new ApiResponseModel<string>
@@ -487,11 +487,22 @@ string userId)
         };
     }
 
-    private string GenerateOrderId()
+    private async Task<string> GenerateUniqueOrderIdAsync()
     {
-        Random random = new Random();
-        string randomNumber = random.Next(1000, 9999).ToString(); // Generate a random 4-digit number
-        return "TR" + randomNumber;
+        string orderId;
+        bool exists;
+        var random = new Random();
+
+        do
+        {
+            var randomNumber = random.Next(1000, 9999).ToString();
+            orderId = "TR" + randomNumber;
+
+            exists = await _context.Orders.AnyAsync(o => o.OrderId == orderId);
+        }
+        while (exists);
+
+        return orderId;
     }
 
     public async Task<ApiResponseModel<bool>> UploadOrderManifest(UploadOrderManifestRequestModel model)
@@ -518,23 +529,6 @@ string userId)
             };
         }
 
-        // 2. File Type Validation
-        // foreach (var file in model.Documents)
-        // {
-        //     if (file.ContentType != "application/pdf")
-        //     {
-        //         return new ApiResponseModel<List<string>>
-        //         {
-        //             IsSuccessful = false,
-        //             Message = "Invalid file format. Only PDF files are allowed.",
-        //             StatusCode = 400
-        //         };
-        //     }
-        // }
-
-        // 3. Upload to Cloudinary and Get URLs
-
-
         // 4. Update Order
         if (order.Documents == null)
         {
@@ -544,10 +538,11 @@ string userId)
         order.Documents.AddRange(model.Documents);
 
         // Update order status if this is the first document being uploaded
-        // if (order.Documents.Count == model.Documents.Count)
-        // {
+        // If this is the first time *any* documents are being added:
+        if (order.Documents.Count > 0 && order.OrderStatus != OrderStatus.Loaded)
+        {
             order.OrderStatus = OrderStatus.Loaded;
-        // }
+        }
 
         await _context.SaveChangesAsync();
 
@@ -668,7 +663,7 @@ string userId)
         // Update order status if this is the first document being uploaded
         // if (order.DeliveryDocuments.Count == model.Documents.Count)
         // {
-            order.OrderStatus = OrderStatus.Destination;
+        order.OrderStatus = OrderStatus.Destination;
         // }
 
         await _context.SaveChangesAsync();
