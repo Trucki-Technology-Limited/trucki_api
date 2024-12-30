@@ -47,7 +47,7 @@ stages:
     - task: AzureCLI@2
       displayName: Update web app container image tag
       inputs:
-        azureSubscription: 'azdev2containerapps1'
+        azureSubscription: 'azdev2containerapps'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
