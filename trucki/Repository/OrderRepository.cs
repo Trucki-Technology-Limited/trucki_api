@@ -537,7 +537,7 @@ string userId)
 
         order.Documents.AddRange(model.Documents);
 
-        // Update order status if this is the first document being uploaded
+        // Update order status if this is the first document being uploadedssss
         // If this is the first time *any* documents are being added:
         if (order.Documents.Count > 0 && order.OrderStatus == OrderStatus.Assigned)
         {
