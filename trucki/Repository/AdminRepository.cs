@@ -64,7 +64,7 @@ public class AdminRepository : IAdminRepository
 
     public async Task<ApiResponseModel<GtvDashboardSummary>> GetGtvDashBoardSummary(DateTime startDate, DateTime endDate)
 {
-    // validate startDate and endDate
+    // validate startDate and endDates
     if (startDate > endDate)
     {
         return new ApiResponseModel<GtvDashboardSummary>

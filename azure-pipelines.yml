@@ -6,7 +6,7 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'eab74260-74cb-465d-8ec6-f251e14015fe'  # your service connection ID
+  dockerRegistryServiceConnection: 'f62901bc-69ac-4508-ad3e-902745253841'  # your service connection ID
   imageRepository: 'truckiapi'
   containerRegistry: 'truckiprodcr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/trucki/Dockerfile'
