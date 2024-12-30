@@ -606,7 +606,7 @@ string userId)
         {
             OrderId = orderId,
             BusinessId = order.BusinessId,
-            TruckId = order.TruckId,  // If you want to track truck
+            TruckId = order.TruckId,  // If you want to track trucks
             Amount = order.Price.HasValue ? (decimal)order.Price.Value * 0.4M : 0, // Calculate 60% based on the order's total price
             TransactionDate = DateTime.Now,
             Type = TransactionType.FortyPercentPayment
