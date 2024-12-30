@@ -539,7 +539,7 @@ string userId)
 
         // Update order status if this is the first document being uploaded
         // If this is the first time *any* documents are being added:
-        if (order.Documents.Count > 0 && order.OrderStatus != OrderStatus.Loaded)
+        if (order.Documents.Count > 0 && order.OrderStatus == OrderStatus.Assigned)
         {
             order.OrderStatus = OrderStatus.Loaded;
         }
@@ -649,10 +649,6 @@ string userId)
             };
         }
 
-        // 3. Upload to Cloudinary and Get URLs
-
-        // 4. Update Order
-        // 4. Update Order
         if (order.Documents == null)
         {
             order.DeliveryDocuments = new List<string>();
