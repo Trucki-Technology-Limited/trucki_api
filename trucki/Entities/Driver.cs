@@ -25,5 +25,15 @@ namespace trucki.Entities
         public string? UserId { get; set; } 
 
         public User? User { get; set; }
+
+           // New property to capture which country this driver belongs to (if relevant)
+        public string Country { get; set; } = "NG";  // or "NG" or any default
+
+        // (Optional) If you plan to use the same DocumentTypes approach:
+        // you can also store the EntityType if each driver is "Driver" for sure:
+        // public string EntityType { get; set; } = "Driver";
+
+        // Navigation property for documents
+        public ICollection<DriverDocument> DriverDocuments { get; set; } = new List<DriverDocument>();
     }
 }

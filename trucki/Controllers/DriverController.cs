@@ -8,7 +8,7 @@ using trucki.Models.ResponseModels;
 namespace trucki.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class DriverController: ControllerBase
+public class DriverController : ControllerBase
 {
     private readonly IDriverService _driverService;
 
@@ -16,7 +16,7 @@ public class DriverController: ControllerBase
     {
         _driverService = driverService;
     }
-    
+
     [HttpPost("AddDriver")]
     [Authorize(Roles = "admin,transporter")]
     public async Task<ActionResult<ApiResponseModel<bool>>> AddDriver([FromBody] AddDriverRequestModel model)
@@ -32,7 +32,7 @@ public class DriverController: ControllerBase
         var response = await _driverService.EditDriver(model);
         return StatusCode(response.StatusCode, response);
     }
-    
+
     [HttpGet("GetAllDrivers")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDrivers()
@@ -45,10 +45,25 @@ public class DriverController: ControllerBase
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<DriverResponseModel>>> GetDriverById(string id)
     {
-        var response = await _driverService.GetDriverById(id);
-        return StatusCode(response.StatusCode, response);
-    }
+        var driver = await _driverService.GetDriverById(id);
 
+        if (driver == null)
+        {
+            // Return 404 with ApiResponseModel
+            return NotFound(
+                ApiResponseModel<DriverResponseModel>.Fail("Driver not found", StatusCodes.Status404NotFound)
+            );
+        }
+
+        // Return 200 with the driver
+        var response = ApiResponseModel<DriverResponseModel>.Success(
+            "Driver retrieved successfully",
+            driver,
+            StatusCodes.Status200OK
+        );
+
+        return Ok(response);
+    }
     [HttpGet("SearchDrivers")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllDriverResponseModel>>>> SearchDrivers(string searchWords)
@@ -68,7 +83,7 @@ public class DriverController: ControllerBase
     [Authorize(Roles = "driver")]
     public async Task<ActionResult<ApiResponseModel<DriverProfileResponseModel>>> GetDriverProfileById()
     {
-        
+
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
@@ -91,13 +106,13 @@ public class DriverController: ControllerBase
         var response = await _driverService.GetOrderAssignedToDriver(driverId);
         return StatusCode(response.StatusCode, response);
     }
-     [HttpPost("CreateDriverAccount")]
+    [HttpPost("CreateDriverAccount")]
     public async Task<ActionResult<ApiResponseModel<bool>>> CreateDriverAccount([FromBody] CreateDriverRequestModel model)
     {
         var response = await _driverService.CreateDriverAccount(model);
         return StatusCode(response.StatusCode, response);
     }
-     [HttpGet("GetDriversByTruckOwnerId")]
+    [HttpGet("GetDriversByTruckOwnerId")]
     [Authorize(Roles = "transporter")]
     public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
     {

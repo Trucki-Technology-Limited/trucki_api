@@ -153,7 +153,7 @@ public class TruckRepository : ITruckRepository
 
     public async Task<ApiResponseModel<AllTruckResponseModel>> GetTruckById(string truckId)
     {
-        var truck = await _context.Trucks.Where(x => x.Id == truckId).FirstOrDefaultAsync();
+        var truck = await _context.Trucks.Where(x => x.Id == truckId).Include(e => e.Driver).FirstOrDefaultAsync();
         if (truck == null)
         {
             return new ApiResponseModel<AllTruckResponseModel>
@@ -343,9 +343,38 @@ public class TruckRepository : ITruckRepository
             };
         }
 
+        // 1. If the truck is already assigned to a different driver, unassign that driver first
+        var existingDriverForThisTruck = await _context.Drivers
+            .FirstOrDefaultAsync(d => d.TruckId == truck.Id);
+
+        if (existingDriverForThisTruck != null && existingDriverForThisTruck.Id != driver.Id)
+        {
+            existingDriverForThisTruck.TruckId = null;
+            existingDriverForThisTruck.Truck = null;
+            _context.Drivers.Update(existingDriverForThisTruck);
+        }
+
+        // 2. If the new driver is already assigned to a different truck, unassign them from that old truck
+        //    so we don’t have two trucks referencing the same driver.
+        var oldTruckForThisDriver = await _context.Trucks
+            .FirstOrDefaultAsync(t => t.DriverId == driver.Id);
+
+        if (oldTruckForThisDriver != null && oldTruckForThisDriver.Id != truck.Id)
+        {
+            oldTruckForThisDriver.DriverId = null;
+            oldTruckForThisDriver.Driver = null;
+            _context.Trucks.Update(oldTruckForThisDriver);
+        }
+
+        // 3. Assign the new driver to the current truck
         truck.Driver = driver;
+        truck.DriverId = driver.Id;
+        driver.Truck = truck;
+        driver.TruckId = truck.Id;
 
         _context.Trucks.Update(truck);
+        _context.Drivers.Update(driver);
+
         await _context.SaveChangesAsync();
 
         return new ApiResponseModel<bool>
@@ -356,6 +385,7 @@ public class TruckRepository : ITruckRepository
             Data = true
         };
     }
+
 
     public async Task<ApiResponseModel<string>> UpdateTruckStatus(string truckId, UpdateTruckStatusRequestModel model)
     {

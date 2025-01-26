@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250126084949_AddDriverDocument")]
+    partial class AddDriverDocument
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -371,7 +373,10 @@ namespace trucki.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("DocumentTypeId")
+                    b.Property<int>("DocumentTypeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DocumentTypeId1")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -397,11 +402,11 @@ namespace trucki.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DocumentTypeId");
+                    b.HasIndex("DocumentTypeId1");
 
                     b.HasIndex("DriverId");
 
-                    b.ToTable("DriverDocuments");
+                    b.ToTable("DriverDocument");
                 });
 
             modelBuilder.Entity("trucki.Entities.Manager", b =>
@@ -970,7 +975,7 @@ namespace trucki.Migrations
                 {
                     b.HasOne("trucki.Entities.DocumentType", "DocumentType")
                         .WithMany()
-                        .HasForeignKey("DocumentTypeId")
+                        .HasForeignKey("DocumentTypeId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

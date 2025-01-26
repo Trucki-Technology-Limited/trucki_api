@@ -34,7 +34,7 @@ public class DriverService: IDriverService
         return res;
     }
 
-    public async Task<ApiResponseModel<DriverResponseModel>> GetDriverById(string id)
+    public async Task<DriverResponseModel> GetDriverById(string id)
     {
         var res = await _driverRepository.GetDriverById(id);
         return res;

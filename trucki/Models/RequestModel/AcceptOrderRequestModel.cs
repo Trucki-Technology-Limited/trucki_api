@@ -8,6 +8,13 @@ public class AcceptOrderRequestModel
     public string driverId { get; set; }
     public string status { get; set; }
 }
+public class AssignOrderToTruckAsTransporter
+{
+    public string OrderId { get; set; }
+    public string TruckId { get; set; }
+    // Possibly the requesting truck owner userId or truckOwnerId
+    public string TruckOwnerId { get; set; }
+}
 
  public class SearchOrderRequestModel
     {

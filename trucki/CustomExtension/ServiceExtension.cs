@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.UI.Services;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
+using trucki.Repositories;
 using trucki.Repository;
 using trucki.Services;
 
@@ -43,6 +44,10 @@ namespace trucki.CustomExtension
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<ITruckOwnerService, TruckOwnerService>();
             services.AddScoped<ITruckService, TruckService>();
+            services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
+            services.AddScoped<IDocumentTypeService, DocumentTypeService>();
+            services.AddScoped<IDriverDocumentService, DriverDocumentService>();
+            services.AddScoped<IDriverDocumentRepository, DriverDocumentRepository>();
         }
     }
 }

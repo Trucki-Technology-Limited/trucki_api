@@ -20,4 +20,9 @@ public interface IOrderService
     Task<ApiResponseModel<OrderResponseModelForMobile>> GetOrderByIdForMobile(string orderId);
     Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model);
     Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> SearchOrders(SearchOrderRequestModel filter);
+    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetPendingOrders();
+    Task<ApiResponseModel<bool>> AssignOrderToTruckAsTransporter(AssignOrderToTruckAsTransporter model);
+    Task<ApiResponseModel<List<AllOrderResponseModel>>> GetTransporterOrdersAsync(string truckOwnerId);
+     Task<ApiResponseModel<List<AllOrderResponseModel>>> GetTransporterCompletedOrdersAsync(string truckOwnerId);
+     Task<ApiResponseModel<List<AllOrderResponseModel>>> GetDriverOrdersAsync(string driverId);
 }

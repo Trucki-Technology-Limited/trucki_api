@@ -13,7 +13,7 @@ namespace trucki.DatabaseContext
         {
 
         }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -37,5 +37,10 @@ namespace trucki.DatabaseContext
         public DbSet<Order> Orders { get; set; }
         public DbSet<BankDetails> BankDetails { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<DocumentType> DocumentTypes { get; set; }
+        public DbSet<DriverDocument> DriverDocuments { get; set; }
+
+
+
     }
 }

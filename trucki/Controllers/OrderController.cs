@@ -68,7 +68,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost("UploadOrderDocuments")]
-    [Authorize(Roles = "manager,field officer,chiefmanager")]
+    [Authorize(Roles = "manager,field officer,chiefmanager,transporter,driver")]
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadOrderDocuments([FromBody] UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadOrderManifest(model);
@@ -82,7 +82,7 @@ public class OrderController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("uploadDeliveryManifest")]
-    [Authorize(Roles = "manager,field officer,chiefmanager")]
+    [Authorize(Roles = "manager,field officer,chiefmanager,transporter,driver")]
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> UploadDeliveryManifest([FromBody] UploadOrderManifestRequestModel model)
     {
         var response = await _orderService.UploadDeliveryManifest(model);
@@ -103,7 +103,7 @@ public class OrderController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetOrderByIdForMobile")]
-    [Authorize(Roles = "driver")]
+    [Authorize(Roles = "driver,transporter")]
     public async Task<ActionResult<ApiResponseModel<OrderResponseModelForMobile>>> GetOrderByIdForMobile(string orderId)
     {
         var response = await _orderService.GetOrderByIdForMobile(orderId);
@@ -121,6 +121,41 @@ public class OrderController : ControllerBase
     public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> SearchOrders([FromBody] SearchOrderRequestModel model)
     {
         var response = await _orderService.SearchOrders(model);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetPendingOrders")]
+    [Authorize()]
+    public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetPendingOrders()
+    {
+        var response = await _orderService.GetPendingOrders();
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpPost("AssignOrderToTruckAsTransporter")]
+    [Authorize(Roles = "transporter")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> AssignOrderToTruckAsTransporter([FromBody] AssignOrderToTruckAsTransporter model)
+    {
+        var response = await _orderService.AssignOrderToTruckAsTransporter(model);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetTransporterActiveOrdersAsync")]
+    [Authorize(Roles = "transporter")]
+    public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetTransporterActiveOrdersAsync(string ownerId)
+    {
+        var response = await _orderService.GetTransporterOrdersAsync(ownerId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetTransporterCompletedOrdersAsync")]
+    [Authorize(Roles = "transporter")]
+    public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetTransporterCompletedOrdersAsync(string ownerId)
+    {
+        var response = await _orderService.GetTransporterCompletedOrdersAsync(ownerId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetDriverOrdersAsync")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<List<AllOrderResponseModel>>>> GetDriverOrdersAsync(string driverId)
+    {
+        var response = await _orderService.GetDriverOrdersAsync(driverId);
         return StatusCode(response.StatusCode, response);
     }
 }

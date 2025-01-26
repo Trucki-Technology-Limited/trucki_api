@@ -109,6 +109,7 @@ public class OrderRepository : IOrderRepository
         order.TruckId = model.TruckId;
         order.Truck = truck;
         order.OrderStatus = OrderStatus.Assigned;
+        truck.TruckStatus = TruckStatus.Busy;
         // var emailSubject = "Order Created";
         // await _emailSender.SendOrderEmailAsync(newManager.EmailAddress, emailSubject, password);
         await _context.SaveChangesAsync();
@@ -579,6 +580,7 @@ string userId)
 
         order.is60Paid = true;
         order.OrderStatus = OrderStatus.InTransit;
+        // truck.TruckStatus = TruckStatus.Busy;
 
         await _context.SaveChangesAsync();
 
@@ -614,6 +616,8 @@ string userId)
 
         _context.Transactions.Add(transaction);
         order.is40Paid = true;
+
+        // var truck = await _context.Trucks.Where(x => x.Id == order.TruckId).FirstOrDefaultAsync();
         order.OrderStatus = OrderStatus.Delivered;
 
         await _context.SaveChangesAsync();
@@ -649,18 +653,20 @@ string userId)
             };
         }
 
-        if (order.Documents == null)
+        // 4. Update Order
+        if (order.DeliveryDocuments == null)
         {
             order.DeliveryDocuments = new List<string>();
         }
 
         order.DeliveryDocuments.AddRange(model.Documents);
 
-        // Update order status if this is the first document being uploaded
-        // if (order.DeliveryDocuments.Count == model.Documents.Count)
-        // {
-        order.OrderStatus = OrderStatus.Destination;
-        // }
+        // Update order status if this is the first document being uploadedssss
+        // If this is the first time *any* documents are being added:
+        if (order.DeliveryDocuments.Count > 0 && order.OrderStatus == OrderStatus.InTransit)
+        {
+            order.OrderStatus = OrderStatus.Destination;
+        }
 
         await _context.SaveChangesAsync();
 
@@ -670,6 +676,91 @@ string userId)
             Message = "Documents uploaded and order updated",
             StatusCode = 200,
         };
+    }
+    public async Task<ApiResponseModel<bool>> AssignOrderToTruckAsTransporter(AssignOrderToTruckAsTransporter model)
+    {
+        var response = new ApiResponseModel<bool>();
+
+        try
+        {
+            // 1. Retrieve the Order
+            var order = await _context.Orders
+                .FirstOrDefaultAsync(o => o.Id == model.OrderId);
+
+            if (order == null)
+            {
+                response.IsSuccessful = false;
+                response.Message = "Order not found";
+                response.StatusCode = 404;
+                return response;
+            }
+
+            // 2. Retrieve the Truck
+            var truck = await _context.Trucks
+                .Include(t => t.Driver) // so we can check if driver is attached
+                .FirstOrDefaultAsync(t => t.Id == model.TruckId);
+
+            if (truck == null)
+            {
+                response.IsSuccessful = false;
+                response.Message = "Truck not found";
+                response.StatusCode = 404;
+                return response;
+            }
+
+            // 3. Check if the truck belongs to the requesting TruckOwner
+            if (!string.Equals(truck.TruckOwnerId, model.TruckOwnerId, StringComparison.OrdinalIgnoreCase))
+            {
+                response.IsSuccessful = false;
+                response.Message = "You do not own this truck. Assignment not allowed.";
+                response.StatusCode = 404;
+                return response;
+            }
+
+            // 4. Check if the truck is available 
+            // if (truck.TruckStatus == TruckStatus.Busy)
+            // {
+            //     response.IsSuccessful = false;
+            //     response.Message = $"Truck is not available. Current status: {truck.TruckStatus}";
+            //     response.StatusCode = 404;
+            //     return response;
+            // }
+
+            // 5. Check if the truck has a driver
+            if (truck.Driver == null)
+            {
+                response.IsSuccessful = false;
+                response.Message = "Truck does not have a driver assigned. Cannot proceed.";
+                response.StatusCode = 404;
+                return response;
+            }
+
+            // 6. If all checks pass, assign the truck to the order
+            order.TruckId = truck.Id;
+            order.TruckNo = truck.PlateNumber;
+            order.OrderStatus = OrderStatus.Assigned;
+            order.UpdatedAt = DateTime.Now;
+
+            // Optionally, if you want to mark the truck as no longer available:
+            truck.TruckStatus = TruckStatus.Busy;
+            truck.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            response.IsSuccessful = true;
+            response.Message = "Truck assigned to the order successfully.";
+            response.Data = true;
+            response.StatusCode = 200;
+        }
+        catch (Exception ex)
+        {
+            response.IsSuccessful = false;
+            response.Message = $"An error occurred: {ex.Message}";
+            response.StatusCode = 500;
+            response.Data = false;
+        }
+
+        return response;
     }
     public async Task<ApiResponseModel<bool>> AcceptOrderRequest(AcceptOrderRequestModel model)
     {
@@ -789,6 +880,225 @@ string userId)
             StatusCode = 200,
             Data = orderResponseList
         };
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetPendingOrders()
+    {
+        var orders = await _context.Orders
+            .Include(a => a.Business)
+            .Include(b => b.Routes)
+            .Include(r => r.Truck)
+            .Where(o => o.OrderStatus == OrderStatus.Pending)
+            .ToListAsync();
+
+        // Handle the case where no orders are found
+        if (!orders.Any())
+        {
+            return new ApiResponseModel<List<AllOrderResponseModel>>
+            {
+                IsSuccessful = true, // You might want to change this to false
+                Message = "No available pending order",
+                StatusCode = 200
+            };
+        }
+
+        var mappedOrders = _mapper.Map<List<AllOrderResponseModel>>(orders);
+        return new ApiResponseModel<List<AllOrderResponseModel>>
+        {
+            IsSuccessful = true,
+            Data = mappedOrders,
+            StatusCode = 200
+        };
+    }
+
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetTransporterOrdersAsync(string truckOwnerId)
+    {
+        var response = new ApiResponseModel<List<AllOrderResponseModel>>();
+
+        try
+        {
+            // 1. Get all available trucks for this TruckOwner
+            var availableTrucks = await _context.Trucks
+                .Where(t => t.TruckOwnerId == truckOwnerId)
+                .ToListAsync();
+
+            // 2. Extract TruckIds from those available trucks
+            var availableTruckIds = availableTrucks.Select(t => t.Id).ToList();
+
+            // 3. Define the statuses we care about
+            var validStatuses = new[]
+            {
+            OrderStatus.Assigned,
+            OrderStatus.Loaded,
+            OrderStatus.InTransit,
+            OrderStatus.Accepted
+        };
+
+            // 4. Get all orders for those trucks that match any of the above statuses
+            var relevantOrders = await _context.Orders
+                .Where(o => o.TruckId != null
+                         && availableTruckIds.Contains(o.TruckId)
+                         && validStatuses.Contains(o.OrderStatus))
+                .Include(o => o.Truck)       // Eager load related Truck
+                .Include(o => o.Business)    // Eager load any other related data you need
+                .Include(o => o.Manager)
+                .Include(b => b.Routes)
+                // .Include(...) more includes as needed
+                .ToListAsync();
+
+            // 5. Construct the DTO
+
+            var transporterOrdersDto = _mapper.Map<List<AllOrderResponseModel>>(relevantOrders);
+            // 6. Return response
+            response.IsSuccessful = true;
+            response.Message = "Fetched available trucks and orders successfully";
+            response.Data = transporterOrdersDto;
+            response.StatusCode = 200;
+        }
+        catch (Exception ex)
+        {
+            response.IsSuccessful = false;
+            response.Message = $"Error retrieving data: {ex.Message}";
+            response.Data = null;
+        }
+
+        return response;
+    }
+
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetDriverOrdersAsync(string driverId)
+    {
+        var response = new ApiResponseModel<List<AllOrderResponseModel>>();
+
+        try
+        {
+            // 1. Validate Driver Existence
+            var driverExists = await _context.Drivers.AnyAsync(d => d.Id == driverId);
+            if (!driverExists)
+            {
+                response.IsSuccessful = false;
+                response.Message = "Driver not found.";
+                response.StatusCode = 404;
+                return response;
+            }
+
+            // 2. Get all trucks assigned to this driver
+            var driverTrucks = await _context.Trucks
+                .Where(t => t.DriverId == driverId)
+                .ToListAsync();
+
+            if (driverTrucks == null || !driverTrucks.Any())
+            {
+                response.IsSuccessful = false;
+                response.Message = "No trucks assigned to this driver.";
+                response.StatusCode = 404;
+                return response;
+            }
+
+            // 3. Extract Truck IDs
+            var driverTruckIds = driverTrucks.Select(t => t.Id).ToList();
+
+            // 4. Define the relevant Order statuses
+            var validStatuses = new[]
+            {
+                OrderStatus.Assigned,
+                OrderStatus.Loaded,
+                OrderStatus.InTransit,
+                OrderStatus.Accepted
+            };
+
+            // 5. Retrieve relevant orders
+            var relevantOrders = await _context.Orders
+                .Where(o => o.TruckId != null
+                         && driverTruckIds.Contains(o.TruckId)
+                         && validStatuses.Contains(o.OrderStatus))
+                .Include(o => o.Truck)
+                .Include(o => o.Business)
+                .Include(o => o.Manager)
+                .Include(o => o.Routes)
+                // Add additional includes if necessary
+                .ToListAsync();
+
+            // 6. Check if there are any relevant orders
+            if (relevantOrders == null || !relevantOrders.Any())
+            {
+                response.IsSuccessful = true;
+                response.Message = "No relevant orders found for the assigned trucks.";
+                response.Data = new List<AllOrderResponseModel>();
+                response.StatusCode = 200;
+                return response;
+            }
+
+            // 7. Map Orders to Response Models
+            var orderResponseModels = _mapper.Map<List<AllOrderResponseModel>>(relevantOrders);
+
+            // 8. Prepare and return the response
+            response.IsSuccessful = true;
+            response.Message = "Fetched orders successfully.";
+            response.Data = orderResponseModels;
+            response.StatusCode = 200;
+        }
+        catch (Exception ex)
+        {
+            // Log the exception as needed (not shown here for brevity)
+            response.IsSuccessful = false;
+            response.Message = $"Error retrieving data: {ex.Message}";
+            response.Data = null;
+            response.StatusCode = 500;
+        }
+
+        return response;
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetTransporterCompletedOrdersAsync(string truckOwnerId)
+    {
+        var response = new ApiResponseModel<List<AllOrderResponseModel>>();
+
+        try
+        {
+            // 1. Get all available trucks for this TruckOwner
+            var availableTrucks = await _context.Trucks
+                .Where(t => t.TruckOwnerId == truckOwnerId)
+                .ToListAsync();
+
+            // 2. Extract TruckIds from those available trucks
+            var availableTruckIds = availableTrucks.Select(t => t.Id).ToList();
+
+            // 3. Define the statuses we care about
+            var validStatuses = new[]
+            {
+            OrderStatus.Destination,
+            OrderStatus.Delivered,
+            OrderStatus.Flagged,
+            OrderStatus.Archived
+        };
+
+            // 4. Get all orders for those trucks that match any of the above statuses
+            var relevantOrders = await _context.Orders
+                .Where(o => o.TruckId != null
+                         && availableTruckIds.Contains(o.TruckId)
+                         && validStatuses.Contains(o.OrderStatus))
+                .Include(o => o.Truck)       // Eager load related Truck
+                .Include(o => o.Business)    // Eager load any other related data you need
+                .Include(o => o.Manager)
+                .Include(b => b.Routes)
+                // .Include(...) more includes as needed
+                .ToListAsync();
+
+            // 5. Construct the DTO
+
+            var transporterOrdersDto = _mapper.Map<List<AllOrderResponseModel>>(relevantOrders);
+            // 6. Return response
+            response.IsSuccessful = true;
+            response.Message = "Fetched available trucks and orders successfully";
+            response.Data = transporterOrdersDto;
+            response.StatusCode = 200;
+        }
+        catch (Exception ex)
+        {
+            response.IsSuccessful = false;
+            response.Message = $"Error retrieving data: {ex.Message}";
+            response.Data = null;
+        }
+
+        return response;
     }
 
 

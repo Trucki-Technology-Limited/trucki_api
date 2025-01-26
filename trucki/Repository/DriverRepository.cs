@@ -13,7 +13,7 @@ using trucki.Models.ResponseModels;
 
 namespace trucki.Repository;
 
-public class DriverRepository:IDriverRepository
+public class DriverRepository : IDriverRepository
 {
     private readonly TruckiDBContext _context;
     private readonly UserManager<User> _userManager;
@@ -92,7 +92,7 @@ public class DriverRepository:IDriverRepository
         _context.Drivers.Add(newDriver);
         var password = HelperClass.GenerateRandomPassword();
         var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress, newDriver.Phone, "driver", password, false);
-        
+
         //TODO:: Email password to user
         if (res.StatusCode == 201)
         {
@@ -137,7 +137,7 @@ public class DriverRepository:IDriverRepository
 
         driver.Name = model.Name;
         driver.Phone = model.Number;
-        
+
 
         driver.PassportFile = model.ProfilePicture ?? driver.PassportFile;
 
@@ -166,7 +166,7 @@ public class DriverRepository:IDriverRepository
                 StatusCode = 404 // Not Found
             };
         }
-        
+
         driver.IsActive = false;
         _context.Drivers.Update(driver);
         await _context.SaveChangesAsync();
@@ -178,45 +178,42 @@ public class DriverRepository:IDriverRepository
             Data = true
         };
     }
-        public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers()
-        {
-            var drivers = await _context.Drivers.ToListAsync();
-
-            var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
-
-            return new ApiResponseModel<List<AllDriverResponseModel>>
-            {
-                IsSuccessful = true,
-                Message = "Drivers retrieved successfully",
-                StatusCode = 200,
-                Data = driverResponseModels
-            };
-        }
-
-    public async Task<ApiResponseModel<DriverResponseModel>> GetDriverById(string id)
+    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers()
     {
-        var driver = await _context.Drivers.Where(x => x.Id == id).Include(d => d.Truck).FirstOrDefaultAsync();
+        var drivers = await _context.Drivers.ToListAsync();
 
-        if (driver == null)
-            return new ApiResponseModel<DriverResponseModel>
-            {
-                Data = new DriverResponseModel { }, IsSuccessful = false, Message = "Driver not found",
-                StatusCode = 404
-            };
+        var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
 
-        var driverToReturn = _mapper.Map<DriverResponseModel>(driver);
-        if (driver.Truck != null)
-        {
-            driverToReturn.Truck = _mapper.Map<AllTruckResponseModel>(driver.Truck); 
-        }
-
-        return new ApiResponseModel<DriverResponseModel>
+        return new ApiResponseModel<List<AllDriverResponseModel>>
         {
             IsSuccessful = true,
-            Message = "Driver retrieved successfully",
+            Message = "Drivers retrieved successfully",
             StatusCode = 200,
-            Data = driverToReturn
+            Data = driverResponseModels
         };
+    }
+
+    public async Task<DriverResponseModel> GetDriverById(string id)
+    {
+        var driver = await _context.Drivers
+            .Where(x => x.Id == id)
+            .Include(d => d.Truck)
+            .FirstOrDefaultAsync();
+
+        if (driver == null)
+        {
+            // Return null (or throw an exception, depending on how you prefer to handle "not found" in your service)
+            return null;
+        }
+
+        var driverToReturn = _mapper.Map<DriverResponseModel>(driver);
+
+        if (driver.Truck != null)
+        {
+            driverToReturn.Truck = _mapper.Map<AllTruckResponseModel>(driver.Truck);
+        }
+
+        return driverToReturn;
     }
 
     public async Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords)
@@ -280,7 +277,7 @@ public class DriverRepository:IDriverRepository
             StatusCode = 200
         };
     }
- 
+
     public async Task<ApiResponseModel<OrderCountByDriver>> GetOrderCountByDriver(string driverId)
     {
         var today = DateTime.Now;
@@ -300,7 +297,7 @@ public class DriverRepository:IDriverRepository
             {
                 IsSuccessful = true, // You might want to change this to false
                 Message = "No completed orders found for this driver",
-                Data =  new OrderCountByDriver
+                Data = new OrderCountByDriver
                 {
                     week = 0,
                     month = 0
@@ -323,7 +320,7 @@ public class DriverRepository:IDriverRepository
             StatusCode = 200
         };
     }
-    
+
     public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrderAssignedToDriver(string driverId)
     {
         var orders = await _context.Orders
@@ -345,7 +342,7 @@ public class DriverRepository:IDriverRepository
                 StatusCode = 200
             };
         }
-        
+
         var mappedOrders = _mapper.Map<List<AllOrderResponseModel>>(orders);
         return new ApiResponseModel<List<AllOrderResponseModel>>
         {
@@ -354,7 +351,7 @@ public class DriverRepository:IDriverRepository
             StatusCode = 200
         };
     }
-         public async Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model)
+    public async Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model)
     {
         var existingManager = await _context.Drivers
             .FirstOrDefaultAsync(m => m.EmailAddress == model.Email || m.Phone == model.Number);
@@ -390,7 +387,7 @@ public class DriverRepository:IDriverRepository
             //DriversLicence = ""
         };
         _context.Drivers.Add(newDriver);
-        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress,newDriver.Phone,
+        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress, newDriver.Phone,
             "driver", model.password, true);
         //TODO:: Email password to user
         if (res.StatusCode == 201)
@@ -407,7 +404,7 @@ public class DriverRepository:IDriverRepository
                 IsSuccessful = true,
                 Message = "Driver created successfully",
                 StatusCode = 201,
-                Data =""
+                Data = ""
             };
         }
 
@@ -420,34 +417,34 @@ public class DriverRepository:IDriverRepository
     }
 
     public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
-{
-    // Retrieve drivers that are associated with the given TruckOwnerId
-    var drivers = await _context.Drivers
-        .Where(d => d.TruckOwnerId == truckOwnerId)
-        .ToListAsync();
-
-    // If no drivers found, return a 404 response
-    if (drivers == null || !drivers.Any())
     {
+        // Retrieve drivers that are associated with the given TruckOwnerId
+        var drivers = await _context.Drivers
+            .Where(d => d.TruckOwnerId == truckOwnerId)
+            .ToListAsync();
+
+        // If no drivers found, return a 404 response
+        if (drivers == null || !drivers.Any())
+        {
+            return new ApiResponseModel<List<AllDriverResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "No drivers found for this truck owner",
+                StatusCode = 404,
+                Data = new List<AllDriverResponseModel>()
+            };
+        }
+
+        // Map drivers to the response model
+        var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
+
         return new ApiResponseModel<List<AllDriverResponseModel>>
         {
-            IsSuccessful = false,
-            Message = "No drivers found for this truck owner",
-            StatusCode = 404,
-            Data = new List<AllDriverResponseModel>()
+            IsSuccessful = true,
+            Message = "Drivers retrieved successfully",
+            StatusCode = 200,
+            Data = driverResponseModels
         };
     }
-
-    // Map drivers to the response model
-    var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
-
-    return new ApiResponseModel<List<AllDriverResponseModel>>
-    {
-        IsSuccessful = true,
-        Message = "Drivers retrieved successfully",
-        StatusCode = 200,
-        Data = driverResponseModels
-    };
-}
 
 }

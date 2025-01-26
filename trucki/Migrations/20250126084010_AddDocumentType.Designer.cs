@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250126084010_AddDocumentType")]
+    partial class AddDocumentType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -307,10 +309,6 @@ namespace trucki.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -357,51 +355,6 @@ namespace trucki.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Drivers");
-                });
-
-            modelBuilder.Entity("trucki.Entities.DriverDocument", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ApprovalStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("DocumentTypeId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DriverId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("FileUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("RejectionReason")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("SubmittedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentTypeId");
-
-                    b.HasIndex("DriverId");
-
-                    b.ToTable("DriverDocuments");
                 });
 
             modelBuilder.Entity("trucki.Entities.Manager", b =>
@@ -966,25 +919,6 @@ namespace trucki.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("trucki.Entities.DriverDocument", b =>
-                {
-                    b.HasOne("trucki.Entities.DocumentType", "DocumentType")
-                        .WithMany()
-                        .HasForeignKey("DocumentTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("trucki.Entities.Driver", "Driver")
-                        .WithMany("DriverDocuments")
-                        .HasForeignKey("DriverId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DocumentType");
-
-                    b.Navigation("Driver");
-                });
-
             modelBuilder.Entity("trucki.Entities.Manager", b =>
                 {
                     b.HasOne("trucki.Entities.User", "User")
@@ -1099,11 +1033,6 @@ namespace trucki.Migrations
                     b.Navigation("Customers");
 
                     b.Navigation("Routes");
-                });
-
-            modelBuilder.Entity("trucki.Entities.Driver", b =>
-                {
-                    b.Navigation("DriverDocuments");
                 });
 
             modelBuilder.Entity("trucki.Entities.Manager", b =>

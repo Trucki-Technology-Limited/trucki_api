@@ -83,4 +83,31 @@ string userId)
     {
         return await _orderRepository.SearchOrders(filter);
     }
+
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetPendingOrders()
+    {
+        var res = await _orderRepository.GetPendingOrders();
+        return res;
+    }
+
+    public async Task<ApiResponseModel<bool>> AssignOrderToTruckAsTransporter(AssignOrderToTruckAsTransporter model)
+    {
+        var res = await _orderRepository.AssignOrderToTruckAsTransporter(model);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetTransporterOrdersAsync(string truckOwnerId)
+    {
+        var res = await _orderRepository.GetTransporterOrdersAsync(truckOwnerId);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetTransporterCompletedOrdersAsync(string truckOwnerId)
+    {
+        var res = await _orderRepository.GetTransporterCompletedOrdersAsync(truckOwnerId);
+        return res;
+    }
+    public async Task<ApiResponseModel<List<AllOrderResponseModel>>> GetDriverOrdersAsync(string driverId)
+    {
+        var res = await _orderRepository.GetDriverOrdersAsync(driverId);
+        return res;
+    }
 }

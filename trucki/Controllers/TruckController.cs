@@ -68,7 +68,7 @@ public class TruckController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("AssignDriverToTruck")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,transporter")]
     public async Task<ActionResult<ApiResponseModel<bool>>> AssignDriverToTruck(AssignDriverToTruckRequestModel model)
     {
         var response = await _truckService.AssignDriverToTruck(model);
