@@ -19,13 +19,26 @@ public class Profiles : Profile
         CreateMap<AllDriverResponseModel, Driver>().ReverseMap();
         CreateMap<AllOfficerResponseModel, Officer>().ReverseMap();
         CreateMap<AllTruckResponseModel, Truck>().ReverseMap();
-        CreateMap<AllOfficerResponseModel, Officer>().ReverseMap();   
+        CreateMap<AllOfficerResponseModel, Officer>().ReverseMap();
         CreateMap<AllCustomerResponseModel, Customer>().ReverseMap();
         CreateMap<AllOrderResponseModel, Order>().ReverseMap();
         CreateMap<BankDetailsResponseModel, BankDetails>().ReverseMap();
         CreateMap<TruckOwnerResponseModel, TruckOwner>().ReverseMap();
         CreateMap<DriverResponseModel, Driver>().ReverseMap();
         CreateMap<DriverProfileResponseModel, Driver>().ReverseMap();
-          CreateMap<OfficerBusinessResponseModel, Business>().ReverseMap();
+        CreateMap<OfficerBusinessResponseModel, Business>().ReverseMap();
+        CreateMap<CargoOwner, CargoOwnerProfileResponseModel>();
+        CreateMap<CargoOrders, CargoOrderResponseModel>();
+        CreateMap<CargoTruckResponseModel, Truck>().ReverseMap();
+        CreateMap<Bid, BidResponseModel>();
+        CreateMap<Invoice, InvoiceResponseModel>()
+               .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.Order));
+        CreateMap<PaymentAccount, BankAccountResponseModel>();
+        CreateMap<CargoOrderItem, CargoOrderItemResponseModel>();
+        CreateMap<CargoOrders, CargoOrderSummaryModel>()
+             .ForMember(dest => dest.TotalItems, opt => opt.MapFrom(src => src.Items.Count))
+             .ForMember(dest => dest.TotalWeight, opt => opt.MapFrom(src => src.Items.Sum(i => i.Weight * i.Quantity)));
+        CreateMap<CargoOwner, CargoOwnerResponseModel>();
+
     }
 }

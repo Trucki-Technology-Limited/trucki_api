@@ -66,7 +66,9 @@ public class DriverRepository : IDriverRepository
             EmailAddress = model.Email,
             TruckId = model.TruckId,
             DriversLicence = model.IdCard,
-            PassportFile = model.Picture
+            PassportFile = model.Picture,
+            Country = model.Country
+            
         };
 
         // Check if TruckOwnerId is provided
@@ -383,6 +385,7 @@ public class DriverRepository : IDriverRepository
             Name = model.Name,
             Phone = model.Number,
             EmailAddress = model.Email,
+            Country = model.Country,
             //PassportFile = "",
             //DriversLicence = ""
         };

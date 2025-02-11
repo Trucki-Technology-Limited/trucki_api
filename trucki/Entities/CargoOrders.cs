@@ -1,0 +1,99 @@
+namespace trucki.Entities;
+
+public class CargoOrderItem : BaseClass
+{
+    public string CargoOrderId { get; set; }
+    public CargoOrders CargoOrder { get; set; }
+    public string Description { get; set; }
+    public decimal Weight { get; set; }
+    public decimal Length { get; set; }
+    public decimal Width { get; set; }
+    public decimal Height { get; set; }
+    public bool IsFragile { get; set; }
+    public string SpecialHandlingInstructions { get; set; }
+    public CargoType Type { get; set; }
+    public int Quantity { get; set; }
+    public List<string> ItemImages { get; set; } = new();
+}
+
+public enum CargoType
+{
+    General,
+    Fragile,
+    Perishable,
+    Hazardous,
+    Electronics,
+    Furniture,
+    Vehicle,
+    Construction
+}
+
+public enum CargoOrderStatus
+{
+    Draft,
+    OpenForBidding,
+    BiddingInProgress,
+    DriverSelected,
+    DriverAcknowledged,
+    ReadyForPickup,
+    InTransit,
+    Delivered,
+    Completed,
+    PaymentPending,
+    PaymentComplete,
+    PaymentOverdue
+}
+
+public class CargoOrders : BaseClass
+{
+    public string CargoOwnerId { get; set; }
+    public CargoOwner CargoOwner { get; set; }
+    public string PickupLocation { get; set; }
+    public string PickupLocationLat { get; set; }
+    public string PickupLocationLong { get; set; }
+    public string DeliveryLocation { get; set; }
+    public string DeliveryLocationLat { get; set; }
+    public string DeliveryLocationLong { get; set; }
+    public CargoOrderStatus Status { get; set; }
+    public string CountryCode { get; set; }
+    public List<CargoOrderItem> Items { get; set; } = new();
+    public List<Bid> Bids { get; set; } = new();
+    public string? AcceptedBidId { get; set; }
+    public Bid? AcceptedBid { get; set; }
+    public List<string>? Documents { get; set; } = new();
+    public List<string>? DeliveryDocuments { get; set; } = new();
+    public string? Consignment { get; set; }
+    public DateTime? PickupDateTime { get; set; }
+    public DateTime? ActualPickupDateTime { get; set; }
+    public DateTime? DeliveryDateTime { get; set; }
+    public CargoTruckType? RequiredTruckType { get; set; }
+    public decimal TotalAmount { get; set; }
+    public decimal SystemFee { get; set; } // 20% of total amount
+    public decimal Tax { get; set; }
+    public string? InvoiceNumber { get; set; }
+    public PaymentStatus PaymentStatus { get; set; }
+    public DateTime? PaymentDueDate { get; set; }
+}
+
+public enum PaymentStatus
+{
+    Pending,
+    Paid,
+    Overdue
+}
+
+
+
+
+// First, let's create an enum for truck types
+public enum CargoTruckType
+{
+    CargoVan,
+    MiniVan,
+    PickupVan,
+    BoxTruck,
+    FlatbedTruck,
+    RefrigeratedTruck,
+    DumpTruck,
+    TankerTruck
+}

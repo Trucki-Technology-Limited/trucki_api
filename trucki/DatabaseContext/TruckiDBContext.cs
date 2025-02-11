@@ -25,6 +25,53 @@ namespace trucki.DatabaseContext
                 .HasOne(t => t.Driver)
                 .WithOne(d => d.Truck)
                 .HasForeignKey<Driver>(d => d.TruckId);
+            // New CargoOrders configurations
+            modelBuilder.Entity<CargoOrders>(builder =>
+            {
+                builder.HasKey(x => x.Id);
+
+                // Configure CargoOwner relationship
+                builder.HasOne(co => co.CargoOwner)
+                    .WithMany(o => o.Orders)
+                    .HasForeignKey(co => co.CargoOwnerId);
+
+                // Configure Bids collection relationship
+                builder.HasMany(co => co.Bids)
+                    .WithOne(b => b.Order)
+                    .HasForeignKey(b => b.OrderId);
+
+                // Configure AcceptedBid relationship
+                builder.HasOne(co => co.AcceptedBid)
+                    .WithOne()
+                    .HasForeignKey<CargoOrders>("AcceptedBidId");
+
+                // Configure Documents and DeliveryDocuments as comma-separated strings
+                builder.Property(co => co.Documents)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
+
+                builder.Property(co => co.DeliveryDocuments)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
+            });
+
+            // New Bid configurations
+            modelBuilder.Entity<Bid>(builder =>
+            {
+                builder.HasKey(x => x.Id);
+
+                // Configure Order relationship
+                builder.HasOne(b => b.Order)
+                    .WithMany(o => o.Bids)
+                    .HasForeignKey(b => b.OrderId);
+
+                // Configure Truck relationship
+                builder.HasOne(b => b.Truck)
+                    .WithMany()
+                    .HasForeignKey(b => b.TruckId);
+            });
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -39,6 +86,8 @@ namespace trucki.DatabaseContext
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<DocumentType> DocumentTypes { get; set; }
         public DbSet<DriverDocument> DriverDocuments { get; set; }
+        public DbSet<CargoOwner> CargoOwners { get; set; }
+        public DbSet<CargoOrders> CargoOrders { get; set; }
 
 
 

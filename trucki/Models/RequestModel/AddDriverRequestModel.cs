@@ -7,6 +7,7 @@ public class AddDriverRequestModel
     public string Name { set; get; }
     public string Email { set; get; }
     public string Number { set; get; }
+    public string Country { set; get; }
     public string address { set; get; }
     public string? TruckId { set; get; }
     public string? TruckOwnerId { get; set; }  // Add this property
@@ -25,6 +26,7 @@ public class CreateDriverRequestModel
     public string Name { set; get; }
     public string Email { set; get; }
     public string Number { set; get; }
+    public string Country { set; get; }
     public string address { set; get; }
     public string password { set; get; }
 }

@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250205115512_UpdateCargoOrdersTable")]
+    partial class UpdateCargoOrdersTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -194,9 +196,6 @@ namespace trucki.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime?>("DriverAcknowledgedAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<string>("OrderId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -204,18 +203,18 @@ namespace trucki.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<string>("TruckId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("truckId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId");
 
-                    b.HasIndex("TruckId");
+                    b.HasIndex("truckId");
 
                     b.ToTable("Bid");
                 });
@@ -256,61 +255,6 @@ namespace trucki.Migrations
                     b.ToTable("Businesses");
                 });
 
-            modelBuilder.Entity("trucki.Entities.CargoOrderItem", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CargoOrderId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Height")
-                        .HasColumnType("numeric");
-
-                    b.Property<bool>("IsFragile")
-                        .HasColumnType("boolean");
-
-                    b.Property<List<string>>("ItemImages")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
-                    b.Property<decimal>("Length")
-                        .HasColumnType("numeric");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SpecialHandlingInstructions")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("Width")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CargoOrderId");
-
-                    b.ToTable("CargoOrderItem");
-                });
-
             modelBuilder.Entity("trucki.Entities.CargoOrders", b =>
                 {
                     b.Property<string>("Id")
@@ -319,10 +263,15 @@ namespace trucki.Migrations
                     b.Property<string>("AcceptedBidId")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("ActualPickupDateTime")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<List<string>>("CargoImages")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<string>("CargoOwnerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CargoType")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -334,9 +283,6 @@ namespace trucki.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime?>("DeliveryDateTime")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DeliveryDocuments")
@@ -354,20 +300,12 @@ namespace trucki.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Documents")
                         .HasColumnType("text");
-
-                    b.Property<string>("InvoiceNumber")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("PaymentDueDate")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("PaymentStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("PickupDateTime")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("PickupLocation")
                         .IsRequired()
@@ -381,23 +319,21 @@ namespace trucki.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Quantity")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int?>("RequiredTruckType")
                         .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("SystemFee")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("Tax")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("numeric");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
@@ -1168,15 +1104,15 @@ namespace trucki.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("trucki.Entities.Truck", "Truck")
+                    b.HasOne("trucki.Entities.Truck", "truck")
                         .WithMany()
-                        .HasForeignKey("TruckId")
+                        .HasForeignKey("truckId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Order");
 
-                    b.Navigation("Truck");
+                    b.Navigation("truck");
                 });
 
             modelBuilder.Entity("trucki.Entities.Business", b =>
@@ -1186,17 +1122,6 @@ namespace trucki.Migrations
                         .HasForeignKey("managerId");
 
                     b.Navigation("Manager");
-                });
-
-            modelBuilder.Entity("trucki.Entities.CargoOrderItem", b =>
-                {
-                    b.HasOne("trucki.Entities.CargoOrders", "CargoOrder")
-                        .WithMany("Items")
-                        .HasForeignKey("CargoOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CargoOrder");
                 });
 
             modelBuilder.Entity("trucki.Entities.CargoOrders", b =>
@@ -1395,8 +1320,6 @@ namespace trucki.Migrations
             modelBuilder.Entity("trucki.Entities.CargoOrders", b =>
                 {
                     b.Navigation("Bids");
-
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("trucki.Entities.CargoOwner", b =>

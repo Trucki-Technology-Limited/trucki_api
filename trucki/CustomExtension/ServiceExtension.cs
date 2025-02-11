@@ -48,6 +48,10 @@ namespace trucki.CustomExtension
             services.AddScoped<IDocumentTypeService, DocumentTypeService>();
             services.AddScoped<IDriverDocumentService, DriverDocumentService>();
             services.AddScoped<IDriverDocumentRepository, DriverDocumentRepository>();
+            services.AddScoped<ICargoOwnerRepository, CargoOwnerRepository>();
+            services.AddScoped<ICargoOwnerService, CargoOwnerService>();
+            services.AddScoped<ICargoOrderService, CargoOrderService>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
         }
     }
 }
