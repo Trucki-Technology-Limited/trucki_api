@@ -88,6 +88,7 @@ namespace trucki.DatabaseContext
         public DbSet<DriverDocument> DriverDocuments { get; set; }
         public DbSet<CargoOwner> CargoOwners { get; set; }
         public DbSet<CargoOrders> CargoOrders { get; set; }
+        public DbSet<DeliveryLocationUpdate> deliveryLocationUpdates { get; set; }
 
 
 

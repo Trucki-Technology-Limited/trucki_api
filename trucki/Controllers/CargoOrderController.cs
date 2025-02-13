@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
@@ -32,7 +33,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("OpenOrderForBidding")]
-        public async Task<IActionResult> OpenOrderForBidding([FromBody]OpenOrderForBiddingDto model)
+        public async Task<IActionResult> OpenOrderForBidding([FromBody] OpenOrderForBiddingDto model)
         {
             var result = await _cargoOrderService.OpenOrderForBiddingAsync(model.OrderId);
             return StatusCode(result.StatusCode, result);
@@ -80,31 +81,38 @@ namespace trucki.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("{orderId}/UploadManifest")]
+        [HttpPost("UploadManifest")]
         public async Task<IActionResult> UploadManifest([FromBody] UploadManifestDto uploadManifestDto)
         {
             var result = await _cargoOrderService.UploadManifestAsync(uploadManifestDto);
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("{orderId}/UpdateLocation")]
+        [HttpPost("UpdateLocation")]
         public async Task<IActionResult> UpdateLocation([FromBody] UpdateLocationDto updateLocationDto)
         {
             var result = await _cargoOrderService.UpdateLocationAsync(updateLocationDto);
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("{orderId}/CompleteDelivery")]
+        [HttpPost("CompleteDelivery")]
         public async Task<IActionResult> CompleteDelivery([FromBody] CompleteDeliveryDto completeDeliveryDto)
         {
             var result = await _cargoOrderService.CompleteDeliveryAsync(completeDeliveryDto);
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("{orderId}/GetDeliveryUpdates")]
+        [HttpGet("GetDeliveryUpdates/{orderId}")]
         public async Task<IActionResult> GetDeliveryUpdates(string orderId)
         {
             var result = await _cargoOrderService.GetDeliveryUpdatesAsync(orderId);
+            return StatusCode(result.StatusCode, result);
+        }
+        [HttpPost("StartOrderDto")]
+        [Authorize(Roles = "driver")]
+        public async Task<IActionResult> StartOrder([FromBody] StartOrderDto startOrderDto)
+        {
+            var result = await _cargoOrderService.StartOrderAsync(startOrderDto);
             return StatusCode(result.StatusCode, result);
         }
     }

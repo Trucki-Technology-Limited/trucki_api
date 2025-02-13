@@ -772,5 +772,47 @@ namespace trucki.Services
                 return ApiResponseModel<List<DeliveryLocationUpdate>>.Fail($"Error: {ex.Message}", 500);
             }
         }
+
+        public async Task<ApiResponseModel<bool>> StartOrderAsync(StartOrderDto startOrderDto)
+        {
+            try
+            {
+                var order = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                    .FirstOrDefaultAsync(o => o.Id == startOrderDto.OrderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Order not found", 404);
+                }
+
+                // Verify the order is in DriverAcknowledged status
+                if (order.Status != CargoOrderStatus.DriverAcknowledged)
+                {
+                    return ApiResponseModel<bool>.Fail("Order must be in acknowledged state to start", 400);
+                }
+
+                // Verify this is the assigned driver
+                var driver = await _dbContext.Set<Driver>()
+                    .Include(d => d.Truck)
+                    .FirstOrDefaultAsync(d => d.Id == startOrderDto.DriverId);
+
+                if (driver?.Truck == null || order.AcceptedBid?.TruckId != driver.Truck.Id)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver is not assigned to this order", 400);
+                }
+
+                // Update order status to ReadyForPickup
+                order.Status = CargoOrderStatus.ReadyForPickup;
+                await _dbContext.SaveChangesAsync();
+
+                return ApiResponseModel<bool>.Success("Order is now ready for pickup", true, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+            }
+        }
     }
 }

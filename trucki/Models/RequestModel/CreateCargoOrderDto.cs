@@ -77,4 +77,9 @@ namespace trucki.Models.RequestModel
         public decimal Amount { get; set; }
         public string? Notes { get; set; }  // Optional notes from driver about the bid
     }
+      public class StartOrderDto
+    {
+        public string OrderId { get; set; }
+        public string DriverId { get; set; }
+    }
 }

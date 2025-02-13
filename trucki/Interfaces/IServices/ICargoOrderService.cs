@@ -20,5 +20,6 @@ public interface ICargoOrderService
         Task<ApiResponseModel<bool>> CompleteDeliveryAsync(CompleteDeliveryDto completeDeliveryDto);
         Task<ApiResponseModel<bool>> UpdateLocationAsync(UpdateLocationDto updateLocationDto);
         Task<ApiResponseModel<bool>> UploadManifestAsync(UploadManifestDto uploadManifestDto);
+        Task<ApiResponseModel<bool>> StartOrderAsync(StartOrderDto startOrderDto);
 
 }
