@@ -21,5 +21,7 @@ public interface ICargoOrderService
         Task<ApiResponseModel<bool>> UpdateLocationAsync(UpdateLocationDto updateLocationDto);
         Task<ApiResponseModel<bool>> UploadManifestAsync(UploadManifestDto uploadManifestDto);
         Task<ApiResponseModel<bool>> StartOrderAsync(StartOrderDto startOrderDto);
+        Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetCompletedOrdersForDriverAsync(string driverId);
+        Task<ApiResponseModel<DriverSummaryResponseModel>> GetDriverSummaryAsync(string driverId);
 
 }

@@ -36,5 +36,6 @@ namespace trucki.Models.ResponseModels
 
         public string PassportFile { get; set; }
         public string Country { get; set; }
+        public bool IsActive { get; set; }
     }
 }

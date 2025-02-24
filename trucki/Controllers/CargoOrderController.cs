@@ -115,5 +115,17 @@ namespace trucki.Controllers
             var result = await _cargoOrderService.StartOrderAsync(startOrderDto);
             return StatusCode(result.StatusCode, result);
         }
+        [HttpGet("driver/GetCompletedOrders")]
+        public async Task<IActionResult> GetCompletedOrdersForDriver(string driverId)
+        {
+            var result = await _cargoOrderService.GetCompletedOrdersForDriverAsync(driverId);
+            return StatusCode(result.StatusCode, result);
+        }
+        [HttpGet("driver/summary")]
+        public async Task<IActionResult> GetDriverSummary(string driverId)
+        {
+            var result = await _cargoOrderService.GetDriverSummaryAsync(driverId);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

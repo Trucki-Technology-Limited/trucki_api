@@ -814,5 +814,226 @@ namespace trucki.Services
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
+        public async Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetCompletedOrdersForDriverAsync(string driverId)
+        {
+            try
+            {
+                // First get the driver with their truck information
+                var driver = await _dbContext.Set<Driver>()
+                    .Include(d => d.Truck)
+                    .FirstOrDefaultAsync(d => d.Id == driverId);
+
+                if (driver == null)
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail(
+                        "Driver not found",
+                        404);
+                }
+
+                if (driver.Truck == null)
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail(
+                        "No truck assigned to this driver",
+                        404);
+                }
+
+                // Get completed orders for the driver
+                var completedOrders = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.CargoOwner)
+                    .Include(o => o.Items)
+                    .Include(o => o.AcceptedBid)
+                    .Where(o =>
+                        o.AcceptedBid != null &&
+                        o.AcceptedBid.TruckId == driver.Truck.Id &&
+                        (o.Status == CargoOrderStatus.Delivered))
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                if (!completedOrders.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No completed orders found for this driver",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                var orderResponses = new List<CargoOrderResponseModel>();
+
+                foreach (var order in completedOrders)
+                {
+                    // Initialize collections to prevent null reference
+                    order.Items ??= new List<CargoOrderItem>();
+                    order.Documents ??= new List<string>();
+                    order.DeliveryDocuments ??= new List<string>();
+
+                    var orderResponse = _mapper.Map<CargoOrderResponseModel>(order);
+
+                    // Calculate and add summary information
+                    var summary = await GetOrderSummary(order);
+                    orderResponse.TotalWeight = summary.TotalWeight;
+                    orderResponse.TotalVolume = summary.TotalVolume;
+                    orderResponse.HasFragileItems = summary.HasFragileItems;
+                    orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
+                    orderResponse.SpecialHandlingRequirements = summary.SpecialHandlingRequirements;
+
+                    // Add bid/payment information
+                    if (order.AcceptedBid != null)
+                    {
+                        orderResponse.AcceptedAmount = order.AcceptedBid.Amount;
+                    }
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                    "Completed orders retrieved successfully",
+                    orderResponses,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail(
+                    $"Error retrieving completed orders: {ex.Message}",
+                    500);
+            }
+        }
+        // Add to CargoOrderService
+        public async Task<ApiResponseModel<DriverSummaryResponseModel>> GetDriverSummaryAsync(string driverId)
+        {
+            try
+            {
+                // Get driver and truck info
+                var driver = await _dbContext.Set<Driver>()
+                    .Include(d => d.Truck)
+                    .FirstOrDefaultAsync(d => d.Id == driverId);
+
+                if (driver == null)
+                {
+                    return ApiResponseModel<DriverSummaryResponseModel>.Fail(
+                        "Driver not found",
+                        404);
+                }
+
+                if (driver.Truck == null)
+                {
+                    return ApiResponseModel<DriverSummaryResponseModel>.Fail(
+                        "No truck assigned to this driver",
+                        404);
+                }
+
+                // Get all completed orders for calculations
+                var completedOrders = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.AcceptedBid)
+                    .Where(o =>
+                        o.AcceptedBid != null &&
+                        o.AcceptedBid.TruckId == driver.Truck.Id &&
+                        o.Status == CargoOrderStatus.Delivered)
+                    .ToListAsync();
+
+                var now = DateTime.UtcNow;
+                var startOfWeek = now.Date.AddDays(-(int)now.DayOfWeek);
+                var startOfMonth = new DateTime(now.Year, now.Month, 1);
+
+                // Calculate weekly stats
+                var weeklyStats = new WeeklyStats
+                {
+                    CompletedTrips = completedOrders.Count(o =>
+                        o.DeliveryDateTime >= startOfWeek),
+                    Earnings = completedOrders
+                        .Where(o => o.DeliveryDateTime >= startOfWeek)
+                        .Sum(o => o.AcceptedBid.Amount),
+                    DailyTrips = completedOrders
+                        .Where(o => o.DeliveryDateTime >= startOfWeek)
+                        .GroupBy(o => o.DeliveryDateTime.Value.Date)
+                        .Select(g => new DailyTrip
+                        {
+                            Date = g.Key,
+                            TripCount = g.Count(),
+                            Earnings = g.Sum(o => o.AcceptedBid.Amount)
+                        })
+                        .OrderBy(d => d.Date)
+                        .ToList()
+                };
+
+                // Calculate monthly stats
+                var monthlyStats = new MonthlyStats
+                {
+                    CompletedTrips = completedOrders.Count(o =>
+                        o.DeliveryDateTime >= startOfMonth),
+                    Earnings = completedOrders
+                        .Where(o => o.DeliveryDateTime >= startOfMonth)
+                        .Sum(o => o.AcceptedBid.Amount),
+                    WeeklyTrips = GetWeeklyTrips(completedOrders, startOfMonth)
+                };
+
+                // Calculate total stats
+                var summary = new DriverSummaryResponseModel
+                {
+                    WeeklyStats = weeklyStats,
+                    MonthlyStats = monthlyStats,
+                    TotalEarnings = completedOrders.Sum(o => o.AcceptedBid.Amount),
+                    TotalTripsCompleted = completedOrders.Count,
+                    AverageRating = 0
+                    // AverageRating = await CalculateDriverAverageRating(driverId)
+                };
+
+                return ApiResponseModel<DriverSummaryResponseModel>.Success(
+                    "Driver summary retrieved successfully",
+                    summary,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<DriverSummaryResponseModel>.Fail(
+                    $"Error retrieving driver summary: {ex.Message}",
+                    500);
+            }
+        }
+
+        private List<WeeklyTrip> GetWeeklyTrips(List<CargoOrders> orders, DateTime startOfMonth)
+        {
+            return orders
+                .Where(o => o.DeliveryDateTime >= startOfMonth)
+                .GroupBy(o => GetWeekNumberOfMonth(o.DeliveryDateTime.Value))
+                .Select(g => new WeeklyTrip
+                {
+                    WeekNumber = g.Key,
+                    StartDate = GetStartDateOfWeek(startOfMonth, g.Key),
+                    EndDate = GetEndDateOfWeek(startOfMonth, g.Key),
+                    TripCount = g.Count(),
+                    Earnings = g.Sum(o => o.AcceptedBid.Amount)
+                })
+                .OrderBy(w => w.WeekNumber)
+                .ToList();
+        }
+
+        private int GetWeekNumberOfMonth(DateTime date)
+        {
+            DateTime firstDayOfMonth = new DateTime(date.Year, date.Month, 1);
+            return (date.Day - 1) / 7 + 1;
+        }
+
+        private DateTime GetStartDateOfWeek(DateTime startOfMonth, int weekNumber)
+        {
+            return startOfMonth.AddDays((weekNumber - 1) * 7);
+        }
+
+        private DateTime GetEndDateOfWeek(DateTime startOfMonth, int weekNumber)
+        {
+            return startOfMonth.AddDays(weekNumber * 7 - 1);
+        }
+
+        // private async Task<decimal> CalculateDriverAverageRating(string driverId)
+        // {
+        //     var ratings = await _dbContext.Set<DriverRating>()
+        //         .Where(r => r.DriverId == driverId)
+        //         .Select(r => r.Rating)
+        //         .ToListAsync();
+
+        //     if (!ratings.Any())
+        //         return 0;
+
+        //     return ratings.Average();
+        // }
     }
 }

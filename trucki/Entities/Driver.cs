@@ -6,7 +6,7 @@ namespace trucki.Entities
     public class Driver : BaseClass
     {
         public string Name { get; set; }
-        
+
         public string Phone { get; set; }
 
         [EmailAddress]
@@ -21,12 +21,12 @@ namespace trucki.Entities
 
         public string? PassportFile { get; set; }
         public bool IsActive { get; set; } = true;
-        [ForeignKey("User")] 
-        public string? UserId { get; set; } 
+        [ForeignKey("User")]
+        public string? UserId { get; set; }
 
         public User? User { get; set; }
 
-           // New property to capture which country this driver belongs to (if relevant)
+        // New property to capture which country this driver belongs to (if relevant)
         public string Country { get; set; } = "NG";  // or "NG" or any default
 
         // (Optional) If you plan to use the same DocumentTypes approach:
@@ -35,5 +35,6 @@ namespace trucki.Entities
 
         // Navigation property for documents
         public ICollection<DriverDocument> DriverDocuments { get; set; } = new List<DriverDocument>();
+        public ICollection<DriverBankAccount> BankAccounts { get; set; } = new List<DriverBankAccount>();
     }
 }

@@ -52,6 +52,7 @@ namespace trucki.CustomExtension
             services.AddScoped<ICargoOwnerService, CargoOwnerService>();
             services.AddScoped<ICargoOrderService, CargoOrderService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
+            services.AddScoped<IDriverBankAccountService, DriverBankAccountService>();
         }
     }
 }
