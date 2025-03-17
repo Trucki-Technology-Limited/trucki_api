@@ -4,6 +4,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using trucki.CustomExtension;
 using trucki.DatabaseContext;
+using trucki.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -16,12 +17,13 @@ builder.Services.AddDependencyInjection();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSignalR();
 //builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
     {
-        In=ParameterLocation.Header,
+        In = ParameterLocation.Header,
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey
     });
@@ -40,8 +42,8 @@ using (var scope = app.Services.CreateScope())
 
 // if (app.Environment.IsDevelopment())
 // {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwagger();
+app.UseSwaggerUI();
 // }
 
 app.UseCors();
@@ -49,7 +51,12 @@ app.UseIdentityServer();
 app.UseAuthentication();
 app.UseRouting();
 app.UseAuthorization();
-app.MapControllers();
 
-
+// Configure the HTTP request pipeline.
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    // Map the SignalR hub
+    endpoints.MapHub<ChatHub>("/chathub");
+});
 app.Run();

@@ -1,3 +1,5 @@
+using trucki.Entities;
+
 namespace trucki.Models.ResponseModels;
 
 public class DriverProfileResponseModel
@@ -12,5 +14,7 @@ public class DriverProfileResponseModel
     public string Country { get; set; }
     public bool IsActive { get; set; }
     public string UserId { get; set; }
+    public bool HasAcceptedTerms { get; set; }
+     public DriverOnboardingStatus OnboardingStatus { get; set; }
     public AllTruckResponseModel? Truck { get; set; }
 }

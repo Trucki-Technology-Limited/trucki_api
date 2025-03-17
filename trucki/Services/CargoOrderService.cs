@@ -412,6 +412,13 @@ namespace trucki.Services
                 orderResponse.HasFragileItems = summary.HasFragileItems;
                 orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
 
+                // Set the Driver property if an accepted bid exists and has a driver
+                if (cargoOrder.AcceptedBid != null &&
+                    cargoOrder.AcceptedBid.Truck != null &&
+                    cargoOrder.AcceptedBid.Truck.Driver != null)
+                {
+                    orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(cargoOrder.AcceptedBid.Truck.Driver);
+                }
                 return ApiResponseModel<CargoOrderResponseModel>.Success(
                     "Cargo order retrieved successfully",
                     orderResponse,
@@ -578,9 +585,16 @@ namespace trucki.Services
                     orderResponse.NextAction = GetNextRequiredAction(order.Status);
 
                     // Add bid/payment information
+                    // Add bid/payment information
                     if (order.AcceptedBid != null)
                     {
                         orderResponse.AcceptedAmount = order.AcceptedBid.Amount;
+
+                        // Set the Driver property if the bid has a driver
+                        if (order.AcceptedBid.Truck != null && order.AcceptedBid.Truck.Driver != null)
+                        {
+                            orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(order.AcceptedBid.Truck.Driver);
+                        }
                     }
 
                     orderResponses.Add(orderResponse);
@@ -880,6 +894,12 @@ namespace trucki.Services
                     if (order.AcceptedBid != null)
                     {
                         orderResponse.AcceptedAmount = order.AcceptedBid.Amount;
+
+                        // Set the Driver property if the bid has a driver
+                        if (order.AcceptedBid.Truck != null && order.AcceptedBid.Truck.Driver != null)
+                        {
+                            orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(order.AcceptedBid.Truck.Driver);
+                        }
                     }
 
                     orderResponses.Add(orderResponse);

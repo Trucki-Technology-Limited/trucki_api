@@ -36,5 +36,16 @@ namespace trucki.Entities
         // Navigation property for documents
         public ICollection<DriverDocument> DriverDocuments { get; set; } = new List<DriverDocument>();
         public ICollection<DriverBankAccount> BankAccounts { get; set; } = new List<DriverBankAccount>();
+        public ICollection<TermsAcceptanceRecord> TermsAcceptanceRecords { get; set; } = new List<TermsAcceptanceRecord>();
+        [NotMapped] // Not stored in DB, calculated
+        public bool HasAcceptedLatestTerms => TermsAcceptanceRecords.Any(t => t.TermsVersion == "2025"); // Update with your current version
+        public DriverOnboardingStatus OnboardingStatus { get; set; } = DriverOnboardingStatus.OboardingPending;
+    }
+
+    public enum DriverOnboardingStatus
+    {
+        OboardingPending,
+        OnboardingInReview,
+        OnboardingCompleted
     }
 }

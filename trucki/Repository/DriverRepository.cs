@@ -68,7 +68,7 @@ public class DriverRepository : IDriverRepository
             DriversLicence = model.IdCard,
             PassportFile = model.Picture,
             Country = model.Country
-            
+
         };
 
         // Check if TruckOwnerId is provided
@@ -258,6 +258,7 @@ public class DriverRepository : IDriverRepository
         var driver = await _context.Drivers
             .Include(e => e.User)
             .Include(d => d.Truck)
+            .Include(d => d.TermsAcceptanceRecords)
             .FirstOrDefaultAsync(d => d.UserId == driverId);
 
         if (driver == null)
@@ -271,7 +272,7 @@ public class DriverRepository : IDriverRepository
         }
 
         var mappedDriver = _mapper.Map<DriverProfileResponseModel>(driver);
-
+        mappedDriver.HasAcceptedTerms = driver.TermsAcceptanceRecords.Any(r => r.TermsVersion == "2025"); // Current version
         return new ApiResponseModel<DriverProfileResponseModel>
         {
             IsSuccessful = true,
@@ -389,6 +390,7 @@ public class DriverRepository : IDriverRepository
             //PassportFile = "",
             //DriversLicence = ""
         };
+        newDriver.OnboardingStatus = DriverOnboardingStatus.OboardingPending;
         _context.Drivers.Add(newDriver);
         var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress, newDriver.Phone,
             "driver", model.password, true);
@@ -449,5 +451,189 @@ public class DriverRepository : IDriverRepository
             Data = driverResponseModels
         };
     }
+    public async Task<ApiResponseModel<bool>> AcceptTermsAndConditions(AcceptTermsRequestModel model)
+    {
+        try
+        {
+            var driver = await _context.Drivers
+                .Include(d => d.TermsAcceptanceRecords)
+                .FirstOrDefaultAsync(d => d.Id == model.DriverId);
 
+            if (driver == null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "Driver not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Create a new acceptance record
+            var termsRecord = new TermsAcceptanceRecord
+            {
+                DriverId = driver.Id,
+                TermsVersion = model.TermsVersion,
+                AcceptedAt = model.AcceptedAt,
+                AcceptedFromIp = model.IpAddress, // If you're collecting this
+                DeviceInfo = model.DeviceInfo    // If you're collecting this
+            };
+
+            // Add to the database
+            _context.TermsAcceptanceRecords.Add(termsRecord);
+            await _context.SaveChangesAsync();
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "Terms and conditions accepted successfully",
+                StatusCode = 200,
+                Data = true
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred: {ex.Message}",
+                StatusCode = 500
+            };
+        }
+    }
+    public async Task<ApiResponseModel<bool>> HasAcceptedLatestTerms(string driverId)
+    {
+        try
+        {
+            var latestAcceptance = await _context.TermsAcceptanceRecords
+                .Where(t => t.DriverId == driverId)
+                .OrderByDescending(t => t.AcceptedAt)
+                .FirstOrDefaultAsync();
+
+            bool hasAccepted = latestAcceptance != null && latestAcceptance.TermsVersion == "2025"; // Current version
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = hasAccepted ? "Driver has accepted latest terms" : "Driver has not accepted latest terms",
+                StatusCode = 200,
+                Data = hasAccepted
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred: {ex.Message}",
+                StatusCode = 500
+            };
+        }
+    }
+    public async Task<ApiResponseModel<List<TermsAcceptanceRecordDto>>> GetTermsAcceptanceHistory(string driverId)
+    {
+        try
+        {
+            var history = await _context.TermsAcceptanceRecords
+                .Include(t => t.Driver) // Include driver for name info
+                .Where(t => t.DriverId == driverId)
+                .OrderByDescending(t => t.AcceptedAt)
+                .Select(t => new TermsAcceptanceRecordDto
+                {
+                    Id = t.Id,
+                    DriverId = t.DriverId,
+                    DriverName = t.Driver.Name,
+                    TermsVersion = t.TermsVersion,
+                    AcceptedAt = t.AcceptedAt,
+                    AcceptedFromIp = t.AcceptedFromIp,
+                    DeviceInfo = t.DeviceInfo
+                })
+                .ToListAsync();
+
+            return new ApiResponseModel<List<TermsAcceptanceRecordDto>>
+            {
+                IsSuccessful = true,
+                Message = "Terms acceptance history retrieved successfully",
+                StatusCode = 200,
+                Data = history
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<List<TermsAcceptanceRecordDto>>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred: {ex.Message}",
+                StatusCode = 500
+            };
+        }
+    }
+    public async Task<ApiResponseModel<bool>> UpdateDriverProfilePhoto(UpdateDriverProfilePhotoRequestModel model)
+    {
+        var driver = await _context.Drivers.FindAsync(model.DriverId);
+
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        driver.PassportFile = model.ProfilePhotoUrl;
+
+        // Save changes to database
+        _context.Drivers.Update(driver);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Profile photo updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+    public async Task<ApiResponseModel<bool>> UpdateDriverOnboardingStatus(string driverId, DriverOnboardingStatus status)
+    {
+        try
+        {
+            var driver = await _context.Drivers.FindAsync(driverId);
+
+            if (driver == null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "Driver not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Update the onboarding status
+            driver.OnboardingStatus = status;
+
+            _context.Drivers.Update(driver);
+            await _context.SaveChangesAsync();
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = $"Driver onboarding status updated successfully to {status}",
+                StatusCode = 200,
+                Data = true
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred while updating driver onboarding status: {ex.Message}",
+                StatusCode = 500
+            };
+        }
+    }
 }

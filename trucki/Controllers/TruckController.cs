@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Entities;
@@ -22,6 +23,20 @@ public class TruckController : ControllerBase
     public async Task<ActionResult<ApiResponseModel<string>>> AddNewTruck([FromBody] AddTruckRequestModel model)
     {
         var response = await _truckService.AddNewTruck(model);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpPost("AddDriverOwnedTruck")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<string>>> AddDriverOwnedTruck([FromBody] DriverAddTruckRequestModel model)
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var response = await _truckService.AddDriverOwnedTruck(model);
         return StatusCode(response.StatusCode, response);
     }
 
@@ -101,6 +116,77 @@ public class TruckController : ControllerBase
     public async Task<ActionResult<ApiResponseModel<string>>> UpdateTruckApprovalStatus(string truckId, ApprovalStatus approvalStatus)
     {
         var response = await _truckService.UpdateApprovalStatusAsync(truckId, approvalStatus);
+
+        // If truck is approved, update its status to Available
+        if (approvalStatus == ApprovalStatus.Approved)
+        {
+            // Only update status if approval was successful
+            if (response.IsSuccessful)
+            {
+                var statusUpdateModel = new UpdateTruckStatusRequestModel
+                {
+                    TruckStatus = TruckStatus.Available
+                };
+
+                await _truckService.UpdateTruckStatus(truckId, statusUpdateModel);
+            }
+        }
+
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetMyTrucks")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<List<AllTruckResponseModel>>>> GetMyTrucks(string driverId)
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var response = await _truckService.GetTrucksByDriverId(driverId);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpPost("UpdateTruckPhotos")]
+    [Authorize(Roles = "driver,admin")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> UpdateTruckPhotos([FromBody] UpdateTruckPhotosRequestModel model)
+    {
+        // Security check for drivers to ensure they can only update their own truck
+        if (User.IsInRole("driver"))
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // Get the driver's truck ID
+            var truckResponse = await _truckService.GetTrucksByDriverId(userId);
+            if (!truckResponse.IsSuccessful || truckResponse.Data == null || !truckResponse.Data.Any())
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "You don't have a truck assigned to update",
+                    StatusCode = 403
+                };
+            }
+
+            // Check if they're trying to update a truck that belongs to them
+            var driverTruckId = truckResponse.Data.First().Id;
+            if (driverTruckId != model.TruckId)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "You can only update your own truck",
+                    StatusCode = 403
+                };
+            }
+        }
+
+        var response = await _truckService.UpdateTruckPhotos(model);
         return StatusCode(response.StatusCode, response);
     }
 }

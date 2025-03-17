@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -72,6 +73,26 @@ namespace trucki.DatabaseContext
                     .WithMany()
                     .HasForeignKey(b => b.TruckId);
             });
+            modelBuilder.Entity<ChatMessage>(entity =>
+          {
+              entity.HasKey(e => e.Id);
+              entity.Property(e => e.OrderId).IsRequired();
+              entity.Property(e => e.SenderId).IsRequired();
+              entity.Property(e => e.RecipientId).IsRequired();
+              entity.Property(e => e.Text).IsRequired();
+              entity.Property(e => e.Timestamp).IsRequired();
+              entity.Property(e => e.IsRead).HasDefaultValue(false);
+
+              // Store ImageUrls as JSON
+              entity.Property(e => e.ImageUrls).HasConversion(
+                  v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                  v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>());
+
+              // Relationship with CargoOrders
+              entity.HasOne(e => e.Order)
+                    .WithMany()
+                    .HasForeignKey(e => e.OrderId);
+          });
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -90,6 +111,10 @@ namespace trucki.DatabaseContext
         public DbSet<CargoOrders> CargoOrders { get; set; }
         public DbSet<DeliveryLocationUpdate> deliveryLocationUpdates { get; set; }
         public DbSet<DriverBankAccount> driverBankAccounts { get; set; }
+        public DbSet<TermsAcceptanceRecord> TermsAcceptanceRecords { get; set; }
+        public DbSet<TermsAndConditions> TermsAndConditions { get; set; }
+
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
     }
 }

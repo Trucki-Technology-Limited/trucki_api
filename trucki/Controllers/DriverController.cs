@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using trucki.Entities;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
@@ -117,6 +118,95 @@ public class DriverController : ControllerBase
     public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
     {
         var response = await _driverService.GetDriversByTruckOwnerId(truckOwnerId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpPost("AcceptTerms")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> AcceptTermsAndConditions([FromBody] AcceptTermsRequestModel model)
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        model.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        var response = await _driverService.AcceptTermsAndConditions(model);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpGet("HasAcceptedTerms")]
+    [Authorize(Roles = "driver, admin")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> HasAcceptedLatestTerms(string driverId)
+    {
+        // If no driverId is provided and user is driver, use their ID
+        if (string.IsNullOrEmpty(driverId) && User.IsInRole("driver"))
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+        }
+
+        var response = await _driverService.HasAcceptedLatestTerms(driverId);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpGet("TermsAcceptanceHistory")]
+    [Authorize(Roles = "admin,driver")]
+    public async Task<ActionResult<ApiResponseModel<List<TermsAcceptanceRecordDto>>>> GetTermsAcceptanceHistory(string driverId)
+    {
+        var response = await _driverService.GetTermsAcceptanceHistory(driverId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpPost("UpdateProfilePhoto")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> UpdateProfilePhoto([FromBody] UpdateDriverProfilePhotoRequestModel model)
+    {
+        // For security, verify the driver is updating their own profile,
+        // or an admin is making the change
+        // var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        // if (string.IsNullOrEmpty(userId))
+        // {
+        //     return Unauthorized(ApiResponseModel<bool>.Fail("Unauthorized", StatusCodes.Status401Unauthorized));
+        // }
+
+        // If user is a driver (not admin), ensure they're updating their own profile
+        // if (userRole == "driver")
+        // {
+        //     var driverProfile = await _driverService.GetDriverProfileById(userId);
+        //     if (driverProfile.Data?.Id != model.DriverId)
+        //     {
+        //         return Forbid();
+        //     }
+        // }
+
+        var response = await _driverService.UpdateDriverProfilePhoto(model);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpPost("SetDriverOnboardingInReview")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> SetDriverOnboardingInReview(string driverId)
+    {
+        if (string.IsNullOrEmpty(driverId))
+        {
+            return BadRequest(
+                ApiResponseModel<bool>.Fail(
+                    "Driver ID is required",
+                    StatusCodes.Status400BadRequest
+                )
+            );
+        }
+
+        // Set the driver onboarding status to InReview
+        var response = await _driverService.UpdateDriverOnboardingStatus(driverId, DriverOnboardingStatus.OnboardingInReview);
+
         return StatusCode(response.StatusCode, response);
     }
 

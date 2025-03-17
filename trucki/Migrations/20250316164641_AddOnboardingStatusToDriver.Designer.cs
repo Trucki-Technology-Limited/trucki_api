@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250316164641_AddOnboardingStatusToDriver")]
+    partial class AddOnboardingStatusToDriver
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1135,9 +1137,6 @@ namespace trucki.Migrations
                     b.Property<int>("ApprovalStatus")
                         .HasColumnType("integer");
 
-                    b.Property<string>("CargoSpacePictureUrl")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -1148,15 +1147,9 @@ namespace trucki.Migrations
                     b.Property<string>("DriverId")
                         .HasColumnType("text");
 
-                    b.Property<string>("ExternalTruckPictureUrl")
-                        .HasColumnType("text");
-
                     b.Property<string>("InsuranceExpiryDate")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsDriverOwnedTruck")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("PlateNumber")
                         .IsRequired()

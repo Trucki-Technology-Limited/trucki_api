@@ -8,6 +8,8 @@ public class CargoOwnerProfileResponseModel
     public string EmailAddress { get; set; }
     public string CompanyName { get; set; }
     public string Address { get; set; }
+    public string UserId { get; set; }
+
     public string Country { get; set; }
     public bool IsActive { get; set; }
 }

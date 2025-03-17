@@ -22,6 +22,7 @@ public class CargoOrderResponseModel
     public string Id { get; set; }
     public string CargoOwnerId { get; set; }
     public CargoOwnerResponseModel CargoOwner { get; set; }
+    public DriverProfileResponseModel Driver { get; set; }
     public string PickupLocation { get; set; }
     public string PickupLocationLat { get; set; }
     public string PickupLocationLong { get; set; }

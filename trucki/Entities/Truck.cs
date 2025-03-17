@@ -21,6 +21,12 @@ public class Truck : BaseClass
     public string InsuranceExpiryDate { get; set; }
     public TruckStatus TruckStatus { get; set; }
     public ApprovalStatus ApprovalStatus { get; set; }
+     // New fields for truck pictures
+    public string? ExternalTruckPictureUrl { get; set; }
+    public string? CargoSpacePictureUrl { get; set; }
+    
+    // Flag to identify if the truck was added by a driver (vs a truck owner)
+    public bool IsDriverOwnedTruck { get; set; } = false;
 }
 
 public enum TruckiType
@@ -30,7 +36,8 @@ public enum TruckiType
     BucketBody,
     Lowbed,
     ContainerizedBody,
-    Refrigerator
+    Refrigerator,
+    CargoVan
 }
 
 public enum TruckStatus
@@ -43,6 +50,7 @@ public enum TruckStatus
 
 public enum ApprovalStatus
 {
+    Pending,
     Approved,
     NotApproved,
     Blocked,

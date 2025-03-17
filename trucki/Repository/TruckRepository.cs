@@ -167,26 +167,30 @@ public class TruckRepository : ITruckRepository
 
         var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
 
-        var truckOwner = await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync();
+        var truckOwner = truck.TruckOwnerId != null ?
+            await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync() : null;
 
         var truckToReturn = new AllTruckResponseModel
         {
             Id = truck.Id,
             Documents = truck.Documents,
-            //CertOfOwnerShip = truck.CertOfOwnerShip,
             PlateNumber = truck.PlateNumber,
             TruckCapacity = truck.TruckCapacity,
             DriverId = truck.DriverId,
             DriverName = driver?.Name,
             TruckName = truck.TruckName,
             TruckStatus = truck.TruckStatus,
-            //Capacity = truck.Capacity,
+            Capacity = truck.TruckCapacity,
             TruckOwnerId = truck.TruckOwnerId,
-            TruckOwnerName = truckOwner.Name,
+            TruckOwnerName = truckOwner?.Name,
             TruckType = truck.TruckType,
             TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
             RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
             InsuranceExpiryDate = truck.InsuranceExpiryDate,
+            ApprovalStatus = truck.ApprovalStatus,
+            IsDriverOwnedTruck = truck.IsDriverOwnedTruck,
+            ExternalTruckPictureUrl = truck.ExternalTruckPictureUrl,
+            CargoSpacePictureUrl = truck.CargoSpacePictureUrl,
             CreatedAt = truck.CreatedAt
         };
 
@@ -198,7 +202,6 @@ public class TruckRepository : ITruckRepository
             Data = truckToReturn
         };
     }
-
     public async Task<ApiResponseModel<IEnumerable<AllTruckResponseModel>>> SearchTruck(string? searchWords)
     {
         IQueryable<Truck> query = _context.Trucks;
@@ -237,7 +240,6 @@ public class TruckRepository : ITruckRepository
 
     public async Task<ApiResponseModel<List<AllTruckResponseModel>>> GetAllTrucks()
     {
-
         var trucks = await _context.Trucks
            .Include(t => t.Driver)
            .Include(t => t.TruckOwner)
@@ -277,12 +279,15 @@ public class TruckRepository : ITruckRepository
                 InsuranceExpiryDate = truck.InsuranceExpiryDate,
                 TruckNumber = truck.TruckiNumber,
                 TruckStatus = truck.TruckStatus,
+                ApprovalStatus = truck.ApprovalStatus,
+                IsDriverOwnedTruck = truck.IsDriverOwnedTruck,
+                ExternalTruckPictureUrl = truck.ExternalTruckPictureUrl,
+                CargoSpacePictureUrl = truck.CargoSpacePictureUrl,
                 CreatedAt = truck.CreatedAt
             };
 
             data.Add(responseModel);
         }
-
 
         return new ApiResponseModel<List<AllTruckResponseModel>>
         {
@@ -292,8 +297,6 @@ public class TruckRepository : ITruckRepository
             StatusCode = 200,
         };
     }
-
-
     public async Task<ApiResponseModel<IEnumerable<string>>> GetTruckDocuments(string truckId)
     {
         var truck = await _context.Trucks.FindAsync(truckId);
@@ -532,4 +535,175 @@ public class TruckRepository : ITruckRepository
             Data = truck.Id
         };
     }
+
+    public async Task<ApiResponseModel<string>> AddDriverOwnedTruck(DriverAddTruckRequestModel model)
+    {
+        var existingTruck = await _context.Trucks.Where(x => x.PlateNumber == model.PlateNumber).FirstOrDefaultAsync();
+        if (existingTruck != null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Truck with this plate number already exists",
+                StatusCode = 400
+            };
+        }
+
+        var driver = await _context.Drivers.FindAsync(model.DriverId);
+        if (driver == null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        // Check if the driver already has a truck
+        var existingDriverTruck = await _context.Trucks.Where(x => x.DriverId == model.DriverId).FirstOrDefaultAsync();
+        if (existingDriverTruck != null)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "You already have a truck registered. Please contact admin to update your truck details if needed.",
+                StatusCode = 400
+            };
+        }
+
+        var newTruck = new Truck
+        {
+            PlateNumber = model.PlateNumber,
+            TruckCapacity = model.TruckCapacity,
+            TruckName = model.TruckName,
+            TruckType = model.TruckType,
+            TruckLicenseExpiryDate = model.TruckLicenseExpiryDate,
+            RoadWorthinessExpiryDate = model.RoadWorthinessExpiryDate,
+            InsuranceExpiryDate = model.InsuranceExpiryDate,
+            Documents = model.Documents,
+            DriverId = model.DriverId,
+            Driver = driver,
+            TruckStatus = TruckStatus.OutOfService, // Set as out of service until approved
+            ApprovalStatus = ApprovalStatus.Pending, // Set as pending approval
+            IsDriverOwnedTruck = true, // Indicate this truck is driver-owned
+
+            // New picture fields
+            ExternalTruckPictureUrl = model.ExternalTruckPictureUrl,
+            CargoSpacePictureUrl = model.CargoSpacePictureUrl,
+        };
+
+        _context.Trucks.Add(newTruck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<string>
+        {
+            IsSuccessful = true,
+            Message = "Your truck has been submitted for review. You will be notified once it's approved.",
+            StatusCode = 201,
+            Data = newTruck.Id
+        };
+    }
+    public async Task<ApiResponseModel<List<AllTruckResponseModel>>> GetTrucksByDriverId(string driverId)
+    {
+        // Retrieve the truck for the specified driver (since a driver can only have one truck)
+        var truckRes = await _context.Trucks
+            .Where(x => x.DriverId == driverId)
+            .FirstOrDefaultAsync();
+
+        // Check if any truck was found
+        if (truckRes == null)
+        {
+            return new ApiResponseModel<List<AllTruckResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "No truck found for this driver",
+                StatusCode = 404,
+                Data = new List<AllTruckResponseModel>()
+            };
+        }
+
+        var trucks = new List<Truck> { truckRes };
+
+        // Prepare the response model list
+        var truckResponses = new List<AllTruckResponseModel>();
+
+        foreach (var truck in trucks)
+        {
+            var driver = await _context.Drivers.Where(x => x.Id == truck.DriverId).FirstOrDefaultAsync();
+            var truckOwner = truck.TruckOwnerId != null ?
+                await _context.TruckOwners.Where(x => x.Id == truck.TruckOwnerId).FirstOrDefaultAsync() : null;
+
+            var truckToReturn = new AllTruckResponseModel
+            {
+                Id = truck.Id,
+                Documents = truck.Documents,
+                PlateNumber = truck.PlateNumber,
+                TruckCapacity = truck.TruckCapacity,
+                DriverId = truck.DriverId,
+                TruckName = truck.TruckName,
+                TruckStatus = truck.TruckStatus,
+                DriverName = driver?.Name, // Safe navigation in case driver is null
+                TruckOwnerId = truck.TruckOwnerId,
+                TruckOwnerName = truckOwner?.Name, // Safe navigation in case truckOwner is null
+                TruckType = truck.TruckType,
+                TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
+                RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
+                InsuranceExpiryDate = truck.InsuranceExpiryDate,
+                IsDriverOwnedTruck = truck.IsDriverOwnedTruck,
+                ApprovalStatus = truck.ApprovalStatus,
+                ExternalTruckPictureUrl = truck.ExternalTruckPictureUrl,
+                CargoSpacePictureUrl = truck.CargoSpacePictureUrl,
+                CreatedAt = truck.CreatedAt
+            };
+
+            truckResponses.Add(truckToReturn);
+        }
+
+        return new ApiResponseModel<List<AllTruckResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Trucks found",
+            StatusCode = 200,
+            Data = truckResponses
+        };
+    }
+
+    public async Task<ApiResponseModel<bool>> UpdateTruckPhotos(UpdateTruckPhotosRequestModel model)
+    {
+        var truck = await _context.Trucks.FindAsync(model.TruckId);
+        if (truck == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Truck not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        // Update truck photo fields
+        if (!string.IsNullOrEmpty(model.ExternalTruckPictureUrl))
+        {
+            truck.ExternalTruckPictureUrl = model.ExternalTruckPictureUrl;
+        }
+
+        if (!string.IsNullOrEmpty(model.CargoSpacePictureUrl))
+        {
+            truck.CargoSpacePictureUrl = model.CargoSpacePictureUrl;
+        }
+
+        _context.Trucks.Update(truck);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Truck photos updated successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
 }

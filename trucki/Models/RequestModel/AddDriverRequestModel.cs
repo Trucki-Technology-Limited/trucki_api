@@ -15,7 +15,7 @@ public class AddDriverRequestModel
     public string? TruckOwnerId { get; set; }  // Add this property
 }
 
-public class EditDriverRequestModel 
+public class EditDriverRequestModel
 {
     public string Id { get; set; }
     public string Name { set; get; }
@@ -39,16 +39,16 @@ public class AddDriverBankAccountDto
     public string BankName { get; set; }
     [Required]
     public string DriversId { get; set; }
-    
+
     [Required]
     public string AccountHolderName { get; set; }
-    
+
     [Required]
     public string AccountNumber { get; set; }
-    
+
     [Required]
     public string RoutingNumber { get; set; }
-    
+
     public string? SwiftCode { get; set; }
 }
 public class DriverBankAccountResponseDto
@@ -61,4 +61,21 @@ public class DriverBankAccountResponseDto
     public bool IsDefault { get; set; }
     public bool IsVerified { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+public class UpdateTruckPhotosRequestModel
+{
+    public string TruckId { get; set; }
+    public string? ExternalTruckPictureUrl { get; set; }
+    public string? CargoSpacePictureUrl { get; set; }
+    public string? CargoMeasurements { get; set; }
+}
+
+public class UpdateDriverProfilePhotoRequestModel
+{
+    [Required]
+    public string DriverId { get; set; }
+
+    [Required]
+    [Url]
+    public string ProfilePhotoUrl { get; set; }
 }

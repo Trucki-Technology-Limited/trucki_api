@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using trucki.Entities;
 
 namespace trucki.Models.ResponseModels
 {
@@ -37,5 +38,6 @@ namespace trucki.Models.ResponseModels
         public string PassportFile { get; set; }
         public string Country { get; set; }
         public bool IsActive { get; set; }
+        public DriverOnboardingStatus OnboardingStatus { get; set; }
     }
 }

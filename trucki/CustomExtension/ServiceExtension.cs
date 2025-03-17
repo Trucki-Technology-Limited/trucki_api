@@ -15,7 +15,7 @@ namespace trucki.CustomExtension
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000","http://172.20.10.3:3000","https://localhost:3000", "https://trucki-drab.vercel.app","https://web.trucki.co") // Replace with your HTML file's origin
+                    builder.WithOrigins("http://localhost:3000", "http://172.20.10.3:3000", "https://localhost:3000", "https://trucki-drab.vercel.app", "https://web.trucki.co") // Replace with your HTML file's origin
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
@@ -53,6 +53,10 @@ namespace trucki.CustomExtension
             services.AddScoped<ICargoOrderService, CargoOrderService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IDriverBankAccountService, DriverBankAccountService>();
+            services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<ITermsAndConditionsService, TermsAndConditionsService>();
+            services.AddScoped<ITermsAndConditionsRepository, TermsAndConditionsRepository>();
         }
+
     }
 }
