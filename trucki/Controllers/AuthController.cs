@@ -10,7 +10,7 @@ namespace trucki.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController: ControllerBase
+public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
 
@@ -39,7 +39,7 @@ public class AuthController: ControllerBase
         }
         var result = await _authService.GetUserById(userId);
         return StatusCode(result.StatusCode, result);
-    }  
+    }
     [HttpPost("ResetUserPassword")]
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> ResetUserPassword([FromBody] ResetUsersPasswordRequestModel requestModel)
@@ -47,17 +47,42 @@ public class AuthController: ControllerBase
         var result = await _authService.ChangePasswordAsync(requestModel.userId, requestModel.password);
         return StatusCode(result.StatusCode, result);
     }
-     [HttpPost("UpdateUserPassword")]
+    [HttpPost("UpdateUserPassword")]
     [Authorize]
     public async Task<IActionResult> UpdateUserPassword([FromBody] UpdateUsersPasswordRequestModel requestModel)
     {
-          
+
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
         var result = await _authService.UpdateUserPassword(userId, requestModel);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("ForgotPassword")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel request)
+    {
+        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+        if (!(Regex.IsMatch(request.Email, emailPattern)))
+            return StatusCode(400, "Invalid email address format");
+
+        var result = await _authService.ForgotPasswordAsync(request.Email);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("VerifyResetCode")]
+    public async Task<IActionResult> VerifyResetCode([FromBody] VerifyResetCodeRequestModel request)
+    {
+        var result = await _authService.VerifyResetCodeAsync(request.Email, request.ResetCode);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("ResetPassword")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel requestModel)
+    {
+        var result = await _authService.ResetPasswordAsync(requestModel.Email, requestModel.ResetCode, requestModel.NewPassword);
         return StatusCode(result.StatusCode, result);
     }
 }
