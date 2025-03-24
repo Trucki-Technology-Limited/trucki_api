@@ -1,3 +1,5 @@
+using trucki.Entities;
+
 namespace trucki.Models.ResponseModels;
 
 public class CargoOwnerProfileResponseModel
@@ -12,4 +14,7 @@ public class CargoOwnerProfileResponseModel
 
     public string Country { get; set; }
     public bool IsActive { get; set; }
+    public CargoOwnerType OwnerType { get; set; }
+    public decimal? CreditLimit { get; set; }
+    public int? PaymentTermDays { get; set; }
 }

@@ -2,7 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace trucki.Entities;
-
+public enum CargoOwnerType
+{
+    Shipper,
+    Broker
+}
 public class CargoOwner : BaseClass
 {
     public string Name { get; set; }
@@ -22,4 +26,7 @@ public class CargoOwner : BaseClass
     public string Country { get; set; } = "NG";  // or "NG" or any default
 
     public List<CargoOrders> Orders { get; set; }
+    public CargoOwnerType OwnerType { get; set; } = CargoOwnerType.Shipper; // Default to Shipper
+    public decimal? CreditLimit { get; set; }
+    public int? PaymentTermDays { get; set; } = 30;
 }

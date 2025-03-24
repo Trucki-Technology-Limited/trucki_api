@@ -29,16 +29,17 @@ namespace trucki.Models.RequestModel
         public List<CargoOrderItemDto> Items { get; set; }
         public CargoTruckType? RequiredTruckType { get; set; }
         public bool OpenForBidding { get; set; }
+        public DateTime PickupDateTime { get; set; }
     }
 
     public class SelectDriverDto
     {
         public string OrderId { get; set; }
         public string BidId { get; set; }
-        public DateTime PickupDateTime { get; set; }
+
     }
 
-     public class OpenOrderForBiddingDto
+    public class OpenOrderForBiddingDto
     {
         public string OrderId { get; set; }
     }
@@ -77,7 +78,7 @@ namespace trucki.Models.RequestModel
         public decimal Amount { get; set; }
         public string? Notes { get; set; }  // Optional notes from driver about the bid
     }
-      public class StartOrderDto
+    public class StartOrderDto
     {
         public string OrderId { get; set; }
         public string DriverId { get; set; }

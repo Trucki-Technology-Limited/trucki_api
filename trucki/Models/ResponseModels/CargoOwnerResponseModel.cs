@@ -1,3 +1,5 @@
+using trucki.Entities;
+
 namespace trucki.Models.ResponseModels;
 
 public class CargoOwnerResponseModel
@@ -11,4 +13,5 @@ public class CargoOwnerResponseModel
     public string Address { get; set; }
     public string Country { get; set; }
     public bool IsActive { get; set; }
+        public CargoOwnerType OwnerType { get; set; }
 }

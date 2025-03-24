@@ -14,7 +14,7 @@ public interface ICargoOrderService
         Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetAcceptedOrdersForDriverAsync(string driverId);
         Task<ApiResponseModel<bool>> UpdateOrderAsync(string orderId, CreateCargoOrderDto updateOrderDto);
         Task<ApiResponseModel<bool>> OpenOrderForBiddingAsync(string orderId);
-        Task<ApiResponseModel<bool>> SelectDriverBidAsync(SelectDriverDto selectDriverDto);
+        Task<ApiResponseModel<StripePaymentResponse>> SelectDriverBidAsync(SelectDriverDto selectDriverDto);
         Task<ApiResponseModel<bool>> DriverAcknowledgeBidAsync(DriverAcknowledgementDto acknowledgementDto);
         Task<ApiResponseModel<List<DeliveryLocationUpdate>>> GetDeliveryUpdatesAsync(string orderId);
         Task<ApiResponseModel<bool>> CompleteDeliveryAsync(CompleteDeliveryDto completeDeliveryDto);
@@ -23,5 +23,6 @@ public interface ICargoOrderService
         Task<ApiResponseModel<bool>> StartOrderAsync(StartOrderDto startOrderDto);
         Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetCompletedOrdersForDriverAsync(string driverId);
         Task<ApiResponseModel<DriverSummaryResponseModel>> GetDriverSummaryAsync(string driverId);
+        Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId);
 
 }

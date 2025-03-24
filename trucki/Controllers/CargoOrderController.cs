@@ -69,7 +69,7 @@ namespace trucki.Controllers
         }
 
         [HttpPost("bid/{bidId}/SelectDriverBid")]
-        public async Task<ActionResult<ApiResponseModel<bool>>> SelectDriverBid([FromBody] SelectDriverDto selectDriverDto)
+        public async Task<ActionResult<ApiResponseModel<StripePaymentResponse>>> SelectDriverBid([FromBody] SelectDriverDto selectDriverDto)
         {
             var result = await _cargoOrderService.SelectDriverBidAsync(selectDriverDto);
             return StatusCode(result.StatusCode, result);

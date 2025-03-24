@@ -60,7 +60,8 @@ public class CargoOwnerRepository : ICargoOwnerRepository
             EmailAddress = model.Email,
             CompanyName = model.CompanyName,
             Address = model.Address,
-            Country = model.Country
+            Country = model.Country,
+            OwnerType = model.OwnerType
         };
 
         _context.CargoOwners.Add(newCargoOwner);

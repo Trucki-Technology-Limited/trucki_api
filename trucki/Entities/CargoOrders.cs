@@ -73,8 +73,17 @@ public class CargoOrders : BaseClass
     public string? InvoiceNumber { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
     public DateTime? PaymentDueDate { get; set; }
+     public string? PaymentIntentId { get; set; }
+    public DateTime? PaymentDate { get; set; }
+    public bool IsPaid { get; set; }
+    public PaymentMethodType PaymentMethod { get; set; }
 }
 
+public enum PaymentMethodType
+{
+    Stripe,
+    Invoice
+}
 public enum PaymentStatus
 {
     Pending,

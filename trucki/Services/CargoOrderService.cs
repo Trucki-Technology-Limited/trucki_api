@@ -13,10 +13,12 @@ namespace trucki.Services
     {
         private readonly TruckiDBContext _dbContext; // Example EF DbContext
         private readonly IMapper _mapper;
+        private readonly IStripeService _stripeService;
 
-        public CargoOrderService(TruckiDBContext dbContext, IMapper mapper)
+        public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService)
         {
             _dbContext = dbContext;
+            _stripeService = stripeService;
             _mapper = mapper;
         }
 
@@ -49,6 +51,12 @@ namespace trucki.Services
                     }
                 }
 
+                // Set pickup date and time
+                if (createOrderDto.PickupDateTime <= DateTime.UtcNow)
+                {
+                    return ApiResponseModel<bool>.Fail("Pickup time must be in the future", 400);
+                }
+
                 // Create new order
                 var newOrder = new CargoOrders
                 {
@@ -60,6 +68,7 @@ namespace trucki.Services
                     DeliveryLocationLat = createOrderDto.DeliveryLocationLat,
                     DeliveryLocationLong = createOrderDto.DeliveryLocationLong,
                     CountryCode = createOrderDto.CountryCode,
+                    PickupDateTime = createOrderDto.PickupDateTime,
                     RequiredTruckType = createOrderDto.RequiredTruckType,
                     Status = createOrderDto.OpenForBidding ? CargoOrderStatus.OpenForBidding : CargoOrderStatus.Draft,
                     Items = createOrderDto.Items.Select(item => new CargoOrderItem
@@ -281,55 +290,103 @@ namespace trucki.Services
         }
 
 
-        public async Task<ApiResponseModel<bool>> SelectDriverBidAsync(SelectDriverDto selectDriverDto)
+        public async Task<ApiResponseModel<StripePaymentResponse>> SelectDriverBidAsync(SelectDriverDto selectDriverDto)
         {
             try
             {
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.Bids)
+                    .Include(o => o.CargoOwner)
                     .FirstOrDefaultAsync(o => o.Id == selectDriverDto.OrderId);
 
                 if (order == null)
                 {
-                    return ApiResponseModel<bool>.Fail("Order not found", 404);
+                    return ApiResponseModel<StripePaymentResponse>.Fail("Order not found", 404);
                 }
 
                 if (order.Status != CargoOrderStatus.BiddingInProgress)
                 {
-                    return ApiResponseModel<bool>.Fail("Order is not in bidding state", 400);
+                    return ApiResponseModel<StripePaymentResponse>.Fail("Order is not in bidding state", 400);
                 }
 
                 var selectedBid = order.Bids.FirstOrDefault(b => b.Id == selectDriverDto.BidId);
                 if (selectedBid == null)
                 {
-                    return ApiResponseModel<bool>.Fail("Bid not found", 404);
+                    return ApiResponseModel<StripePaymentResponse>.Fail("Bid not found", 404);
                 }
 
-                // Set pickup date and time
-                if (selectDriverDto.PickupDateTime <= DateTime.UtcNow)
+                // Check the cargo owner type and handle payment flow accordingly
+                if (order.CargoOwner.OwnerType == CargoOwnerType.Shipper)
                 {
-                    return ApiResponseModel<bool>.Fail("Pickup time must be in the future", 400);
+
+                    var bidAmount = selectedBid.Amount;
+                    var systemFee = bidAmount * 0.20m; // 20% of the bid amount
+                    var subtotal = bidAmount + systemFee;
+                    var tax = subtotal * 0.10m; // Assuming a 10% tax rate (adjust as needed)
+                    var totalAmount = subtotal + tax;
+
+                    // Store these values in the order
+                    order.TotalAmount = bidAmount;
+                    order.SystemFee = systemFee;
+                    order.Tax = tax;
+                    // For Shippers, we just mark the bid as selected but don't update the order status yet
+                    var paymentResponse = await _stripeService.CreatePaymentIntent(order.Id, totalAmount, "usd");
+                    // We'll wait for payment confirmation
+                    order.AcceptedBidId = selectedBid.Id;
+                    selectedBid.Status = BidStatus.CargoOwnerSelected;
+
+                    // Set the payment method to Stripe for Shippers
+                    order.PaymentMethod = PaymentMethodType.Stripe;
+                    order.PaymentIntentId = paymentResponse.PaymentIntentId;
+                    paymentResponse.PaymentBreakdown = new PaymentBreakdown
+                    {
+                        BidAmount = bidAmount,
+                        SystemFee = systemFee,
+                        Tax = tax,
+                        TotalAmount = totalAmount
+                    };
+                    // The order status remains as BiddingInProgress until payment is confirmed
+                    // We'll update other bids only after payment
+
+                    await _dbContext.SaveChangesAsync();
+
+                    return ApiResponseModel<StripePaymentResponse>.Success(
+                                  "Driver selected, please complete payment",
+                                  paymentResponse,
+                                  200);
                 }
-
-                // Update order and bid status
-                order.Status = CargoOrderStatus.DriverSelected;
-                order.PickupDateTime = selectDriverDto.PickupDateTime;
-                order.AcceptedBidId = selectedBid.Id;
-                selectedBid.Status = BidStatus.CargoOwnerSelected;
-
-                // Mark other bids as expired
-                foreach (var bid in order.Bids.Where(b => b.Id != selectedBid.Id))
+                else // Broker
                 {
-                    bid.Status = BidStatus.Expired;
+                    // For Brokers, follow the existing flow, updating the order status
+                    var bidAmount = selectedBid.Amount;
+                    var systemFee = bidAmount * 0.20m;
+                    var tax = (bidAmount + systemFee) * 0.10m;
+
+                    order.TotalAmount = bidAmount;
+                    order.SystemFee = systemFee;
+                    order.Tax = tax;
+                    order.Status = CargoOrderStatus.DriverSelected;
+                    order.AcceptedBidId = selectedBid.Id;
+                    selectedBid.Status = BidStatus.CargoOwnerSelected;
+                    order.PaymentMethod = PaymentMethodType.Invoice;
+
+                    // Mark other bids as expired
+                    foreach (var bid in order.Bids.Where(b => b.Id != selectedBid.Id))
+                    {
+                        bid.Status = BidStatus.Expired;
+                    }
+
+                    await _dbContext.SaveChangesAsync();
+
+                    return ApiResponseModel<StripePaymentResponse>.Success(
+                                  "Driver selected successfully",
+                                  new StripePaymentResponse(),
+                                  200);
                 }
-
-                await _dbContext.SaveChangesAsync();
-
-                return ApiResponseModel<bool>.Success("Driver selected successfully", true, 200);
             }
             catch (Exception ex)
             {
-                return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+                return ApiResponseModel<StripePaymentResponse>.Fail($"Error: {ex.Message}", 500);
             }
         }
 
@@ -1041,6 +1098,49 @@ namespace trucki.Services
         private DateTime GetEndDateOfWeek(DateTime startOfMonth, int weekNumber)
         {
             return startOfMonth.AddDays(weekNumber * 7 - 1);
+        }
+
+        public async Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId)
+        {
+            try
+            {
+                var order = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.Bids)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Order not found", 404);
+                }
+
+                // Verify this is a Shipper order with a pending payment
+                if (order.Status != CargoOrderStatus.BiddingInProgress || order.AcceptedBidId == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Order is not in the correct state for payment", 400);
+                }
+
+                // Update payment details
+                order.PaymentIntentId = paymentIntentId;
+                order.PaymentDate = DateTime.UtcNow;
+                order.IsPaid = true;
+
+                // Now that payment is confirmed, update the order status
+                order.Status = CargoOrderStatus.DriverSelected;
+
+                // Mark other bids as expired
+                foreach (var bid in order.Bids.Where(b => b.Id != order.AcceptedBidId))
+                {
+                    bid.Status = BidStatus.Expired;
+                }
+
+                await _dbContext.SaveChangesAsync();
+
+                return ApiResponseModel<bool>.Success("Payment confirmed and order updated", true, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+            }
         }
 
         // private async Task<decimal> CalculateDriverAverageRating(string driverId)

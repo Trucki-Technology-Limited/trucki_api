@@ -56,6 +56,7 @@ namespace trucki.CustomExtension
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<ITermsAndConditionsService, TermsAndConditionsService>();
             services.AddScoped<ITermsAndConditionsRepository, TermsAndConditionsRepository>();
+            services.AddScoped<IStripeService, StripeService>();
         }
 
     }
