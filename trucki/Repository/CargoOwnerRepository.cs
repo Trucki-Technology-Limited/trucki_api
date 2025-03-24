@@ -75,6 +75,17 @@ public class CargoOwnerRepository : ICargoOwnerRepository
             newCargoOwner.User = user;
 
             await _context.SaveChangesAsync();
+
+            string confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            string confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}";
+
+            // Send welcome email
+            await _emailSender.SendWelcomeEmailAsync(
+                newCargoOwner.EmailAddress,
+                newCargoOwner.Name,
+                "cargo owner",
+                confirmationLink);
+
             return new ApiResponseModel<string>
             {
                 IsSuccessful = true,
@@ -238,28 +249,28 @@ public class CargoOwnerRepository : ICargoOwnerRepository
                 500);
         }
     }
-      private async Task<CargoOrderSummaryModel> GetOrderSummary(CargoOrders order)
+    private async Task<CargoOrderSummaryModel> GetOrderSummary(CargoOrders order)
+    {
+        // Get all special handling instructions across items
+        var specialHandlingInstructions = order.Items
+            .Where(i => !string.IsNullOrEmpty(i.SpecialHandlingInstructions))
+            .Select(i => i.SpecialHandlingInstructions)
+            .Distinct()
+            .ToList();
+
+        var summary = new CargoOrderSummaryModel
         {
-            // Get all special handling instructions across items
-            var specialHandlingInstructions = order.Items
-                .Where(i => !string.IsNullOrEmpty(i.SpecialHandlingInstructions))
-                .Select(i => i.SpecialHandlingInstructions)
-                .Distinct()
-                .ToList();
+            TotalWeight = order.Items.Sum(i => i.Weight * i.Quantity),
+            TotalVolume = order.Items.Sum(i => i.Length * i.Width * i.Height * i.Quantity),
+            HasFragileItems = order.Items.Any(i => i.IsFragile),
+            ItemTypeBreakdown = order.Items
+                .GroupBy(i => i.Type)
+                .ToDictionary(g => g.Key, g => g.Count()),
+            SpecialHandlingRequirements = specialHandlingInstructions
+        };
 
-            var summary = new CargoOrderSummaryModel
-            {
-                TotalWeight = order.Items.Sum(i => i.Weight * i.Quantity),
-                TotalVolume = order.Items.Sum(i => i.Length * i.Width * i.Height * i.Quantity),
-                HasFragileItems = order.Items.Any(i => i.IsFragile),
-                ItemTypeBreakdown = order.Items
-                    .GroupBy(i => i.Type)
-                    .ToDictionary(g => g.Key, g => g.Count()),
-                SpecialHandlingRequirements = specialHandlingInstructions
-            };
-
-            return summary;
-        }
+        return summary;
+    }
     public async Task<ApiResponseModel<CargoOwnerProfileResponseModel>> GetCargoOwnerProfile(string userId)
     {
         var cargoOwner = await _context.CargoOwners

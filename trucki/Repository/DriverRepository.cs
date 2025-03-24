@@ -404,6 +404,15 @@ public class DriverRepository : IDriverRepository
             // await _emailSender.SendEmailAsync(newDriver.EmailAddress, emailSubject, password);
             // **Save changes to database**
             await _context.SaveChangesAsync();
+            string confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            string confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}";
+
+            // Send welcome email
+            await _emailSender.SendWelcomeEmailAsync(
+                newDriver.EmailAddress,
+                newDriver.Name,
+                "driver",
+                confirmationLink);
             return new ApiResponseModel<string>
             {
                 IsSuccessful = true,

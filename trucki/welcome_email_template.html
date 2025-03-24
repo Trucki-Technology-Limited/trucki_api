@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Trucki</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background-color: #1a73e8;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .content {
+            padding: 30px 40px;
+        }
+
+        h1 {
+            color: #1a73e8;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: #555555;
+        }
+
+        .cta-button {
+            display: block;
+            background-color: #1a73e8;
+            color: white;
+            text-decoration: none;
+            padding: 14px 24px;
+            border-radius: 4px;
+            margin: 30px auto;
+            text-align: center;
+            font-weight: 500;
+            max-width: 250px;
+            transition: background-color 0.2s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #1557b0;
+        }
+
+        .steps {
+            background-color: #f5f8ff;
+            border-radius: 6px;
+            padding: 20px 25px;
+            margin: 25px 0;
+        }
+
+        .steps h2 {
+            font-size: 18px;
+            margin-top: 0;
+            color: #1a73e8;
+        }
+
+        .steps ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .steps li {
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 28px;
+        }
+
+        .steps li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #34a853;
+            font-weight: bold;
+        }
+
+        .steps li:last-child {
+            margin-bottom: 0;
+        }
+
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #777777;
+        }
+
+        .help-text {
+            border-top: 1px solid #eeeeee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 15px;
+        }
+
+        .signature {
+            margin-top: 30px;
+            font-weight: 500;
+        }
+
+        @media only screen and (max-width: 480px) {
+            .content {
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://via.placeholder.com/150x50/1a73e8/ffffff?text=TRUCKI" alt="Trucki Logo">
+        </div>
+
+        <div class="content">
+            <h1>Welcome to Trucki, {{name}}!</h1>
+
+            <p>{{welcomeMessage}}</p>
+
+            <p>Before you start {{actionText}}, please confirm your email address by clicking the button below:</p>
+
+            <a href="{{confirmationLink}}" class="cta-button">Confirm Email Address</a>
+
+            <div class="steps">
+                <h2>What's Next?</h2>
+                <ul>
+                    {{#each steps}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+
+            <div class="help-text">
+                <p>Need {{helpType}}? Our support team is available 24/7 via in-app chat or at <a
+                        href="mailto:{{supportEmail}}">{{supportEmail}}</a>.</p>
+            </div>
+
+            <p class="signature">Thanks for {{thankYouText}}<br>- The Trucki Team</p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Trucki Limited. All rights reserved.</p>
+            <p>This email was sent to {{email}}</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -21,5 +21,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 COPY otp_template.html /app/
 COPY password_reset_template.html /app/
+COPY welcome_email_template.html /app/
 COPY order_template.html /app/
 ENTRYPOINT ["dotnet", "trucki.dll"]

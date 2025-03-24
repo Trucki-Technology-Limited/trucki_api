@@ -99,4 +99,90 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+
+    public async Task SendWelcomeEmailAsync(string toEmail, string name, string userType, string confirmationLink)
+    {
+        var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "welcome_email_template.html");
+        var templateSource = File.ReadAllText(templatePath);
+        var template = Handlebars.Compile(templateSource);
+
+        // Default values
+        string subject = "Welcome to Trucki! Confirm Your Email & Start Your Journey";
+        string welcomeMessage = "Welcome to Trucki, the smarter way to connect with loads and keep your wheels moving!";
+        string actionText = "accepting trips and maximizing your earnings";
+        string thankYouText = "joining Trucki, let's hit the road together!";
+        string supportEmail = "info@trucki.com";
+        string helpType = "help";
+        List<string> steps = new List<string>
+        {
+            "Complete Your Profile – Add your vehicle details, documents & payment info.",
+            "Find & Accept Loads – Get the best-paying trips.",
+            "Track & Get Paid Fast – Real-time trip monitoring & weekly payouts."
+        };
+
+        // Customize based on user type
+        switch (userType.ToLower())
+        {
+            case "driver":
+                // Default values are already set for drivers
+                break;
+
+            case "cargo owner":
+                subject = "Welcome to Trucki! Confirm Your Email & Start Shipping";
+                welcomeMessage = "Welcome to Trucki, your trusted platform for seamless freight shipping!";
+                actionText = "posting loads and connecting with reliable drivers";
+                thankYouText = "choosing Trucki, we're here to power your logistics!";
+                supportEmail = "support@trucki.com";
+                steps = new List<string>
+                {
+                    "Post Your First Load – Set pickup & delivery details in minutes.",
+                    "Get Matched with Verified Drivers – AI-powered load matching for efficiency & cost savings.",
+                    "Track Shipments in Real Time – Monitor every step with GPS tracking."
+                };
+                break;
+
+            case "truck owner":
+                subject = "Welcome to Trucki! Confirm Your Email & Start Managing Your Fleet";
+                welcomeMessage = "Welcome to Trucki, your all-in-one platform for fleet management and cargo fulfillment!";
+                actionText = "assigning loads to your drivers";
+                thankYouText = "joining Trucki, let's build a smarter, more connected fleet together!";
+                supportEmail = "info@trucki.com";
+                steps = new List<string>
+                {
+                    "Add Your Fleet & Drivers – Register trucks & onboard drivers seamlessly.",
+                    "Get Load Assignments – AI-powered load matching for maximum efficiency.",
+                    "Track Performance & Earnings – Real-time trip monitoring & fast payments."
+                };
+                break;
+        }
+
+        var htmlBody = template(new
+        {
+            name = name,
+            email = toEmail,
+            welcomeMessage = welcomeMessage,
+            actionText = actionText,
+            confirmationLink = confirmationLink,
+            steps = steps,
+            helpType = helpType,
+            supportEmail = supportEmail,
+            thankYouText = thankYouText
+        });
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
+        message.To.Add(new MailboxAddress(name, toEmail));
+        message.Subject = subject;
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = htmlBody;
+
+        message.Body = bodyBuilder.ToMessageBody();
+        using (var client = new SmtpClient())
+        {
+            client.Connect(_smtpServer, _smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_Email, _Password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
 }
