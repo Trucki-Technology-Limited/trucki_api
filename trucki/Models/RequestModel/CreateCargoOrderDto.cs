@@ -10,7 +10,7 @@ namespace trucki.Models.RequestModel
         public decimal Width { get; set; }
         public decimal Height { get; set; }
         public bool IsFragile { get; set; }
-        public string SpecialHandlingInstructions { get; set; }
+        public string? SpecialHandlingInstructions { get; set; }
         public CargoType Type { get; set; }
         public int Quantity { get; set; }
         public List<string> ItemImages { get; set; }
