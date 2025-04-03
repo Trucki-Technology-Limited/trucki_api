@@ -19,6 +19,7 @@ public class TermsAndConditionsService : ITermsAndConditionsService
         return await _repository.GetAllTermsAndConditionsAsync();
     }
 
+
     public async Task<IEnumerable<TermsAndConditions>> GetTermsAndConditionsByDocumentTypeAsync(string documentType)
     {
         return await _repository.GetTermsAndConditionsByDocumentTypeAsync(documentType);
