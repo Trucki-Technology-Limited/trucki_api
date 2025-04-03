@@ -131,5 +131,12 @@ namespace trucki.Controllers
             var result = await _cargoOrderService.GetDriverSummaryAsync(driverId);
             return StatusCode(result.StatusCode, result);
         }
+        [HttpPut("bid/UpdateBid")]
+        [Authorize(Roles = "driver")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> UpdateBid([FromBody] UpdateBidDto updateBidDto)
+        {
+            var result = await _cargoOrderService.UpdateBidAsync(updateBidDto);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

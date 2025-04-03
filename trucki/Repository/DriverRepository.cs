@@ -199,7 +199,10 @@ public class DriverRepository : IDriverRepository
     {
         var driver = await _context.Drivers
             .Where(x => x.Id == id)
+             .Include(e => e.User)
             .Include(d => d.Truck)
+            .Include(d => d.BankAccounts)
+            .Include(d => d.TermsAcceptanceRecords)
             .FirstOrDefaultAsync();
 
         if (driver == null)
@@ -209,6 +212,7 @@ public class DriverRepository : IDriverRepository
         }
 
         var driverToReturn = _mapper.Map<DriverResponseModel>(driver);
+        driverToReturn.HasAcceptedTerms = driver.TermsAcceptanceRecords.Any(r => r.TermsVersion == "2025"); // Current version
 
         if (driver.Truck != null)
         {

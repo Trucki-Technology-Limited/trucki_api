@@ -39,6 +39,7 @@ public class Profiles : Profile
              .ForMember(dest => dest.TotalItems, opt => opt.MapFrom(src => src.Items.Count))
              .ForMember(dest => dest.TotalWeight, opt => opt.MapFrom(src => src.Items.Sum(i => i.Weight * i.Quantity)));
         CreateMap<CargoOwner, CargoOwnerResponseModel>();
+        CreateMap<DriverBankAccount, DriverBankAccountResponseModel>();
 
     }
 }

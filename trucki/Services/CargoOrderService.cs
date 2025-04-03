@@ -1100,6 +1100,60 @@ namespace trucki.Services
             return startOfMonth.AddDays(weekNumber * 7 - 1);
         }
 
+        public async Task<ApiResponseModel<bool>> UpdateBidAsync(UpdateBidDto updateBidDto)
+        {
+            try
+            {
+                // Find the bid to update
+                var bid = await _dbContext.Set<Bid>()
+                    .Include(b => b.Order)
+                    .FirstOrDefaultAsync(b => b.Id == updateBidDto.BidId && b.OrderId == updateBidDto.OrderId);
+
+                if (bid == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Bid not found", 404);
+                }
+
+                // Check if the order is still in bidding process
+                if (bid.Order.Status != CargoOrderStatus.OpenForBidding &&
+                    bid.Order.Status != CargoOrderStatus.BiddingInProgress)
+                {
+                    return ApiResponseModel<bool>.Fail("Order is no longer accepting bid updates", 400);
+                }
+
+                // Check if the bid is still pending (not selected, expired, etc.)
+                if (bid.Status != BidStatus.Pending)
+                {
+                    return ApiResponseModel<bool>.Fail("This bid can no longer be updated", 400);
+                }
+
+                // Check if the new amount is lower than the current amount
+                if (updateBidDto.Amount >= bid.Amount)
+                {
+                    return ApiResponseModel<bool>.Fail("New bid amount must be lower than the current amount", 400);
+                }
+
+                // Update the bid
+                bid.Amount = updateBidDto.Amount;
+
+                // Update notes if provided
+                // if (!string.IsNullOrEmpty(updateBidDto.Notes))
+                // {
+                //     bid.Notes = updateBidDto.Notes;
+                // }
+
+                bid.UpdatedAt = DateTime.UtcNow;
+
+                await _dbContext.SaveChangesAsync();
+
+                return ApiResponseModel<bool>.Success("Bid updated successfully", true, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+            }
+        }
+
         public async Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId)
         {
             try
@@ -1156,4 +1210,5 @@ namespace trucki.Services
         //     return ratings.Average();
         // }
     }
+
 }

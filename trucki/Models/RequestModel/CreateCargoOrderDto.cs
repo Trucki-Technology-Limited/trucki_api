@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using trucki.Entities;
 
 namespace trucki.Models.RequestModel
@@ -77,6 +78,20 @@ namespace trucki.Models.RequestModel
         public string DriverId { get; set; }
         public decimal Amount { get; set; }
         public string? Notes { get; set; }  // Optional notes from driver about the bid
+    }
+    public class UpdateBidDto
+    {
+        [Required]
+        public string BidId { get; set; }
+
+        [Required]
+        public string OrderId { get; set; }
+
+        [Required]
+        [Range(0.01, double.MaxValue)]
+        public decimal Amount { get; set; }
+
+        public string? Notes { get; set; }
     }
     public class StartOrderDto
     {

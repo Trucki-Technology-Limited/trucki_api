@@ -34,10 +34,13 @@ namespace trucki.Models.ResponseModels
 
         public string DriversLicence { get; set; }
         public AllTruckResponseModel Truck { get; set; }
+        public ICollection<DriverBankAccountResponseModel> BankAccounts { get; set; }
 
         public string PassportFile { get; set; }
         public string Country { get; set; }
         public bool IsActive { get; set; }
         public DriverOnboardingStatus OnboardingStatus { get; set; }
+
+        public bool HasAcceptedTerms { get; set; }
     }
 }
