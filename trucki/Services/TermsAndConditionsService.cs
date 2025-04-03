@@ -13,6 +13,7 @@ public class TermsAndConditionsService : ITermsAndConditionsService
         _repository = repository;
     }
 
+
     public async Task<IEnumerable<TermsAndConditions>> GetAllTermsAndConditionsAsync()
     {
         return await _repository.GetAllTermsAndConditionsAsync();
