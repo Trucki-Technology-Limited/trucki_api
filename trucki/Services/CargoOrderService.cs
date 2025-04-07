@@ -444,16 +444,16 @@ namespace trucki.Services
             try
             {
                 var cargoOrder = await _dbContext.Set<CargoOrders>()
-                    .Include(o => o.CargoOwner)
-                    .Include(o => o.Items)
-                    .Include(o => o.Bids)
-                        .ThenInclude(b => b.Truck)
-                            .ThenInclude(t => t.Driver)
-                    .Include(o => o.AcceptedBid)
-                        .ThenInclude(b => b.Truck)
-                            .ThenInclude(t => t.Driver)
-                    .AsSplitQuery()
-                    .FirstOrDefaultAsync(o => o.Id == orderId);
+     .Include(o => o.CargoOwner)
+     .Include(o => o.Items)
+     .Include(o => o.Bids)
+         .ThenInclude(b => b.Truck)
+             .ThenInclude(t => t.Driver)
+     .Include(o => o.AcceptedBid)
+         .ThenInclude(b => b.Truck)
+             .ThenInclude(t => t.Driver)
+     .AsSplitQuery()
+     .FirstOrDefaultAsync(o => o.Id == orderId);
 
                 if (cargoOrder == null)
                 {

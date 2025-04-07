@@ -10,4 +10,5 @@ public class BidResponseModel
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public AllTruckResponseModel Truck { get; set; }
+    public DriverProfileResponseModel Driver { get; set; }
 }

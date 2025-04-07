@@ -30,7 +30,8 @@ public class Profiles : Profile
         CreateMap<CargoOwner, CargoOwnerProfileResponseModel>();
         CreateMap<CargoOrders, CargoOrderResponseModel>();
         CreateMap<CargoTruckResponseModel, Truck>().ReverseMap();
-        CreateMap<Bid, BidResponseModel>();
+        CreateMap<Bid, BidResponseModel>()
+         .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Truck.Driver));
         CreateMap<Invoice, InvoiceResponseModel>()
                .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.Order));
         CreateMap<PaymentAccount, BankAccountResponseModel>();
