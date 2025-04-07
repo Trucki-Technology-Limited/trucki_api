@@ -85,4 +85,17 @@ public class AuthController : ControllerBase
         var result = await _authService.ResetPasswordAsync(requestModel.Email, requestModel.ResetCode, requestModel.NewPassword);
         return StatusCode(result.StatusCode, result);
     }
+    [HttpPost("RegisterDeviceToken")]
+    [Authorize]
+    public async Task<IActionResult> RegisterDeviceToken([FromBody] RegisterDeviceTokenDto model)
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _authService.RegisterDeviceTokenAsync(userId, model.Token, model.DeviceType);
+        return StatusCode(result.StatusCode, result);
+    }
 }

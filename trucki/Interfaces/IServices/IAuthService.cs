@@ -13,4 +13,5 @@ public interface IAuthService
     Task<ApiResponseModel<bool>> ForgotPasswordAsync(string email);
     Task<ApiResponseModel<bool>> VerifyResetCodeAsync(string email, string resetCode);
     Task<ApiResponseModel<bool>> ResetPasswordAsync(string email, string resetCode, string newPassword);
+    Task<ApiResponseModel<bool>> RegisterDeviceTokenAsync(string userId, string token, string deviceType);
 }

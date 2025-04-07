@@ -57,6 +57,7 @@ namespace trucki.CustomExtension
             services.AddScoped<ITermsAndConditionsService, TermsAndConditionsService>();
             services.AddScoped<ITermsAndConditionsRepository, TermsAndConditionsRepository>();
             services.AddScoped<IStripeService, StripeService>();
+            services.AddScoped<INotificationService, FirebaseNotificationService>();
         }
 
     }

@@ -16,14 +16,16 @@ public class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
 
-    public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper, ITokenService tokenService, IEmailService emailService
+    public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper, ITokenService tokenService, IEmailService emailService, INotificationService notificationService
 
     )
     {
         _userManager = userManager;
         _emailService = emailService;
         _tokenService = tokenService;
+        _notificationService = notificationService;
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
@@ -444,6 +446,46 @@ public class AuthService : IAuthService
             Message = "Password reset successfully",
             StatusCode = 200
         };
+    }
+    public async Task<ApiResponseModel<bool>> RegisterDeviceTokenAsync(string userId, string token, string deviceType)
+    {
+        try
+        {
+            // Find user to ensure they exist
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Save the device token
+            await _notificationService.SaveDeviceTokenAsync(userId, token, deviceType);
+
+            // Get user roles for topic subscriptions
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "Device token registered successfully",
+                StatusCode = 200,
+                Data = true
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = $"Error registering device token: {ex.Message}",
+                StatusCode = 500
+            };
+        }
     }
 
 }

@@ -116,5 +116,7 @@ namespace trucki.DatabaseContext
 
         public DbSet<ChatMessage> ChatMessages { get; set; }
 
+        public DbSet<DeviceToken> DeviceTokens { get; set; }
+
     }
 }

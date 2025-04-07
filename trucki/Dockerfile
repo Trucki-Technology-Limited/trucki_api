@@ -22,5 +22,7 @@ COPY --from=publish /app/publish .
 COPY otp_template.html /app/
 COPY password_reset_template.html /app/
 COPY welcome_email_template.html /app/
+COPY invoice_email_template.html /app/
 COPY order_template.html /app/
+COPY trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json /app/
 ENTRYPOINT ["dotnet", "trucki.dll"]

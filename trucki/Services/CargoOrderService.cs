@@ -14,12 +14,17 @@ namespace trucki.Services
         private readonly TruckiDBContext _dbContext; // Example EF DbContext
         private readonly IMapper _mapper;
         private readonly IStripeService _stripeService;
+        private readonly INotificationService _notificationService;
+        private readonly IEmailService _emailService;
 
-        public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService)
+        public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService, INotificationService notificationService,
+    IEmailService emailService)
         {
             _dbContext = dbContext;
             _stripeService = stripeService;
             _mapper = mapper;
+            _notificationService = notificationService;
+            _emailService = emailService;
         }
 
         public async Task<ApiResponseModel<bool>> CreateOrderAsync(CreateCargoOrderDto createOrderDto)
@@ -88,7 +93,16 @@ namespace trucki.Services
 
                 _dbContext.Set<CargoOrders>().Add(newOrder);
                 await _dbContext.SaveChangesAsync();
-
+                // Send notification to truck owners and drivers
+                await _notificationService.SendNotificationToTopicAsync(
+                    "driver",
+                    "New Cargo Order Available",
+                    $"A new cargo order is available from {newOrder.PickupLocation} to {newOrder.DeliveryLocation}",
+                    new Dictionary<string, string> {
+                { "orderId", newOrder.Id },
+                { "type", "new_order" }
+                    }
+                );
                 return ApiResponseModel<bool>.Success("Order created successfully", true, 200);
             }
             catch (Exception ex)
@@ -280,7 +294,17 @@ namespace trucki.Services
                 }
 
                 await _dbContext.SaveChangesAsync();
-
+                // Notify cargo owner about the new bid
+                await _notificationService.SendNotificationAsync(
+                    order.CargoOwner.UserId,
+                    "New Bid Received",
+                    $"You received a new bid for your cargo order to {order.DeliveryLocation}",
+                    new Dictionary<string, string> {
+                { "orderId", order.Id },
+                { "bidId", existingBid?.Id },
+                { "type", "new_bid" }
+                    }
+                );
                 return ApiResponseModel<bool>.Success("Bid submitted successfully", true, 200);
             }
             catch (Exception ex)
@@ -377,6 +401,23 @@ namespace trucki.Services
                     }
 
                     await _dbContext.SaveChangesAsync();
+                    var driver = await _dbContext.Drivers
+          .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
+
+                    if (driver?.UserId != null)
+                    {
+                        await _notificationService.SendNotificationAsync(
+                            driver.UserId,
+                            "Bid Accepted",
+                            $"Your bid for cargo order to {order.DeliveryLocation} has been accepted",
+                            new Dictionary<string, string> {
+                    { "orderId", order.Id },
+                    { "bidId", selectedBid.Id },
+                    { "type", "bid_accepted" }
+                            }
+                        );
+                    }
+
 
                     return ApiResponseModel<StripePaymentResponse>.Success(
                                   "Driver selected successfully",
@@ -425,6 +466,23 @@ namespace trucki.Services
 
                 await _dbContext.SaveChangesAsync();
 
+                if (acknowledgementDto.IsAcknowledged)
+                {
+                    order.Status = CargoOrderStatus.DriverAcknowledged;
+                    order.AcceptedBid.Status = BidStatus.DriverAcknowledged;
+                    order.AcceptedBid.DriverAcknowledgedAt = DateTime.UtcNow;
+
+                    // Notify cargo owner that driver acknowledged the order
+                    await _notificationService.SendNotificationAsync(
+                        order.CargoOwner.UserId,
+                        "Driver Accepted Order",
+                        $"The driver has accepted your order to {order.DeliveryLocation}",
+                        new Dictionary<string, string> {
+            { "orderId", order.Id },
+            { "type", "driver_accepted" }
+                        }
+                    );
+                }
                 return ApiResponseModel<bool>.Success(
                     acknowledgementDto.IsAcknowledged ?
                         "Driver acknowledged successfully" :
@@ -1188,7 +1246,32 @@ namespace trucki.Services
                 }
 
                 await _dbContext.SaveChangesAsync();
+                // Send payment confirmation notification to cargo owner
+                await _notificationService.SendNotificationAsync(
+                    order.CargoOwner.UserId,
+                    "Payment Successful",
+                    $"Your payment for cargo order to {order.DeliveryLocation} was successful",
+                    new Dictionary<string, string> {
+                { "orderId", order.Id },
+                { "type", "payment_success" }
+                    }
+                );
 
+
+                if (order.CargoOwner.EmailAddress != null)
+                {
+                    await _emailService.SendPaymentReceiptEmailAsync(
+                        order.CargoOwner.EmailAddress,
+                        order.Id,
+                        order.AcceptedBid.Amount,
+                        order.SystemFee,
+                        order.Tax,
+                        order.TotalAmount,
+                        "USD", // You can make this dynamic based on your currency settings
+                        order.PickupLocation,
+                        order.DeliveryLocation
+                    );
+                }
                 return ApiResponseModel<bool>.Success("Payment confirmed and order updated", true, 200);
             }
             catch (Exception ex)

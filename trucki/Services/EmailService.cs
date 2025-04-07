@@ -185,4 +185,44 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+
+    public async Task SendPaymentReceiptEmailAsync(string toEmail, string orderId, decimal bidAmount, decimal systemFee, decimal tax, decimal totalAmount, string currency, string pickupLocation, string deliveryAddress)
+    {
+        var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "invoice_email_template.html");
+        var templateSource = File.ReadAllText(templatePath);
+        var template = Handlebars.Compile(templateSource);
+
+        var date = DateTime.UtcNow.ToString("MMMM dd, yyyy");
+        var status = "Payment Successful";
+
+        var htmlBody = template(new
+        {
+            date,
+            orderId,
+            status,
+            bidAmount,
+            systemFee,
+            tax,
+            totalAmount,
+            currency,
+            pickupLocation,
+            deliveryAddress
+        });
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = $"Payment Receipt - Order #{orderId}";
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = htmlBody;
+
+        message.Body = bodyBuilder.ToMessageBody();
+        using (var client = new SmtpClient())
+        {
+            client.Connect(_smtpServer, _smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_Email, _Password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
 }
