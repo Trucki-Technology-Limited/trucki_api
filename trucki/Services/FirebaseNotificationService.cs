@@ -1,4 +1,5 @@
 // trucki/Services/FirebaseNotificationService.cs
+using System.Text.RegularExpressions;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
@@ -132,17 +133,27 @@ public class FirebaseNotificationService : INotificationService
     {
         try
         {
-            var response = await FirebaseMessaging.DefaultInstance.SubscribeToTopicAsync(
-                new List<string> { token }, topic);
+            // Sanitize the topic name to conform with FCM rules
+            var sanitizedTopic = SanitizeTopicName(topic);
 
-            _logger.LogInformation($"Successfully subscribed token to topic {topic}. Success count: {response.SuccessCount}");
+            var response = await FirebaseMessaging.DefaultInstance.SubscribeToTopicAsync(
+                new List<string> { token }, sanitizedTopic);
+
+            _logger.LogInformation($"Successfully subscribed token to topic '{sanitizedTopic}'. Success count: {response.SuccessCount}");
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error subscribing to topic: {ex.Message}");
+            _logger.LogError($"Error subscribing to topic '{topic}': {ex.Message}");
             throw;
         }
     }
+
+    private string SanitizeTopicName(string topic)
+    {
+        // Converts to lowercase, removes invalid characters, and replaces spaces with underscores
+        return Regex.Replace(topic.ToLowerInvariant(), @"[^a-z0-9_-]", "_");
+    }
+
 
     public async Task UnsubscribeFromTopicAsync(string token, string topic)
     {
