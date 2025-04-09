@@ -249,6 +249,7 @@ namespace trucki.Services
                 // Check if the order exists and is open for bidding
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.Bids)
+                    .Include(a => a.CargoOwner)
                     .FirstOrDefaultAsync(o => o.Id == createBidDto.OrderId);
 
                 if (order == null)
@@ -277,6 +278,11 @@ namespace trucki.Services
                     return ApiResponseModel<bool>.Fail("Truck is not available for bidding", 400);
                 }
 
+                var hasActiveOrder = await DriverHasActiveOrderAsync(driver.Id);
+                if (hasActiveOrder)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver already has an active order and cannot place another bid until it's completed", 400);
+                }
                 // Check if driver already has a pending bid for this order
                 var existingBid = order.Bids.FirstOrDefault(b =>
                     b.TruckId == driver.TruckId &&
@@ -451,6 +457,7 @@ namespace trucki.Services
             {
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.AcceptedBid)
+                    .Include(a => a.CargoOwner)
                     .FirstOrDefaultAsync(o => o.Id == acknowledgementDto.OrderId);
 
                 if (order == null || order.AcceptedBid == null)
@@ -462,9 +469,25 @@ namespace trucki.Services
                 {
                     return ApiResponseModel<bool>.Fail("Order is not in driver selection state", 400);
                 }
+                // Get the driver info
+                var truckId = order.AcceptedBid.TruckId;
+                var driver = await _dbContext.Set<Driver>()
+                    .FirstOrDefaultAsync(d => d.TruckId == truckId);
+
+                if (driver == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver not found for this truck", 404);
+                }
 
                 if (acknowledgementDto.IsAcknowledged)
                 {
+                    // Check if the driver already has an active order
+                    var hasActiveOrder = await DriverHasActiveOrderAsync(driver.Id, order.Id);
+                    if (hasActiveOrder)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver already has an active order and cannot accept another one until it's completed", 400);
+                    }
+
                     order.Status = CargoOrderStatus.DriverAcknowledged;
                     order.AcceptedBid.Status = BidStatus.DriverAcknowledged;
                     order.AcceptedBid.DriverAcknowledgedAt = DateTime.UtcNow;
@@ -1090,7 +1113,7 @@ namespace trucki.Services
                         o.DeliveryDateTime >= startOfWeek),
                     Earnings = completedOrders
                         .Where(o => o.DeliveryDateTime >= startOfWeek)
-                        .Sum(o => o.AcceptedBid.Amount),
+                        .Sum(o => (double)o.AcceptedBid.Amount), // Cast to double
                     DailyTrips = completedOrders
                         .Where(o => o.DeliveryDateTime >= startOfWeek)
                         .GroupBy(o => o.DeliveryDateTime.Value.Date)
@@ -1098,7 +1121,7 @@ namespace trucki.Services
                         {
                             Date = g.Key,
                             TripCount = g.Count(),
-                            Earnings = g.Sum(o => o.AcceptedBid.Amount)
+                            Earnings = g.Sum(o => (double)o.AcceptedBid.Amount) // Cast to double
                         })
                         .OrderBy(d => d.Date)
                         .ToList()
@@ -1111,7 +1134,7 @@ namespace trucki.Services
                         o.DeliveryDateTime >= startOfMonth),
                     Earnings = completedOrders
                         .Where(o => o.DeliveryDateTime >= startOfMonth)
-                        .Sum(o => o.AcceptedBid.Amount),
+                        .Sum(o => (double)o.AcceptedBid.Amount), // Cast to double
                     WeeklyTrips = GetWeeklyTrips(completedOrders, startOfMonth)
                 };
 
@@ -1120,7 +1143,7 @@ namespace trucki.Services
                 {
                     WeeklyStats = weeklyStats,
                     MonthlyStats = monthlyStats,
-                    TotalEarnings = completedOrders.Sum(o => o.AcceptedBid.Amount),
+                    TotalEarnings = completedOrders.Sum(o => (double)o.AcceptedBid.Amount), // Cast to double
                     TotalTripsCompleted = completedOrders.Count,
                     AverageRating = 0
                     // AverageRating = await CalculateDriverAverageRating(driverId)
@@ -1138,7 +1161,6 @@ namespace trucki.Services
                     500);
             }
         }
-
         private List<WeeklyTrip> GetWeeklyTrips(List<CargoOrders> orders, DateTime startOfMonth)
         {
             return orders
@@ -1150,7 +1172,7 @@ namespace trucki.Services
                     StartDate = GetStartDateOfWeek(startOfMonth, g.Key),
                     EndDate = GetEndDateOfWeek(startOfMonth, g.Key),
                     TripCount = g.Count(),
-                    Earnings = g.Sum(o => o.AcceptedBid.Amount)
+                    Earnings = g.Sum(o => (double)o.AcceptedBid.Amount)
                 })
                 .OrderBy(w => w.WeekNumber)
                 .ToList();
@@ -1291,6 +1313,46 @@ namespace trucki.Services
             catch (Exception ex)
             {
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+            }
+        }
+
+        private async Task<bool> DriverHasActiveOrderAsync(string driverId, string excludeOrderId = null)
+        {
+            try
+            {
+                // Get the driver's truck
+                var driver = await _dbContext.Set<Driver>()
+                    .Include(d => d.Truck)
+                    .FirstOrDefaultAsync(d => d.Id == driverId);
+
+                if (driver?.Truck == null)
+                    return false;
+
+                // Get all active orders for this truck
+                var query = _dbContext.Set<CargoOrders>()
+                    .Include(o => o.AcceptedBid)
+                    .Where(o =>
+                        o.AcceptedBid != null &&
+                        o.AcceptedBid.TruckId == driver.Truck.Id &&
+                        (
+                         // o.Status == CargoOrderStatus.DriverSelected ||
+                         o.Status == CargoOrderStatus.DriverAcknowledged ||
+                         o.Status == CargoOrderStatus.ReadyForPickup ||
+                         o.Status == CargoOrderStatus.InTransit));
+
+                // Exclude the current order if specified
+                if (!string.IsNullOrEmpty(excludeOrderId))
+                {
+                    query = query.Where(o => o.Id != excludeOrderId);
+                }
+
+                // Check if any active orders exist
+                return await query.AnyAsync();
+            }
+            catch
+            {
+                // Error on the safe side - consider it as having an active order
+                return true;
             }
         }
 

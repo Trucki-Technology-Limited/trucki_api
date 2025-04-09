@@ -4,7 +4,7 @@ public class DriverSummaryResponseModel
 {
     public WeeklyStats WeeklyStats { get; set; }
     public MonthlyStats MonthlyStats { get; set; }
-    public decimal TotalEarnings { get; set; }
+    public double TotalEarnings { get; set; }
     public int TotalTripsCompleted { get; set; }
     public decimal AverageRating { get; set; }
 }
@@ -12,14 +12,14 @@ public class DriverSummaryResponseModel
 public class WeeklyStats
 {
     public int CompletedTrips { get; set; }
-    public decimal Earnings { get; set; }
+    public double Earnings { get; set; }
     public List<DailyTrip> DailyTrips { get; set; }
 }
 
 public class MonthlyStats
 {
     public int CompletedTrips { get; set; }
-    public decimal Earnings { get; set; }
+    public double Earnings { get; set; }
     public List<WeeklyTrip> WeeklyTrips { get; set; }
 }
 
@@ -27,7 +27,7 @@ public class DailyTrip
 {
     public DateTime Date { get; set; }
     public int TripCount { get; set; }
-    public decimal Earnings { get; set; }
+    public double Earnings { get; set; }
 }
 
 public class WeeklyTrip
@@ -36,5 +36,5 @@ public class WeeklyTrip
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int TripCount { get; set; }
-    public decimal Earnings { get; set; }
+    public double Earnings { get; set; }
 }
