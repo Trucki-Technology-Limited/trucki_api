@@ -93,16 +93,19 @@ namespace trucki.Services
 
                 _dbContext.Set<CargoOrders>().Add(newOrder);
                 await _dbContext.SaveChangesAsync();
-                // Send notification to truck owners and drivers
-                await _notificationService.SendNotificationToTopicAsync(
-                    "driver",
-                    "New Cargo Order Available",
-                    $"A new cargo order is available from {newOrder.PickupLocation} to {newOrder.DeliveryLocation}",
-                    new Dictionary<string, string> {
+                if (createOrderDto.OpenForBidding)
+                {
+                    // Send notification to truck owners and drivers
+                    await _notificationService.SendNotificationToTopicAsync(
+                        "driver",
+                        "New Cargo Order Available",
+                        $"A new cargo order is available from {newOrder.PickupLocation} to {newOrder.DeliveryLocation}",
+                        new Dictionary<string, string> {
                 { "orderId", newOrder.Id },
                 { "type", "new_order" }
-                    }
-                );
+                        }
+                    );
+                }
                 return ApiResponseModel<bool>.Success("Order created successfully", true, 200);
             }
             catch (Exception ex)
@@ -217,6 +220,17 @@ namespace trucki.Services
 
                 order.Status = CargoOrderStatus.OpenForBidding;
                 await _dbContext.SaveChangesAsync();
+
+                // Send notification to truck owners and drivers
+                await _notificationService.SendNotificationToTopicAsync(
+                    "driver",
+                    "New Cargo Order Available",
+                    $"A new cargo order is available from {order.PickupLocation} to {order.DeliveryLocation}",
+                    new Dictionary<string, string> {
+                { "orderId", order.Id },
+                { "type", "new_order" }
+                    }
+                );
 
                 return ApiResponseModel<bool>.Success("Order is now open for bidding", true, 200);
             }
