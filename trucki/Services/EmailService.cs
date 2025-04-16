@@ -8,6 +8,14 @@ namespace trucki.Services;
 
 public class EmailService : IEmailService
 {
+    /// <summary>
+    /// EmailService handles all outbound email functionalities, including sending OTPs, order notifications,
+    /// password resets, welcome emails, and payment receipts via SMTP. Since the official Resend SDK requires .NET 8,
+    /// we implement a custom SMTP client approach here for .NET 6 compatibility.
+    /// 
+    /// Note: As of April 2025, accessing Resend's platform requires VPN access. Make sure to connect to the VPN
+    /// before attempting to configure or send emails.
+    /// </summary>
 
     private readonly string _Email;
     private readonly string _Password;
@@ -15,6 +23,21 @@ public class EmailService : IEmailService
     private readonly string _smtpServer;
     private readonly int _smtpPort;
     private readonly bool _useSsl;
+    /// <summary>
+    /// Constructor retrieves email configuration from app settings. We store Resend SMTP
+    /// credentials and server configuration in the application's configuration file.
+    /// 
+    /// For example, in appsettings.json:
+    /// "EmailSetting": {
+    ///   "Email": "your_resend_smtp_username",
+    ///   "Password": "your_resend_smtp_password",
+    ///   "From": "no-reply@yourdomain.com",
+    ///   "SmtpServer": "smtp.resend.com",  // Example host
+    ///   "SmtpPort": "587",
+    ///   "UseSsl": "true"
+    /// }
+    /// </summary>
+    /// <param name="configuration">App configuration injected by the DI container.</param>
 
 
     public EmailService(IConfiguration configuration)
@@ -26,6 +49,14 @@ public class EmailService : IEmailService
         _smtpPort = int.Parse(configuration["EmailSetting:SmtpPort"]);
         _useSsl = bool.Parse(configuration["EmailSetting:UseSsl"]);
     }
+    /// <summary>
+    /// Sends a One-Time Password (OTP) email to the specified recipient using an HTML template.
+    /// 
+    /// Note: The 'otp_template.html' file should be placed in the root of the project.
+    /// </summary>
+    /// <param name="toEmail">Recipient's email address.</param>
+    /// <param name="subject">Email subject line (e.g. "Your OTP Code").</param>
+    /// <param name="otp">The OTP value to be included in the email template.</param>
 
     public async Task SendEmailAsync(string toEmail, string subject, string otp)
     {
@@ -52,6 +83,16 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+    /// <summary>
+    /// Sends an order notification email using an HTML template.
+    /// </summary>
+    /// <param name="toEmail">Recipient's email address.</param>
+    /// <param name="subject">Subject line for the email.</param>
+    /// <param name="date">Date of order or notification.</param>
+    /// <param name="orderId">Unique identifier for the order.</param>
+    /// <param name="status">Status of the order (e.g., "Processing").</param>
+    /// <param name="businessName">Name of the business for the email template.</param>
+    /// <param name="deliveryAddress">Delivery address for the order.</param>
 
     public async Task SendOrderEmailAsync(string toEmail, string subject, string date, string orderId, string status, string businessName, string deliveryAddress)
     {
@@ -75,7 +116,10 @@ public class EmailService : IEmailService
             client.Send(message);
             client.Disconnect(true);
         }
-    }
+    }    /// <summary>
+         /// Sends a password reset email using a reset code embedded into an HTML template.
+         /// </summary>
+
     public async Task SendPasswordResetEmailAsync(string toEmail, string subject, string resetCode)
     {
         var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "password_reset_template.html");
@@ -99,6 +143,11 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+    /// <summary>
+    /// Sends a welcome email tailored to different user types (Driver, Cargo Owner, or Truck Owner).
+    /// The email body is generated from a Handlebars template.
+    /// </summary>
+
 
     public async Task SendWelcomeEmailAsync(string toEmail, string name, string userType, string confirmationLink)
     {
@@ -185,6 +234,10 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+    /// <summary>
+    /// Sends a payment receipt email containing a summarized invoice, including fees, taxes, and other
+    /// monetary details. It uses an HTML template to format the receipt.
+    /// </summary>
 
     public async Task SendPaymentReceiptEmailAsync(string toEmail, string orderId, decimal bidAmount, decimal systemFee, decimal tax, decimal totalAmount, string currency, string pickupLocation, string deliveryAddress)
     {
