@@ -93,6 +93,21 @@ namespace trucki.DatabaseContext
                     .WithMany()
                     .HasForeignKey(e => e.OrderId);
           });
+            modelBuilder.Entity<DatabaseNotification>(entity =>
+  {
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.UserId).IsRequired();
+      entity.Property(e => e.Title).IsRequired();
+      entity.Property(e => e.Message).IsRequired();
+      entity.Property(e => e.Type).IsRequired();
+      entity.Property(e => e.CreatedAt).IsRequired();
+      entity.Property(e => e.IsRead).HasDefaultValue(false);
+
+      // Relationship with User
+      entity.HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId);
+  });
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -117,6 +132,7 @@ namespace trucki.DatabaseContext
         public DbSet<ChatMessage> ChatMessages { get; set; }
 
         public DbSet<DeviceToken> DeviceTokens { get; set; }
+        public DbSet<DatabaseNotification> Notifications { get; set; }
 
     }
 }

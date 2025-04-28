@@ -15,16 +15,18 @@ namespace trucki.Services
         private readonly IMapper _mapper;
         private readonly IStripeService _stripeService;
         private readonly INotificationService _notificationService;
+        private readonly NotificationEventService _notificationEventService;
         private readonly IEmailService _emailService;
 
         public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService, INotificationService notificationService,
-    IEmailService emailService)
+    IEmailService emailService, NotificationEventService notificationEventService)
         {
             _dbContext = dbContext;
             _stripeService = stripeService;
             _mapper = mapper;
             _notificationService = notificationService;
             _emailService = emailService;
+            _notificationEventService = notificationEventService;
         }
 
         public async Task<ApiResponseModel<bool>> CreateOrderAsync(CreateCargoOrderDto createOrderDto)
@@ -93,6 +95,11 @@ namespace trucki.Services
 
                 _dbContext.Set<CargoOrders>().Add(newOrder);
                 await _dbContext.SaveChangesAsync();
+                await _notificationEventService.NotifyOrderCreated(
+           newOrder.CargoOwnerId,
+           newOrder.Id,
+           newOrder.PickupLocation,
+           newOrder.DeliveryLocation);
                 if (createOrderDto.OpenForBidding)
                 {
                     // Send notification to truck owners and drivers
@@ -105,6 +112,10 @@ namespace trucki.Services
                 { "type", "new_order" }
                         }
                     );
+                    await _notificationEventService.NotifyOrderOpenForBidding(
+              newOrder.Id,
+              newOrder.PickupLocation,
+              newOrder.DeliveryLocation);
                 }
                 return ApiResponseModel<bool>.Success("Order created successfully", true, 200);
             }
@@ -231,6 +242,10 @@ namespace trucki.Services
                 { "type", "new_order" }
                     }
                 );
+                await _notificationEventService.NotifyOrderOpenForBidding(
+         order.Id,
+         order.PickupLocation,
+         order.DeliveryLocation);
 
                 return ApiResponseModel<bool>.Success("Order is now open for bidding", true, 200);
             }
@@ -325,6 +340,11 @@ namespace trucki.Services
                 { "type", "new_bid" }
                     }
                 );
+                await _notificationEventService.NotifyBidSubmitted(
+           order.CargoOwnerId,
+           order.Id,
+           driver.Name,
+           createBidDto.Amount);
                 return ApiResponseModel<bool>.Success("Bid submitted successfully", true, 200);
             }
             catch (Exception ex)
@@ -394,6 +414,23 @@ namespace trucki.Services
 
                     await _dbContext.SaveChangesAsync();
 
+                    var driver = await _dbContext.Drivers
+      .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
+
+                    if (driver?.UserId != null)
+                    {
+                        await _notificationService.SendNotificationAsync(
+                            driver.UserId,
+                            "Bid Accepted",
+                            $"Your bid for cargo order to {order.DeliveryLocation} has been accepted",
+                            new Dictionary<string, string> {
+                    { "orderId", order.Id },
+                    { "bidId", selectedBid.Id },
+                    { "type", "bid_accepted" }
+                            }
+                        );
+                    }
+
                     return ApiResponseModel<StripePaymentResponse>.Success(
                                   "Driver selected, please complete payment",
                                   paymentResponse,
@@ -456,8 +493,12 @@ namespace trucki.Services
             try
             {
                 var order = await _dbContext.Set<CargoOrders>()
-                    .Include(o => o.AcceptedBid)
                     .Include(a => a.CargoOwner)
+                    .Include(o => o.AcceptedBid)
+                     .ThenInclude(b => b.Truck)
+                        .ThenInclude(t => t.Driver)
+
+
                     .FirstOrDefaultAsync(o => o.Id == acknowledgementDto.OrderId);
 
                 if (order == null || order.AcceptedBid == null)
@@ -519,6 +560,11 @@ namespace trucki.Services
             { "type", "driver_accepted" }
                         }
                     );
+
+                    await _notificationEventService.NotifyDriverAcknowledged(
+                  order.CargoOwnerId,
+                  order.Id,
+                  order.AcceptedBid.Truck.Driver.Name);
                 }
                 return ApiResponseModel<bool>.Success(
                     acknowledgementDto.IsAcknowledged ?

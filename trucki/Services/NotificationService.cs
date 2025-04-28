@@ -7,21 +7,28 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using trucki.DatabaseContext;
 using trucki.Entities;
+using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
+using trucki.Models.RequestModel;
+using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
 
-public class FirebaseNotificationService : INotificationService
+public class NotificationService : INotificationService
 {
     private readonly UserManager<User> _userManager;
     private readonly TruckiDBContext _dbContext;
-    private readonly ILogger<FirebaseNotificationService> _logger;
+    private readonly ILogger<NotificationService> _logger;
+    private readonly INotificationRepository _notificationRepository;
 
-    public FirebaseNotificationService(TruckiDBContext dbContext, ILogger<FirebaseNotificationService> logger, UserManager<User> userManager)
+
+    public NotificationService(TruckiDBContext dbContext, ILogger<NotificationService> logger, UserManager<User> userManager, INotificationRepository notificationRepository)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _logger = logger;
+        _notificationRepository = notificationRepository;
+
 
         // Initialize Firebase if not already initialized
         if (FirebaseApp.DefaultInstance == null)
@@ -223,5 +230,70 @@ public class FirebaseNotificationService : INotificationService
             _logger.LogError($"Error saving device token: {ex.Message}");
             throw;
         }
+
+    }
+    public async Task<ApiResponseModel<PagedResponse<NotificationResponseModel>>> GetNotificationsAsync(
+    string userId, GetNotificationsQueryDto query)
+    {
+        return await _notificationRepository.GetNotificationsAsync(userId, query);
+    }
+
+    public async Task<ApiResponseModel<NotificationCountResponseModel>> GetNotificationCountAsync(string userId)
+    {
+        return await _notificationRepository.GetNotificationCountAsync(userId);
+    }
+
+    public async Task<ApiResponseModel<bool>> MarkAsReadAsync(string userId, string notificationId)
+    {
+        return await _notificationRepository.MarkAsReadAsync(userId, notificationId);
+    }
+
+    public async Task<ApiResponseModel<bool>> MarkMultipleAsReadAsync(string userId, List<string> notificationIds)
+    {
+        return await _notificationRepository.MarkMultipleAsReadAsync(userId, notificationIds);
+    }
+
+    public async Task<ApiResponseModel<bool>> MarkAllAsReadAsync(string userId)
+    {
+        return await _notificationRepository.MarkAllAsReadAsync(userId);
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteNotificationAsync(string userId, string notificationId)
+    {
+        return await _notificationRepository.DeleteNotificationAsync(userId, notificationId);
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteMultipleNotificationsAsync(string userId, List<string> notificationIds)
+    {
+        return await _notificationRepository.DeleteMultipleNotificationsAsync(userId, notificationIds);
+    }
+
+    public async Task<ApiResponseModel<bool>> DeleteAllNotificationsAsync(string userId)
+    {
+        return await _notificationRepository.DeleteAllNotificationsAsync(userId);
+    }
+
+    public async Task<ApiResponseModel<bool>> CreateNotificationAsync(
+        string userId,
+        string title,
+        string message,
+        NotificationType type,
+        string relatedEntityId = null,
+        string relatedEntityType = null)
+    {
+        return await _notificationRepository.CreateNotificationAsync(
+            userId, title, message, type, relatedEntityId, relatedEntityType);
+    }
+
+    public async Task<ApiResponseModel<bool>> CreateNotificationsForMultipleUsersAsync(
+        List<string> userIds,
+        string title,
+        string message,
+        NotificationType type,
+        string relatedEntityId = null,
+        string relatedEntityType = null)
+    {
+        return await _notificationRepository.CreateNotificationsForMultipleUsersAsync(
+            userIds, title, message, type, relatedEntityId, relatedEntityType);
     }
 }
