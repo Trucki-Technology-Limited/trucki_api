@@ -5,6 +5,7 @@ using Swashbuckle.AspNetCore.Filters;
 using trucki.CustomExtension;
 using trucki.DatabaseContext;
 using trucki.Hubs;
+using QuestPDF.Infrastructure; // Make sure this is included
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -59,4 +60,5 @@ app.UseEndpoints(endpoints =>
     // Map the SignalR hub
     endpoints.MapHub<ChatHub>("/chathub");
 });
+QuestPDF.Settings.License = LicenseType.Community;
 app.Run();

@@ -31,5 +31,10 @@ namespace trucki.Interfaces.IServices
         /// Get active bank account details for payment
         /// </summary>
         Task<ApiResponseModel<BankAccountResponseModel>> GetActiveBankAccountAsync();
+        
+        /// <summary>
+        /// Generate PDF for invoice
+        /// </summary>
+        Task<ApiResponseModel<byte[]>> GenerateInvoicePDFAsync(string invoiceId);
     }
 }

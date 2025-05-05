@@ -353,7 +353,6 @@ namespace trucki.Services
             }
         }
 
-
         public async Task<ApiResponseModel<StripePaymentResponse>> SelectDriverBidAsync(SelectDriverDto selectDriverDto)
         {
             try
@@ -379,29 +378,55 @@ namespace trucki.Services
                     return ApiResponseModel<StripePaymentResponse>.Fail("Bid not found", 404);
                 }
 
-                // Check the cargo owner type and handle payment flow accordingly
+                // Calculate fee components for both shipper and broker
+                var bidAmount = selectedBid.Amount;
+                var systemFee = bidAmount * 0.15m; // 15% system fee
+                var subtotal = bidAmount + systemFee;
+                var tax = subtotal * 0.10m; // 10% tax
+                var totalAmount = subtotal + tax;
+
+                // Store these values in the order
+                order.TotalAmount = bidAmount;
+                order.SystemFee = systemFee;
+                order.Tax = tax;
+
+                // Set the accepted bid
+                order.AcceptedBidId = selectedBid.Id;
+                selectedBid.Status = BidStatus.CargoOwnerSelected;
+
+                // Generate invoice number - common for both shipper and broker
+                string invoiceNumber = GenerateInvoiceNumber();
+                order.InvoiceNumber = invoiceNumber;
+
+                // Create invoice for both shipper and broker
+                var invoice = new Invoice
+                {
+                    OrderId = order.Id,
+                    InvoiceNumber = invoiceNumber,
+                    SubTotal = bidAmount,
+                    SystemFee = systemFee,
+                    Tax = tax,
+                    TotalAmount = totalAmount,
+                    // Different due dates based on cargo owner type
+                    DueDate = order.CargoOwner.OwnerType == CargoOwnerType.Broker
+                        ? DateTime.UtcNow.AddDays(30) // 30 days for brokers
+                        : DateTime.UtcNow.AddDays(7),  // 7 days for shippers
+                    Status = InvoiceStatus.Pending
+                };
+
+                _dbContext.Set<Invoice>().Add(invoice);
+
+                // Different flows based on cargo owner type
                 if (order.CargoOwner.OwnerType == CargoOwnerType.Shipper)
                 {
-
-                    var bidAmount = selectedBid.Amount;
-                    var systemFee = bidAmount * 0.20m; // 20% of the bid amount
-                    var subtotal = bidAmount + systemFee;
-                    var tax = subtotal * 0.10m; // Assuming a 10% tax rate (adjust as needed)
-                    var totalAmount = subtotal + tax;
-
-                    // Store these values in the order
-                    order.TotalAmount = bidAmount;
-                    order.SystemFee = systemFee;
-                    order.Tax = tax;
-                    // For Shippers, we just mark the bid as selected but don't update the order status yet
+                    // For Shippers, proceed with Stripe payment
                     var paymentResponse = await _stripeService.CreatePaymentIntent(order.Id, totalAmount, "usd");
-                    // We'll wait for payment confirmation
-                    order.AcceptedBidId = selectedBid.Id;
-                    selectedBid.Status = BidStatus.CargoOwnerSelected;
 
-                    // Set the payment method to Stripe for Shippers
+                    // Set payment method and store payment intent ID
                     order.PaymentMethod = PaymentMethodType.Stripe;
                     order.PaymentIntentId = paymentResponse.PaymentIntentId;
+
+                    // Add payment breakdown to response
                     paymentResponse.PaymentBreakdown = new PaymentBreakdown
                     {
                         BidAmount = bidAmount,
@@ -409,13 +434,13 @@ namespace trucki.Services
                         Tax = tax,
                         TotalAmount = totalAmount
                     };
-                    // The order status remains as BiddingInProgress until payment is confirmed
-                    // We'll update other bids only after payment
 
+                    // Save changes but don't update order status yet (will be updated after payment)
                     await _dbContext.SaveChangesAsync();
 
+                    // Notify driver that their bid was selected (but pending payment)
                     var driver = await _dbContext.Drivers
-      .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
+                        .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
 
                     if (driver?.UserId != null)
                     {
@@ -424,31 +449,22 @@ namespace trucki.Services
                             "Bid Accepted",
                             $"Your bid for cargo order to {order.DeliveryLocation} has been accepted",
                             new Dictionary<string, string> {
-                    { "orderId", order.Id },
-                    { "bidId", selectedBid.Id },
-                    { "type", "bid_accepted" }
+                        { "orderId", order.Id },
+                        { "bidId", selectedBid.Id },
+                        { "type", "bid_accepted" }
                             }
                         );
                     }
 
                     return ApiResponseModel<StripePaymentResponse>.Success(
-                                  "Driver selected, please complete payment",
-                                  paymentResponse,
-                                  200);
+                        "Driver selected, please complete payment",
+                        paymentResponse,
+                        200);
                 }
                 else // Broker
                 {
-                    // For Brokers, follow the existing flow, updating the order status
-                    var bidAmount = selectedBid.Amount;
-                    var systemFee = bidAmount * 0.20m;
-                    var tax = (bidAmount + systemFee) * 0.10m;
-
-                    order.TotalAmount = bidAmount;
-                    order.SystemFee = systemFee;
-                    order.Tax = tax;
+                    // For Brokers, update order status immediately
                     order.Status = CargoOrderStatus.DriverSelected;
-                    order.AcceptedBidId = selectedBid.Id;
-                    selectedBid.Status = BidStatus.CargoOwnerSelected;
                     order.PaymentMethod = PaymentMethodType.Invoice;
 
                     // Mark other bids as expired
@@ -458,8 +474,10 @@ namespace trucki.Services
                     }
 
                     await _dbContext.SaveChangesAsync();
+
+                    // Notify driver about selection
                     var driver = await _dbContext.Drivers
-          .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
+                        .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
 
                     if (driver?.UserId != null)
                     {
@@ -468,18 +486,30 @@ namespace trucki.Services
                             "Bid Accepted",
                             $"Your bid for cargo order to {order.DeliveryLocation} has been accepted",
                             new Dictionary<string, string> {
-                    { "orderId", order.Id },
-                    { "bidId", selectedBid.Id },
-                    { "type", "bid_accepted" }
+                        { "orderId", order.Id },
+                        { "bidId", selectedBid.Id },
+                        { "type", "bid_accepted" }
                             }
                         );
                     }
 
+                    // Return empty payment response with breakdown info
+                    var emptyPaymentResponse = new StripePaymentResponse
+                    {
+                        OrderId = order.Id,
+                        PaymentBreakdown = new PaymentBreakdown
+                        {
+                            BidAmount = bidAmount,
+                            SystemFee = systemFee,
+                            Tax = tax,
+                            TotalAmount = totalAmount
+                        }
+                    };
 
                     return ApiResponseModel<StripePaymentResponse>.Success(
-                                  "Driver selected successfully",
-                                  new StripePaymentResponse(),
-                                  200);
+                        "Driver selected and invoice created successfully",
+                        emptyPaymentResponse,
+                        200);
                 }
             }
             catch (Exception ex)
@@ -488,6 +518,14 @@ namespace trucki.Services
             }
         }
 
+        private string GenerateInvoiceNumber()
+        {
+            // Format: INV-YYYYMMDD-XXXX
+            var dateString = DateTime.UtcNow.ToString("yyyyMMdd");
+            var random = new Random();
+            var randomPart = random.Next(1000, 9999).ToString();
+            return $"INV-{dateString}-{randomPart}";
+        }
         public async Task<ApiResponseModel<bool>> DriverAcknowledgeBidAsync(DriverAcknowledgementDto acknowledgementDto)
         {
             try
@@ -1313,6 +1351,16 @@ namespace trucki.Services
                     return ApiResponseModel<bool>.Fail("Order is not in the correct state for payment", 400);
                 }
 
+
+                // Find the invoice associated with this order
+                var invoice = await _dbContext.Set<Invoice>()
+                    .FirstOrDefaultAsync(i => i.OrderId == orderId);
+
+                if (invoice == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Invoice not found for this order", 404);
+                }
+
                 // Update payment details
                 order.PaymentIntentId = paymentIntentId;
                 order.PaymentDate = DateTime.UtcNow;
@@ -1320,6 +1368,11 @@ namespace trucki.Services
 
                 // Now that payment is confirmed, update the order status
                 order.Status = CargoOrderStatus.DriverSelected;
+
+                // Update invoice status to Paid
+                invoice.Status = InvoiceStatus.Paid;
+                invoice.PaymentApprovedAt = DateTime.UtcNow;
+
 
                 // Mark other bids as expired
                 foreach (var bid in order.Bids.Where(b => b.Id != order.AcceptedBidId))

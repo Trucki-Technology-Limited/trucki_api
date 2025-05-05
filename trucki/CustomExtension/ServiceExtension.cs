@@ -60,6 +60,8 @@ namespace trucki.CustomExtension
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<NotificationEventService>();
+            services.AddScoped<IPDFService, PDFService>();
+
         }
 
     }

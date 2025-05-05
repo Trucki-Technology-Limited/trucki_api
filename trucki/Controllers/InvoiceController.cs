@@ -52,5 +52,29 @@ namespace trucki.Controllers
             var result = await _invoiceService.GetActiveBankAccountAsync();
             return StatusCode(result.StatusCode, result);
         }
+        
+        [HttpGet("DownloadInvoicePDF/{invoiceId}")]
+        public async Task<IActionResult> DownloadInvoicePDF(string invoiceId)
+        {
+            var result = await _invoiceService.GenerateInvoicePDFAsync(invoiceId);
+            
+            if (!result.IsSuccessful)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            
+            // Return the PDF as a file download
+            return File(
+                result.Data, 
+                "application/pdf", 
+                $"Invoice-{invoiceId}.pdf");
+        }
+        
+        [HttpGet("GetInvoicePDF/{invoiceId}")]
+        public async Task<IActionResult> GetInvoicePDF(string invoiceId)
+        {
+            var result = await _invoiceService.GenerateInvoicePDFAsync(invoiceId);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

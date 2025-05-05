@@ -5,16 +5,19 @@ using trucki.Entities;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
+
 namespace trucki.Services;
 public class InvoiceService : IInvoiceService
 {
     private readonly TruckiDBContext _dbContext;
     private readonly IMapper _mapper;
+    private readonly IPDFService _pdfService;
 
-    public InvoiceService(TruckiDBContext dbContext, IMapper mapper)
+    public InvoiceService(TruckiDBContext dbContext, IMapper mapper, IPDFService pdfService)
     {
         _dbContext = dbContext;
         _mapper = mapper;
+        _pdfService = pdfService;
     }
 
     public async Task<ApiResponseModel<InvoiceResponseModel>> GenerateInvoiceAsync(string orderId)
@@ -37,7 +40,7 @@ public class InvoiceService : IInvoiceService
 
             // Calculate amounts
             var subTotal = order.AcceptedBid.Amount;
-            var systemFee = subTotal * 0.20m; // 20% system fee
+            var systemFee = subTotal * 0.10m; // 20% system fee
             var tax = (subTotal + systemFee) * 0.10m; // 10% tax
             var totalAmount = subTotal + systemFee + tax;
 
@@ -214,6 +217,33 @@ public class InvoiceService : IInvoiceService
         catch (Exception ex)
         {
             return ApiResponseModel<BankAccountResponseModel>.Fail($"Error: {ex.Message}", 500);
+        }
+    }
+    
+    public async Task<ApiResponseModel<byte[]>> GenerateInvoicePDFAsync(string invoiceId)
+    {
+        try
+        {
+            // Check if invoice exists
+            var invoiceExists = await _dbContext.Set<Invoice>().AnyAsync(i => i.InvoiceNumber == invoiceId);
+            
+            if (!invoiceExists)
+            {
+                return ApiResponseModel<byte[]>.Fail("Invoice not found", 404);
+            }
+            
+            // Generate the PDF using the PDFService
+            var pdfBytes = await _pdfService.GenerateInvoicePDFAsync(invoiceId);
+            await File.WriteAllBytesAsync("invoice-debug.pdf", pdfBytes);
+            
+            return ApiResponseModel<byte[]>.Success(
+                "Invoice PDF generated successfully",
+                pdfBytes,
+                200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<byte[]>.Fail($"Error generating PDF: {ex.Message}", 500);
         }
     }
 

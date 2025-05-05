@@ -133,6 +133,7 @@ namespace trucki.DatabaseContext
 
         public DbSet<DeviceToken> DeviceTokens { get; set; }
         public DbSet<DatabaseNotification> Notifications { get; set; }
+        public DbSet<Invoice> Invoices { get; set; }
 
     }
 }
