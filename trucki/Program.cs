@@ -16,7 +16,11 @@ builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
 builder.Services.AddDependencyInjection();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new DateTimeUtcConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
 //builder.Services.AddSwaggerGen();

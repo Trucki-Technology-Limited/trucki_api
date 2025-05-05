@@ -382,13 +382,15 @@ namespace trucki.Services
                 var bidAmount = selectedBid.Amount;
                 var systemFee = bidAmount * 0.15m; // 15% system fee
                 var subtotal = bidAmount + systemFee;
-                var tax = subtotal * 0.10m; // 10% tax
-                var totalAmount = subtotal + tax;
+                // var tax = subtotal * 0.10m; // 10% tax
+                var totalAmount = subtotal
+                // + tax
+                ;
 
                 // Store these values in the order
                 order.TotalAmount = bidAmount;
                 order.SystemFee = systemFee;
-                order.Tax = tax;
+                // order.Tax = tax;
 
                 // Set the accepted bid
                 order.AcceptedBidId = selectedBid.Id;
@@ -405,7 +407,7 @@ namespace trucki.Services
                     InvoiceNumber = invoiceNumber,
                     SubTotal = bidAmount,
                     SystemFee = systemFee,
-                    Tax = tax,
+                    Tax = 0,
                     TotalAmount = totalAmount,
                     // Different due dates based on cargo owner type
                     DueDate = order.CargoOwner.OwnerType == CargoOwnerType.Broker
@@ -431,7 +433,7 @@ namespace trucki.Services
                     {
                         BidAmount = bidAmount,
                         SystemFee = systemFee,
-                        Tax = tax,
+                        Tax = 0,
                         TotalAmount = totalAmount
                     };
 
@@ -501,7 +503,7 @@ namespace trucki.Services
                         {
                             BidAmount = bidAmount,
                             SystemFee = systemFee,
-                            Tax = tax,
+                            Tax = 0,
                             TotalAmount = totalAmount
                         }
                     };
