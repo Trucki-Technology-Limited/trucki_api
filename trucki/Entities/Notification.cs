@@ -36,6 +36,7 @@ namespace trucki.Entities
         DocumentUploaded,
         PaymentReceived,
         AccountApproved,
-        NewMessage
+        NewMessage,
+        OrderDeclined
     }
 }

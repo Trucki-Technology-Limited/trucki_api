@@ -94,20 +94,46 @@ namespace trucki.DatabaseContext
                     .HasForeignKey(e => e.OrderId);
           });
             modelBuilder.Entity<DatabaseNotification>(entity =>
-  {
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.UserId).IsRequired();
-      entity.Property(e => e.Title).IsRequired();
-      entity.Property(e => e.Message).IsRequired();
-      entity.Property(e => e.Type).IsRequired();
-      entity.Property(e => e.CreatedAt).IsRequired();
-      entity.Property(e => e.IsRead).HasDefaultValue(false);
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.Title).IsRequired();
+                entity.Property(e => e.Message).IsRequired();
+                entity.Property(e => e.Type).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.IsRead).HasDefaultValue(false);
 
-      // Relationship with User
-      entity.HasOne(e => e.User)
-            .WithMany()
-            .HasForeignKey(e => e.UserId);
-  });
+                // Relationship with User
+                entity.HasOne(e => e.User)
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId);
+            });
+            // Configure CargoOwnerWallet
+            modelBuilder.Entity<CargoOwnerWallet>()
+                .HasOne(w => w.CargoOwner)
+                .WithOne()
+                .HasForeignKey<CargoOwnerWallet>(w => w.CargoOwnerId);
+
+            // Configure WalletTransaction
+            modelBuilder.Entity<WalletTransaction>()
+                .HasOne(t => t.Wallet)
+                .WithMany(w => w.Transactions)
+                .HasForeignKey(t => t.WalletId);
+
+            modelBuilder.Entity<WalletTransaction>()
+                .HasOne(t => t.RelatedOrder)
+                .WithMany()
+                .HasForeignKey(t => t.RelatedOrderId)
+                .IsRequired(false);  // Optional relationship
+
+            // Configure CargoOrders updates
+            modelBuilder.Entity<CargoOrders>()
+                .Property(o => o.WalletPaymentAmount)
+                .IsRequired(false);
+
+            modelBuilder.Entity<CargoOrders>()
+                .Property(o => o.StripePaymentAmount)
+                .IsRequired(false);
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -134,6 +160,8 @@ namespace trucki.DatabaseContext
         public DbSet<DeviceToken> DeviceTokens { get; set; }
         public DbSet<DatabaseNotification> Notifications { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
+        public DbSet<CargoOwnerWallet> CargoOwnerWallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
 
     }
 }

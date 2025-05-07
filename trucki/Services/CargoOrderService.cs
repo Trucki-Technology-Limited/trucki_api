@@ -17,9 +17,10 @@ namespace trucki.Services
         private readonly INotificationService _notificationService;
         private readonly NotificationEventService _notificationEventService;
         private readonly IEmailService _emailService;
+        private readonly IWalletService _walletService;
 
         public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService, INotificationService notificationService,
-    IEmailService emailService, NotificationEventService notificationEventService)
+    IEmailService emailService, NotificationEventService notificationEventService, IWalletService walletService)
         {
             _dbContext = dbContext;
             _stripeService = stripeService;
@@ -27,6 +28,7 @@ namespace trucki.Services
             _notificationService = notificationService;
             _emailService = emailService;
             _notificationEventService = notificationEventService;
+            _walletService = walletService;
         }
 
         public async Task<ApiResponseModel<bool>> CreateOrderAsync(CreateCargoOrderDto createOrderDto)
@@ -382,15 +384,11 @@ namespace trucki.Services
                 var bidAmount = selectedBid.Amount;
                 var systemFee = bidAmount * 0.15m; // 15% system fee
                 var subtotal = bidAmount + systemFee;
-                // var tax = subtotal * 0.10m; // 10% tax
-                var totalAmount = subtotal
-                // + tax
-                ;
+                var totalAmount = subtotal;
 
                 // Store these values in the order
                 order.TotalAmount = bidAmount;
                 order.SystemFee = systemFee;
-                // order.Tax = tax;
 
                 // Set the accepted bid
                 order.AcceptedBidId = selectedBid.Id;
@@ -418,50 +416,130 @@ namespace trucki.Services
 
                 _dbContext.Set<Invoice>().Add(invoice);
 
+                // Get the cargo owner's wallet balance
+                var walletBalance = await _walletService.GetWalletBalance(order.CargoOwnerId);
+
                 // Different flows based on cargo owner type
                 if (order.CargoOwner.OwnerType == CargoOwnerType.Shipper)
                 {
-                    // For Shippers, proceed with Stripe payment
-                    var paymentResponse = await _stripeService.CreatePaymentIntent(order.Id, totalAmount, "usd");
+                    // Determine payment breakdown
+                    var walletPaymentAmount = Math.Min(walletBalance, totalAmount);
+                    var remainingPaymentAmount = totalAmount - walletPaymentAmount;
 
-                    // Set payment method and store payment intent ID
-                    order.PaymentMethod = PaymentMethodType.Stripe;
-                    order.PaymentIntentId = paymentResponse.PaymentIntentId;
-
-                    // Add payment breakdown to response
-                    paymentResponse.PaymentBreakdown = new PaymentBreakdown
+                    // Store wallet payment amount
+                    if (walletPaymentAmount > 0)
                     {
-                        BidAmount = bidAmount,
-                        SystemFee = systemFee,
-                        Tax = 0,
-                        TotalAmount = totalAmount
-                    };
-
-                    // Save changes but don't update order status yet (will be updated after payment)
-                    await _dbContext.SaveChangesAsync();
-
-                    // Notify driver that their bid was selected (but pending payment)
-                    var driver = await _dbContext.Drivers
-                        .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
-
-                    if (driver?.UserId != null)
-                    {
-                        await _notificationService.SendNotificationAsync(
-                            driver.UserId,
-                            "Bid Accepted",
-                            $"Your bid for cargo order to {order.DeliveryLocation} has been accepted",
-                            new Dictionary<string, string> {
-                        { "orderId", order.Id },
-                        { "bidId", selectedBid.Id },
-                        { "type", "bid_accepted" }
-                            }
-                        );
+                        order.WalletPaymentAmount = walletPaymentAmount;
                     }
 
-                    return ApiResponseModel<StripePaymentResponse>.Success(
-                        "Driver selected, please complete payment",
-                        paymentResponse,
-                        200);
+                    // If payment is fully covered by wallet
+                    if (remainingPaymentAmount <= 0)
+                    {
+                        // Process wallet payment
+                        var walletResult = await _walletService.DeductFundsFromWallet(
+                            order.CargoOwnerId,
+                            walletPaymentAmount,
+                            $"Payment for Order #{order.Id}",
+                            WalletTransactionType.Payment,
+                            order.Id);
+
+                        if (!walletResult.IsSuccessful)
+                        {
+                            return ApiResponseModel<StripePaymentResponse>.Fail(
+                                walletResult.Message,
+                                walletResult.StatusCode);
+                        }
+
+                        // Update order status
+                        order.Status = CargoOrderStatus.DriverSelected;
+                        order.PaymentMethod = PaymentMethodType.Wallet;
+                        order.IsPaid = true;
+                        order.PaymentDate = DateTime.UtcNow;
+
+                        // Mark other bids as expired
+                        foreach (var bid in order.Bids.Where(b => b.Id != selectedBid.Id))
+                        {
+                            bid.Status = BidStatus.Expired;
+                        }
+
+                        // Save changes
+                        await _dbContext.SaveChangesAsync();
+
+                        // Return response without Stripe payment intent
+                        var walletResponse = new StripePaymentResponse
+                        {
+                            OrderId = order.Id,
+                            Amount = totalAmount,
+                            Status = "succeeded",
+                            PaymentBreakdown = new PaymentBreakdown
+                            {
+                                BidAmount = bidAmount,
+                                SystemFee = systemFee,
+                                Tax = 0,
+                                TotalAmount = totalAmount,
+                                WalletAmount = walletPaymentAmount,
+                                RemainingAmount = 0
+                            }
+                        };
+
+                        // Notify driver about selection
+                        var driver = await _dbContext.Drivers
+                            .FirstOrDefaultAsync(d => d.Truck.Id == selectedBid.TruckId);
+
+                        if (driver?.UserId != null)
+                        {
+                            await _notificationService.SendNotificationAsync(
+                                driver.UserId,
+                                "Bid Accepted",
+                                $"Your bid for the order to {order.DeliveryLocation} has been accepted",
+                                new Dictionary<string, string> {
+                            { "orderId", order.Id },
+                            { "bidId", selectedBid.Id },
+                            { "type", "bid_accepted" }
+                                }
+                            );
+                        }
+
+                        return ApiResponseModel<StripePaymentResponse>.Success(
+                            "Payment processed from wallet balance",
+                            walletResponse,
+                            200);
+                    }
+                    else
+                    {
+                        // Create Stripe payment for remaining amount
+                        var paymentResponse = await _stripeService.CreatePaymentIntent(
+                            order.Id,
+                            remainingPaymentAmount,
+                            "usd");
+
+                        // Set partial payment info
+                        order.PaymentMethod = PaymentMethodType.Mixed;
+                        order.WalletPaymentAmount = walletPaymentAmount;
+                        order.StripePaymentAmount = remainingPaymentAmount;
+                        order.PaymentIntentId = paymentResponse.PaymentIntentId;
+
+                        // Save changes but don't update order status yet
+                        await _dbContext.SaveChangesAsync();
+
+                        // Add payment breakdown
+                        paymentResponse.PaymentBreakdown = new PaymentBreakdown
+                        {
+                            BidAmount = bidAmount,
+                            SystemFee = systemFee,
+                            Tax = 0,
+                            TotalAmount = totalAmount,
+                            WalletAmount = walletPaymentAmount,
+                            RemainingAmount = remainingPaymentAmount
+                        };
+
+                        return ApiResponseModel<StripePaymentResponse>.Success(
+                            walletPaymentAmount > 0
+                                ? $"${walletPaymentAmount:F2} applied from wallet balance. Please complete remaining payment."
+                                : "Please complete payment",
+                            paymentResponse,
+                            200);
+                    }
                 }
                 else // Broker
                 {
@@ -504,7 +582,9 @@ namespace trucki.Services
                             BidAmount = bidAmount,
                             SystemFee = systemFee,
                             Tax = 0,
-                            TotalAmount = totalAmount
+                            TotalAmount = totalAmount,
+                            WalletAmount = 0,
+                            RemainingAmount = 0
                         }
                     };
 
@@ -519,7 +599,6 @@ namespace trucki.Services
                 return ApiResponseModel<StripePaymentResponse>.Fail($"Error: {ex.Message}", 500);
             }
         }
-
         private string GenerateInvoiceNumber()
         {
             // Format: INV-YYYYMMDD-XXXX
@@ -528,6 +607,7 @@ namespace trucki.Services
             var randomPart = random.Next(1000, 9999).ToString();
             return $"INV-{dateString}-{randomPart}";
         }
+
         public async Task<ApiResponseModel<bool>> DriverAcknowledgeBidAsync(DriverAcknowledgementDto acknowledgementDto)
         {
             try
@@ -537,8 +617,6 @@ namespace trucki.Services
                     .Include(o => o.AcceptedBid)
                      .ThenInclude(b => b.Truck)
                         .ThenInclude(t => t.Driver)
-
-
                     .FirstOrDefaultAsync(o => o.Id == acknowledgementDto.OrderId);
 
                 if (order == null || order.AcceptedBid == null)
@@ -550,6 +628,7 @@ namespace trucki.Services
                 {
                     return ApiResponseModel<bool>.Fail("Order is not in driver selection state", 400);
                 }
+
                 // Get the driver info
                 var truckId = order.AcceptedBid.TruckId;
                 var driver = await _dbContext.Set<Driver>()
@@ -580,46 +659,106 @@ namespace trucki.Services
                     order.AcceptedBid.Status = BidStatus.DriverDeclined;
                     order.AcceptedBidId = null;
                     order.PickupDateTime = null;
+
+                    // If the order was paid, refund the payment to the cargo owner's wallet
+                    if (order.IsPaid)
+                    {
+                        decimal refundAmount = 0;
+
+                        // Calculate refund amount based on payment method
+                        if (order.PaymentMethod == PaymentMethodType.Stripe)
+                        {
+                            refundAmount = order.TotalAmount;
+                        }
+                        else if (order.PaymentMethod == PaymentMethodType.Mixed)
+                        {
+                            refundAmount = order.WalletPaymentAmount.GetValueOrDefault() + order.StripePaymentAmount.GetValueOrDefault();
+                        }
+                        else if (order.PaymentMethod == PaymentMethodType.Wallet)
+                        {
+                            refundAmount = order.WalletPaymentAmount.GetValueOrDefault();
+                        }
+
+                        if (refundAmount > 0)
+                        {
+                            // Add funds to wallet
+                            await _walletService.AddFundsToWallet(
+                                order.CargoOwnerId,
+                                refundAmount,
+                                $"Refund for Order #{order.Id} - Driver declined",
+                                WalletTransactionType.Refund,
+                                order.Id);
+
+                            // Reset payment fields
+                            order.IsPaid = false;
+                            order.PaymentIntentId = null;
+                            order.PaymentDate = null;
+                            order.WalletPaymentAmount = null;
+                            order.StripePaymentAmount = null;
+                        }
+                    }
                 }
 
                 await _dbContext.SaveChangesAsync();
 
                 if (acknowledgementDto.IsAcknowledged)
                 {
-                    order.Status = CargoOrderStatus.DriverAcknowledged;
-                    order.AcceptedBid.Status = BidStatus.DriverAcknowledged;
-                    order.AcceptedBid.DriverAcknowledgedAt = DateTime.UtcNow;
-
                     // Notify cargo owner that driver acknowledged the order
                     await _notificationService.SendNotificationAsync(
                         order.CargoOwner.UserId,
                         "Driver Accepted Order",
                         $"The driver has accepted your order to {order.DeliveryLocation}",
                         new Dictionary<string, string> {
-            { "orderId", order.Id },
-            { "type", "driver_accepted" }
+                    { "orderId", order.Id },
+                    { "type", "driver_accepted" }
                         }
                     );
 
                     await _notificationEventService.NotifyDriverAcknowledged(
+                        order.CargoOwnerId,
+                        order.Id,
+                        order.AcceptedBid.Truck.Driver.Name);
+
+                    return ApiResponseModel<bool>.Success(
+                        "Driver acknowledged successfully",
+                        true,
+                        200);
+                }
+                else
+                {
+                    // Notify cargo owner that driver declined
+                    await _notificationService.SendNotificationAsync(
+                        order.CargoOwner.UserId,
+                        "Driver Declined Order",
+                        $"The driver has declined your order to {order.DeliveryLocation}. The order is now reopened for bidding.",
+                        new Dictionary<string, string> {
+                    { "orderId", order.Id },
+                    { "type", "driver_declined" }
+                        }
+                    );
+
+                    await _notificationEventService.NotifyDriverDeclined(
                   order.CargoOwnerId,
                   order.Id,
                   order.AcceptedBid.Truck.Driver.Name);
+                    // If payment was refunded to wallet, include that information
+                    string message = "Order reopened for bidding";
+                    if (order.IsPaid)
+                    {
+                        message = $"Order reopened for bidding. Payment refunded to your wallet.";
+                    }
+
+                    return ApiResponseModel<bool>.Success(
+                        message,
+                        true,
+                        200);
                 }
-                return ApiResponseModel<bool>.Success(
-                    acknowledgementDto.IsAcknowledged ?
-                        "Driver acknowledged successfully" :
-                        "Order reopened for bidding",
-                    true,
-                    200);
             }
             catch (Exception ex)
             {
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
-
-
         public async Task<ApiResponseModel<CargoOrderResponseModel>> GetCargoOrderByIdAsync(string orderId)
         {
             try
@@ -1333,13 +1472,13 @@ namespace trucki.Services
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
-
         public async Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId)
         {
             try
             {
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.Bids)
+                    .Include(w => w.CargoOwner)
                     .FirstOrDefaultAsync(o => o.Id == orderId);
 
                 if (order == null)
@@ -1353,7 +1492,6 @@ namespace trucki.Services
                     return ApiResponseModel<bool>.Fail("Order is not in the correct state for payment", 400);
                 }
 
-
                 // Find the invoice associated with this order
                 var invoice = await _dbContext.Set<Invoice>()
                     .FirstOrDefaultAsync(i => i.OrderId == orderId);
@@ -1361,6 +1499,24 @@ namespace trucki.Services
                 if (invoice == null)
                 {
                     return ApiResponseModel<bool>.Fail("Invoice not found for this order", 404);
+                }
+
+                // Process wallet portion of payment for mixed payments
+                if (order.PaymentMethod == PaymentMethodType.Mixed && order.WalletPaymentAmount > 0)
+                {
+                    var walletResult = await _walletService.DeductFundsFromWallet(
+                        order.CargoOwnerId,
+                        order.WalletPaymentAmount.Value,
+                        $"Partial payment for Order #{order.Id}",
+                        WalletTransactionType.Payment,
+                        order.Id);
+
+                    if (!walletResult.IsSuccessful)
+                    {
+                        return ApiResponseModel<bool>.Fail(
+                            $"Error processing wallet payment: {walletResult.Message}",
+                            walletResult.StatusCode);
+                    }
                 }
 
                 // Update payment details
@@ -1375,7 +1531,6 @@ namespace trucki.Services
                 invoice.Status = InvoiceStatus.Paid;
                 invoice.PaymentApprovedAt = DateTime.UtcNow;
 
-
                 // Mark other bids as expired
                 foreach (var bid in order.Bids.Where(b => b.Id != order.AcceptedBidId))
                 {
@@ -1383,6 +1538,7 @@ namespace trucki.Services
                 }
 
                 await _dbContext.SaveChangesAsync();
+
                 // Send payment confirmation notification to cargo owner
                 await _notificationService.SendNotificationAsync(
                     order.CargoOwner.UserId,
@@ -1393,7 +1549,6 @@ namespace trucki.Services
                 { "type", "payment_success" }
                     }
                 );
-
 
                 if (order.CargoOwner.EmailAddress != null)
                 {
@@ -1409,6 +1564,7 @@ namespace trucki.Services
                         order.DeliveryLocation
                     );
                 }
+
                 return ApiResponseModel<bool>.Success("Payment confirmed and order updated", true, 200);
             }
             catch (Exception ex)
@@ -1416,7 +1572,6 @@ namespace trucki.Services
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
-
         private async Task<bool> DriverHasActiveOrderAsync(string driverId, string excludeOrderId = null)
         {
             try

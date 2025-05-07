@@ -42,6 +42,8 @@ public class Profiles : Profile
         CreateMap<CargoOwner, CargoOwnerResponseModel>();
         CreateMap<DriverBankAccount, DriverBankAccountResponseModel>();
         CreateMap<DatabaseNotification, NotificationResponseModel>();
+        CreateMap<WalletTransaction, WalletTransactionResponseModel>()
+           .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount));
 
     }
 }

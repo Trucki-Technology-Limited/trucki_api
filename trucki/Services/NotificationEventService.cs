@@ -21,7 +21,7 @@ namespace trucki.Services
         {
             var title = "New Order Created";
             var message = $"Your order from {pickupLocation} to {deliveryLocation} has been created successfully.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -41,7 +41,7 @@ namespace trucki.Services
         {
             var title = "New Order Available for Bidding";
             var message = $"A new order from {pickupLocation} to {deliveryLocation} is open for bidding.";
-            
+
             // Get all active drivers with available trucks
             var driversWithAvailableTrucks = await _dbContext.Drivers
                 .Include(d => d.Truck)
@@ -67,7 +67,7 @@ namespace trucki.Services
         {
             var title = "New Bid Received";
             var message = $"Driver {driverName} has submitted a bid of ${amount} for your order.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -87,7 +87,7 @@ namespace trucki.Services
         {
             var title = "Bid Accepted";
             var message = $"Your bid for the order from {pickupLocation} to {deliveryLocation} has been accepted.";
-            
+
             // Get the UserId from Driver
             var driver = await _dbContext.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
             if (driver?.UserId != null)
@@ -107,7 +107,7 @@ namespace trucki.Services
         {
             var title = "Driver Acknowledged Order";
             var message = $"Driver {driverName} has acknowledged your order and will start soon.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -122,12 +122,32 @@ namespace trucki.Services
             }
         }
 
+        // Driver Declined notification for cargo owner
+        public async Task NotifyDriverDeclined(string cargoOwnerId, string orderId, string driverName)
+        {
+            var title = "Driver Declined Order";
+            var message = $"Driver {driverName} has declined your order and won't be able to proceed.";
+
+            // Get the UserId from CargoOwner
+            var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+            if (cargoOwner?.UserId != null)
+            {
+                await _notificationService.CreateNotificationAsync(
+                    cargoOwner.UserId,
+                    title,
+                    message,
+                    NotificationType.OrderDeclined,
+                    orderId,
+                    "CargoOrders");
+            }
+        }
+
         // Order started notification for cargo owner
         public async Task NotifyOrderStarted(string cargoOwnerId, string orderId, string driverName)
         {
             var title = "Order Started";
             var message = $"Driver {driverName} has started your order and is heading to the pickup location.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -147,7 +167,7 @@ namespace trucki.Services
         {
             var title = "Order Picked Up";
             var message = $"Driver {driverName} has picked up your order and is now in transit.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -167,7 +187,7 @@ namespace trucki.Services
         {
             var title = "Order Delivered";
             var message = $"Driver {driverName} has delivered your order successfully.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -187,7 +207,7 @@ namespace trucki.Services
         {
             var title = "Document Uploaded";
             var message = $"A new {documentType} document has been uploaded for your order.";
-            
+
             // Get the UserId from CargoOwner
             var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
             if (cargoOwner?.UserId != null)
@@ -207,7 +227,7 @@ namespace trucki.Services
         {
             var title = "Payment Received";
             var message = $"You have received a payment of ${amount} for your delivery.";
-            
+
             // Get the UserId from Driver
             var driver = await _dbContext.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
             if (driver?.UserId != null)
@@ -227,7 +247,7 @@ namespace trucki.Services
         {
             var title = "Account Approved";
             var message = $"Your {entityType} account has been approved. You can now use all features.";
-            
+
             await _notificationService.CreateNotificationAsync(
                 userId,
                 title,
@@ -242,7 +262,7 @@ namespace trucki.Services
         {
             var title = "New Message";
             var message = $"You have received a new message regarding order: {orderTitle}";
-            
+
             await _notificationService.CreateNotificationAsync(
                 recipientId,
                 title,

@@ -19,6 +19,8 @@ public class PaymentBreakdown
     public decimal SystemFee { get; set; }
     public decimal Tax { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal WalletAmount { get; set; } = 0; // Amount paid from wallet
+    public decimal RemainingAmount { get; set; } = 0; // Amount to pay via Stripe
 }
 public class CreatePaymentIntentDto
 {

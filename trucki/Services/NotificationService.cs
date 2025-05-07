@@ -31,22 +31,22 @@ public class NotificationService : INotificationService
 
 
         // Initialize Firebase if not already initialized
-        try
+        if (FirebaseApp.DefaultInstance == null)
         {
-            // Try to get the default instance — if it doesn't exist, it will throw.
-            var _ = FirebaseApp.DefaultInstance;
-        }
-        catch (InvalidOperationException)
-        {
-            // Create the app only if it hasn’t been created yet
-            FirebaseApp.Create(new AppOptions
+            try
             {
-                Credential = GoogleCredential.FromFile("trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json")
-            });
-
-            _logger.LogInformation("Firebase initialized successfully");
+                var app = FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.FromFile("trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json")
+                });
+                _logger.LogInformation("Firebase initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error initializing Firebase: {ex.Message}");
+                throw;
+            }
         }
-
     }
 
     public async Task SendNotificationAsync(string userId, string title, string body, Dictionary<string, string> data = null)
