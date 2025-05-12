@@ -25,18 +25,27 @@ namespace trucki.Entities
 
     public enum NotificationType
     {
+        // Existing types
         OrderCreated,
-        BidSubmitted,
-        BidAccepted,
         OrderAssigned,
         OrderStarted,
         OrderPickedUp,
-        OrderInTransit,
         OrderDelivered,
+        OrderDeclined,
+        BidSubmitted,
+        BidAccepted,
         DocumentUploaded,
         PaymentReceived,
         AccountApproved,
         NewMessage,
-        OrderDeclined
+
+        // New types
+        LocationUpdated,           // For location updates (not stored in DB)
+        PaymentReminder,           // For payment due reminders
+        PickupReminder,            // For upcoming pickup reminders
+        DeliveryDelay,             // For delivery delay notifications
+        DeliveryConfirmed,         // For confirmed deliveries
+        DriverRated,               // For driver ratings
+        PaymentReleased            // For payment releases to drivers
     }
 }

@@ -615,8 +615,8 @@ namespace trucki.Services
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(a => a.CargoOwner)
                     .Include(o => o.AcceptedBid)
-                     .ThenInclude(b => b.Truck)
-                        .ThenInclude(t => t.Driver)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
                     .FirstOrDefaultAsync(o => o.Id == acknowledgementDto.OrderId);
 
                 if (order == null || order.AcceptedBid == null)
@@ -709,8 +709,8 @@ namespace trucki.Services
                         "Driver Accepted Order",
                         $"The driver has accepted your order to {order.DeliveryLocation}",
                         new Dictionary<string, string> {
-                    { "orderId", order.Id },
-                    { "type", "driver_accepted" }
+                { "orderId", order.Id },
+                { "type", "driver_accepted" }
                         }
                     );
 
@@ -732,15 +732,16 @@ namespace trucki.Services
                         "Driver Declined Order",
                         $"The driver has declined your order to {order.DeliveryLocation}. The order is now reopened for bidding.",
                         new Dictionary<string, string> {
-                    { "orderId", order.Id },
-                    { "type", "driver_declined" }
+                { "orderId", order.Id },
+                { "type", "driver_declined" }
                         }
                     );
 
                     await _notificationEventService.NotifyDriverDeclined(
-                  order.CargoOwnerId,
-                  order.Id,
-                  order.AcceptedBid.Truck.Driver.Name);
+                        order.CargoOwnerId,
+                        order.Id,
+                        order.AcceptedBid.Truck.Driver.Name);
+
                     // If payment was refunded to wallet, include that information
                     string message = "Order reopened for bidding";
                     if (order.IsPaid)
@@ -1031,6 +1032,8 @@ namespace trucki.Services
             {
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.AcceptedBid)
+                    .Include(o => o.CargoOwner) // Add this line
+                    .Include(o => o.AcceptedBid.Truck.Driver) // Add this line to get driver info
                     .FirstOrDefaultAsync(o => o.Id == uploadManifestDto.OrderId);
 
                 if (order == null)
@@ -1057,6 +1060,12 @@ namespace trucki.Services
 
                 await _dbContext.SaveChangesAsync();
 
+                // Add notification to cargo owner about pickup
+                await _notificationEventService.NotifyOrderPickedUp(
+                    order.CargoOwnerId,
+                    order.Id,
+                    order.AcceptedBid.Truck.Driver.Name);
+
                 return ApiResponseModel<bool>.Success("Manifest uploaded and order is now in transit", true, 200);
             }
             catch (Exception ex)
@@ -1064,13 +1073,13 @@ namespace trucki.Services
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
-
         public async Task<ApiResponseModel<bool>> UpdateLocationAsync(UpdateLocationDto updateLocationDto)
         {
             try
             {
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.AcceptedBid)
+                    .Include(o => o.CargoOwner) // Add this line
                     .FirstOrDefaultAsync(o => o.Id == updateLocationDto.OrderId);
 
                 if (order == null)
@@ -1097,6 +1106,13 @@ namespace trucki.Services
                 _dbContext.Set<DeliveryLocationUpdate>().Add(locationUpdate);
                 await _dbContext.SaveChangesAsync();
 
+                // Add notification to cargo owner about location update
+                await _notificationEventService.NotifyLocationUpdated(
+                    order.CargoOwnerId,
+                    order.Id,
+                    updateLocationDto.CurrentLocation,
+                    updateLocationDto.EstimatedTimeOfArrival ?? DateTime.UtcNow);
+
                 return ApiResponseModel<bool>.Success("Location updated successfully", true, 200);
             }
             catch (Exception ex)
@@ -1111,6 +1127,8 @@ namespace trucki.Services
             {
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.AcceptedBid)
+                    .Include(o => o.CargoOwner) // Add this line
+                    .Include(o => o.AcceptedBid.Truck.Driver) // Add this line to get driver info
                     .FirstOrDefaultAsync(o => o.Id == completeDeliveryDto.OrderId);
 
                 if (order == null)
@@ -1135,6 +1153,19 @@ namespace trucki.Services
                 order.DeliveryDateTime = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
+
+                // Add notification to cargo owner about completed delivery
+                await _notificationEventService.NotifyOrderDelivered(
+                    order.CargoOwnerId,
+                    order.Id,
+                    order.AcceptedBid.Truck.Driver.Name);
+
+                // Add notification to driver about delivery confirmation
+                await _notificationEventService.NotifyDeliveryConfirmed(
+                    order.AcceptedBid.Truck.Driver.Id,
+                    order.Id,
+                    order.PickupLocation,
+                    order.DeliveryLocation);
 
                 return ApiResponseModel<bool>.Success("Delivery completed successfully", true, 200);
             }
@@ -1171,6 +1202,7 @@ namespace trucki.Services
                 var order = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.AcceptedBid)
                         .ThenInclude(b => b.Truck)
+                    .Include(o => o.CargoOwner) // Add this line
                     .FirstOrDefaultAsync(o => o.Id == startOrderDto.OrderId);
 
                 if (order == null)
@@ -1197,6 +1229,12 @@ namespace trucki.Services
                 // Update order status to ReadyForPickup
                 order.Status = CargoOrderStatus.ReadyForPickup;
                 await _dbContext.SaveChangesAsync();
+
+                // Add notification to cargo owner about the order being started
+                await _notificationEventService.NotifyOrderStarted(
+                    order.CargoOwnerId,
+                    order.Id,
+                    driver.Name);
 
                 return ApiResponseModel<bool>.Success("Order is now ready for pickup", true, 200);
             }

@@ -22,6 +22,7 @@ namespace trucki.CustomExtension
                 });
             });
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddHostedService<BackgroundNotificationService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAdminRepository, AdminRepository>();

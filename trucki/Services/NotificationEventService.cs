@@ -329,5 +329,231 @@ namespace trucki.Services
                     "ChatMessage");
             }, "NewMessage");
         }
+
+        // Location update notification for cargo owner - push notification only
+        public async Task NotifyLocationUpdated(string cargoOwnerId, string orderId, string currentLocation, DateTime estimatedArrival)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "Cargo Location Updated";
+                var message = $"Your cargo is now at {currentLocation}. " +
+                             $"Estimated arrival: {estimatedArrival.ToString("g")}";
+
+                // Get the UserId from CargoOwner
+                var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+                if (cargoOwner?.UserId != null)
+                {
+                    // Only send push notification without creating database entry
+                    await _notificationService.SendNotificationAsync(
+                        cargoOwner.UserId,
+                        title,
+                        message,
+                        new Dictionary<string, string> {
+                            { "orderId", orderId },
+                            { "type", "location_update" },
+                            { "currentLocation", currentLocation },
+                            { "estimatedArrival", estimatedArrival.ToString("o") }
+                        }
+                    );
+                }
+            }, "LocationUpdated");
+        }
+
+        // Notify cargo owner about payment reminder
+        public async Task NotifyPaymentReminder(string cargoOwnerId, string orderId, string invoiceNumber, decimal amount, DateTime dueDate)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "Payment Reminder";
+                var message = $"Invoice #{invoiceNumber} for ${amount} is due on {dueDate.ToShortDateString()}. Please submit payment to avoid late fees.";
+
+                // Get the UserId from CargoOwner
+                var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+                if (cargoOwner?.UserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        cargoOwner.UserId,
+                        title,
+                        message,
+                        NotificationType.PaymentReminder,
+                        orderId,
+                        "CargoOrders");
+                }
+            }, "PaymentReminder");
+        }
+
+        // Notify driver about upcoming pickup
+        public async Task NotifyPickupReminder(string driverId, string orderId, string pickupLocation, DateTime pickupTime)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var timeUntilPickup = pickupTime - DateTime.UtcNow;
+                string timeMessage;
+
+                if (timeUntilPickup.TotalHours < 1)
+                    timeMessage = $"{(int)timeUntilPickup.TotalMinutes} minutes";
+                else if (timeUntilPickup.TotalHours < 24)
+                    timeMessage = $"{(int)timeUntilPickup.TotalHours} hours";
+                else
+                    timeMessage = $"{(int)timeUntilPickup.TotalDays} days";
+
+                var title = "Upcoming Pickup Reminder";
+                var message = $"You have a cargo pickup at {pickupLocation} in {timeMessage}.";
+
+                // Get the UserId from Driver
+                var driver = await _dbContext.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
+                if (driver?.UserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        driver.UserId,
+                        title,
+                        message,
+                        NotificationType.PickupReminder,
+                        orderId,
+                        "CargoOrders");
+                }
+            }, "PickupReminder");
+        }
+
+        // Notify cargo owner about potential delivery delay
+        public async Task NotifyDeliveryDelay(string cargoOwnerId, string orderId, string reason, DateTime newEstimatedTime)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "Delivery Delay";
+                var message = $"Your delivery is delayed due to {reason}. New estimated arrival: {newEstimatedTime.ToString("g")}";
+
+                // Get the UserId from CargoOwner
+                var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+                if (cargoOwner?.UserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        cargoOwner.UserId,
+                        title,
+                        message,
+                        NotificationType.DeliveryDelay,
+                        orderId,
+                        "CargoOrders");
+                }
+            }, "DeliveryDelay");
+        }
+
+        // Notify driver that cargo delivery has been confirmed and their job is complete
+        public async Task NotifyDeliveryConfirmed(string driverId, string orderId, string pickupLocation, string deliveryLocation)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "Delivery Confirmed";
+                var message = $"Your delivery from {pickupLocation} to {deliveryLocation} has been confirmed. Thank you for your service!";
+
+                // Get the UserId from Driver
+                var driver = await _dbContext.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
+                if (driver?.UserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        driver.UserId,
+                        title,
+                        message,
+                        NotificationType.DeliveryConfirmed,
+                        orderId,
+                        "CargoOrders");
+                }
+            }, "DeliveryConfirmed");
+        }
+
+        // Notify driver of a rating/review from the cargo owner
+        public async Task NotifyDriverRated(string driverId, string orderId, int rating, string comment = null)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "New Rating Received";
+                var message = rating >= 4
+                    ? $"You received a {rating}-star rating for your recent delivery! {(string.IsNullOrEmpty(comment) ? "" : $"Comment: \"{comment}\"")}"
+                    : $"You received a {rating}-star rating for your recent delivery. We encourage you to maintain our service standards.";
+
+                // Get the UserId from Driver
+                var driver = await _dbContext.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
+                if (driver?.UserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        driver.UserId,
+                        title,
+                        message,
+                        NotificationType.DriverRated,
+                        orderId,
+                        "CargoOrders");
+                }
+            }, "DriverRated");
+        }
+
+        // Notify driver of a payment released to their account (if applicable in your system)
+        public async Task NotifyPaymentReleased(string driverId, string orderId, decimal amount, string transferId)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "Payment Released";
+                var message = $"A payment of ${amount} has been released to your account for completed delivery.";
+
+                // Get the UserId from Driver
+                var driver = await _dbContext.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
+                if (driver?.UserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        driver.UserId,
+                        title,
+                        message,
+                        NotificationType.PaymentReleased,
+                        orderId,
+                        "CargoOrders");
+
+                    // Also send as push notification for immediate awareness
+                    await _notificationService.SendNotificationAsync(
+                        driver.UserId,
+                        title,
+                        message,
+                        new Dictionary<string, string> {
+                            { "orderId", orderId },
+                            { "type", "payment_released" },
+                            { "amount", amount.ToString() },
+                            { "transferId", transferId }
+                        }
+                    );
+                }
+            }, "PaymentReleased");
+        }
+        public async Task NotifyInvoiceOverdue(string cargoOwnerId, string orderId, string invoiceNumber, decimal amount, DateTime dueDate)
+        {
+            await SafeExecuteNotificationAsync(async () =>
+            {
+                var title = "Invoice Overdue";
+                var message = $"Invoice #{invoiceNumber} for ${amount} was due on {dueDate.ToShortDateString()} and is now overdue. Please submit payment as soon as possible.";
+
+                // Get the UserId from CargoOwner
+                var cargoOwner = await _dbContext.CargoOwners.FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+                if (cargoOwner?.UserId != null)
+                {
+                    // Send push notification
+                    await _notificationService.SendNotificationAsync(
+                        cargoOwner.UserId,
+                        title,
+                        message,
+                        new Dictionary<string, string> {
+                    { "orderId", orderId },
+                    { "invoiceNumber", invoiceNumber },
+                    { "type", "invoice_overdue" }
+                        }
+                    );
+
+                    // Create database notification
+                    await _notificationService.CreateNotificationAsync(
+                        cargoOwner.UserId,
+                        title,
+                        message,
+                        NotificationType.PaymentReminder, // You might add a specific NotificationType.InvoiceOverdue if preferred
+                        orderId,
+                        "CargoOrders");
+                }
+            }, "InvoiceOverdue");
+        }
     }
 }
