@@ -20,7 +20,7 @@ public class NotificationService : INotificationService
     private readonly TruckiDBContext _dbContext;
     private readonly ILogger<NotificationService> _logger;
     private readonly INotificationRepository _notificationRepository;
-    private bool _firebaseInitialized = false;
+
 
     public NotificationService(TruckiDBContext dbContext, ILogger<NotificationService> logger, UserManager<User> userManager, INotificationRepository notificationRepository)
     {
@@ -29,37 +29,8 @@ public class NotificationService : INotificationService
         _logger = logger;
         _notificationRepository = notificationRepository;
 
-        // Initialize Firebase during service initialization but don't break if it fails
-        InitializeFirebase();
-    }
 
-    private void InitializeFirebase()
-    {
-        // Only attempt initialization if not already initialized
-        if (FirebaseApp.DefaultInstance == null)
-        {
-            try
-            {
-                var app = FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.FromFile("trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json")
-                });
-                _firebaseInitialized = true;
-                _logger.LogInformation("Firebase initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                _firebaseInitialized = false;
-                _logger.LogError($"Error initializing Firebase: {ex.Message}");
-                // Don't throw - allow the app to continue even if Firebase initialization fails
-            }
-        }
-        else
-        {
-            _firebaseInitialized = true;
-        }
     }
-
     public async Task SendNotificationAsync(string userId, string title, string body, Dictionary<string, string> data = null)
     {
         try
@@ -261,27 +232,25 @@ public class NotificationService : INotificationService
 
             _logger.LogInformation($"Device token saved for user {userId}");
 
-            // Try to subscribe to user roles as topics, but don't fail if it doesn't work
-            if (_firebaseInitialized)
+
+            try
             {
-                try
+                var user = await _dbContext.Users.FindAsync(userId);
+                if (user != null)
                 {
-                    var user = await _dbContext.Users.FindAsync(userId);
-                    if (user != null)
+                    var roles = await _userManager.GetRolesAsync(user);
+                    foreach (var role in roles)
                     {
-                        var roles = await _userManager.GetRolesAsync(user);
-                        foreach (var role in roles)
-                        {
-                            await SubscribeToTopicAsync(token, role.ToLower());
-                        }
+                        await SubscribeToTopicAsync(token, role.ToLower());
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning($"Failed to subscribe user {userId} to role topics: {ex.Message}");
-                    // Continue execution - don't throw
-                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to subscribe user {userId} to role topics: {ex.Message}");
+                // Continue execution - don't throw
+            }
+
         }
         catch (Exception ex)
         {
@@ -294,11 +263,7 @@ public class NotificationService : INotificationService
     // Safe retry mechanism for Firebase operations
     private async Task<T> RetryFirebaseOperationAsync<T>(Func<Task<T>> operation, string operationName, int maxRetries = 3)
     {
-        if (!_firebaseInitialized)
-        {
-            _logger.LogWarning($"Cannot perform {operationName}: Firebase is not initialized");
-            return default;
-        }
+
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
@@ -319,11 +284,7 @@ public class NotificationService : INotificationService
                 // Exponential backoff: wait longer between each retry
                 await Task.Delay(100 * (int)Math.Pow(2, attempt - 1));
 
-                // Try to re-initialize Firebase if we suspect that's the issue
-                if (ex.Message.Contains("not initialized") || FirebaseApp.DefaultInstance == null)
-                {
-                    InitializeFirebase();
-                }
+
             }
         }
 

@@ -6,11 +6,16 @@ using trucki.CustomExtension;
 using trucki.DatabaseContext;
 using trucki.Hubs;
 using QuestPDF.Infrastructure; // Make sure this is included
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2; // <-- Add this
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
-// Add services to the container.
+// ✅ Initialize Firebase once globally
+InitializeFirebaseApp();
+
+// Add services to the container
 builder.Services.AddDbConfiguration(config);
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
@@ -23,7 +28,6 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
-//builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
@@ -33,23 +37,20 @@ builder.Services.AddSwaggerGen(options =>
         Type = SecuritySchemeType.ApiKey
     });
     options.OperationFilter<SecurityRequirementsOperationFilter>();
-
 });
 
 var app = builder.Build();
 var connectionString = config.GetConnectionString("LocalConnection");
 SeedData.EnsureSeedData(connectionString).Wait();
+
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<TruckiDBContext>();
     context.Database.Migrate();
 }
 
-// if (app.Environment.IsDevelopment())
-// {
 app.UseSwagger();
 app.UseSwaggerUI();
-// }
 
 app.UseCors();
 app.UseIdentityServer();
@@ -57,12 +58,36 @@ app.UseAuthentication();
 app.UseRouting();
 app.UseAuthorization();
 
-// Configure the HTTP request pipeline.
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
-    // Map the SignalR hub
     endpoints.MapHub<ChatHub>("/chathub");
 });
+
 QuestPDF.Settings.License = LicenseType.Community;
 app.Run();
+
+// ✅ Firebase initialization method
+void InitializeFirebaseApp()
+{
+    try
+    {
+        if (FirebaseApp.DefaultInstance == null)
+        {
+            FirebaseApp.Create(new AppOptions
+            {
+                Credential = GoogleCredential.FromFile("trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json")
+            });
+            Console.WriteLine("✅ Firebase initialized successfully.");
+        }
+        else
+        {
+            Console.WriteLine("✅ Firebase already initialized.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error initializing Firebase: {ex.Message}");
+    }
+}
+

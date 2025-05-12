@@ -498,6 +498,12 @@ namespace trucki.Services
                             { "type", "bid_accepted" }
                                 }
                             );
+                            await _notificationEventService.NotifyBidAccepted(
+                       driver.Id,
+                       order.Id,
+                       order.PickupLocation,
+                       order.DeliveryLocation
+                   );
                         }
 
                         return ApiResponseModel<StripePaymentResponse>.Success(
@@ -571,6 +577,12 @@ namespace trucki.Services
                         { "type", "bid_accepted" }
                             }
                         );
+                        await _notificationEventService.NotifyBidAccepted(
+           driver.Id,
+           order.Id,
+           order.PickupLocation,
+           order.DeliveryLocation
+       );
                     }
 
                     // Return empty payment response with breakdown info
@@ -633,6 +645,7 @@ namespace trucki.Services
                 var truckId = order.AcceptedBid.TruckId;
                 var driver = await _dbContext.Set<Driver>()
                     .FirstOrDefaultAsync(d => d.TruckId == truckId);
+                string driverName = "Driver"; // Default fallback
 
                 if (driver == null)
                 {
@@ -656,7 +669,17 @@ namespace trucki.Services
                 {
                     // Driver declined, reopen for bidding
                     order.Status = CargoOrderStatus.OpenForBidding;
-                    order.AcceptedBid.Status = BidStatus.DriverDeclined;
+                    // Store the driver name before nulling the accepted bid
+
+                    if (order.AcceptedBid?.Truck?.Driver != null &&
+                        !string.IsNullOrEmpty(order.AcceptedBid.Truck.Driver.Name))
+                    {
+                        driverName = order.AcceptedBid.Truck.Driver.Name;
+                    }
+                    if (order.AcceptedBid != null)
+                    {
+                        order.AcceptedBid.Status = BidStatus.DriverDeclined;
+                    }
                     order.AcceptedBidId = null;
                     order.PickupDateTime = null;
 
@@ -715,7 +738,7 @@ namespace trucki.Services
                     );
 
                     await _notificationEventService.NotifyDriverAcknowledged(
-                        order.CargoOwnerId,
+                        order.CargoOwner.Id,
                         order.Id,
                         order.AcceptedBid.Truck.Driver.Name);
 
@@ -738,9 +761,9 @@ namespace trucki.Services
                     );
 
                     await _notificationEventService.NotifyDriverDeclined(
-                        order.CargoOwnerId,
+                          order.CargoOwner.Id,
                         order.Id,
-                        order.AcceptedBid.Truck.Driver.Name);
+                       driverName);
 
                     // If payment was refunded to wallet, include that information
                     string message = "Order reopened for bidding";
