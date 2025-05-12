@@ -7,7 +7,7 @@ namespace trucki.Models.ResponseModels
         public string Id { get; set; }
         public string InvoiceNumber { get; set; }
         public string OrderId { get; set; }
-        public CargoOrderSummaryModel Order { get; set; }
+        public InvoiceCargoOrderSummaryModel Order { get; set; }
         public decimal SubTotal { get; set; }
         public decimal SystemFee { get; set; }
         public decimal Tax { get; set; }

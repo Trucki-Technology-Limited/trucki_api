@@ -14,7 +14,6 @@ namespace trucki.Interfaces.IServices
         /// Gets paginated list of invoices for a cargo owner with filtering and sorting
         /// </summary>
         Task<ApiResponseModel<PagedResponse<InvoiceResponseModel>>> GetCargoOwnerInvoicesAsync(
-            string cargoOwnerId,
             GetInvoicesQueryDto query);
 
         /// <summary>

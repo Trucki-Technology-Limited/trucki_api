@@ -19,6 +19,7 @@ namespace trucki.Models.RequestModel
 
     public class GetInvoicesQueryDto
     {
+        public string cargoOwnerId { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public InvoiceStatus? Status { get; set; }

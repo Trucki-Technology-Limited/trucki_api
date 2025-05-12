@@ -69,14 +69,14 @@ public class InvoiceService : IInvoiceService
     }
 
     public async Task<ApiResponseModel<PagedResponse<InvoiceResponseModel>>> GetCargoOwnerInvoicesAsync(
-        string cargoOwnerId,
-        GetInvoicesQueryDto query)
+      GetInvoicesQueryDto query)
     {
         try
         {
             var invoicesQuery = _dbContext.Set<Invoice>()
                 .Include(i => i.Order)
-                .Where(i => i.Order.CargoOwnerId == cargoOwnerId);
+                    .ThenInclude(o => o.Items) // Include the order items
+                .Where(i => i.Order.CargoOwnerId == query.cargoOwnerId);
 
             // Apply filters
             if (query.StartDate.HasValue)
@@ -110,7 +110,32 @@ public class InvoiceService : IInvoiceService
                 .Take(query.PageSize)
                 .ToListAsync();
 
-            var invoiceResponses = _mapper.Map<List<InvoiceResponseModel>>(invoices);
+            var invoiceResponses = new List<InvoiceResponseModel>();
+
+            // Process each invoice and calculate order summaries
+            foreach (var invoice in invoices)
+            {
+                var invoiceResponse = _mapper.Map<InvoiceResponseModel>(invoice);
+
+                // Create an enhanced order summary including locations
+                if (invoice.Order != null)
+                {
+                    var orderSummary = new InvoiceCargoOrderSummaryModel
+                    {
+                        Id = invoice.Order.Id,
+                        PickupLocation = invoice.Order.PickupLocation,
+                        DeliveryLocation = invoice.Order.DeliveryLocation,
+                        DeliveryDateTime = invoice.Order.DeliveryDateTime,
+                        TotalItems = invoice.Order.Items?.Count ?? 0,
+                        TotalWeight = invoice.Order.Items?.Sum(i => i.Weight * i.Quantity) ?? 0
+                    };
+
+                    // Set the Order property to the detailed order summary
+                    invoiceResponse.Order = orderSummary;
+                }
+
+                invoiceResponses.Add(invoiceResponse);
+            }
 
             var pagedResponse = new PagedResponse<InvoiceResponseModel>
             {
@@ -219,23 +244,23 @@ public class InvoiceService : IInvoiceService
             return ApiResponseModel<BankAccountResponseModel>.Fail($"Error: {ex.Message}", 500);
         }
     }
-    
+
     public async Task<ApiResponseModel<byte[]>> GenerateInvoicePDFAsync(string invoiceId)
     {
         try
         {
             // Check if invoice exists
             var invoiceExists = await _dbContext.Set<Invoice>().AnyAsync(i => i.InvoiceNumber == invoiceId);
-            
+
             if (!invoiceExists)
             {
                 return ApiResponseModel<byte[]>.Fail("Invoice not found", 404);
             }
-            
+
             // Generate the PDF using the PDFService
             var pdfBytes = await _pdfService.GenerateInvoicePDFAsync(invoiceId);
             await File.WriteAllBytesAsync("invoice-debug.pdf", pdfBytes);
-            
+
             return ApiResponseModel<byte[]>.Success(
                 "Invoice PDF generated successfully",
                 pdfBytes,
