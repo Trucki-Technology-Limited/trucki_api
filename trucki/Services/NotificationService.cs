@@ -1,4 +1,4 @@
-// trucki/Services/FirebaseNotificationService.cs
+// trucki/Services/NotificationService.cs
 using System.Text.RegularExpressions;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
@@ -20,7 +20,7 @@ public class NotificationService : INotificationService
     private readonly TruckiDBContext _dbContext;
     private readonly ILogger<NotificationService> _logger;
     private readonly INotificationRepository _notificationRepository;
-
+    private bool _firebaseInitialized = false;
 
     public NotificationService(TruckiDBContext dbContext, ILogger<NotificationService> logger, UserManager<User> userManager, INotificationRepository notificationRepository)
     {
@@ -29,8 +29,13 @@ public class NotificationService : INotificationService
         _logger = logger;
         _notificationRepository = notificationRepository;
 
+        // Initialize Firebase during service initialization but don't break if it fails
+        InitializeFirebase();
+    }
 
-        // Initialize Firebase if not already initialized
+    private void InitializeFirebase()
+    {
+        // Only attempt initialization if not already initialized
         if (FirebaseApp.DefaultInstance == null)
         {
             try
@@ -39,13 +44,19 @@ public class NotificationService : INotificationService
                 {
                     Credential = GoogleCredential.FromFile("trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json")
                 });
+                _firebaseInitialized = true;
                 _logger.LogInformation("Firebase initialized successfully");
             }
             catch (Exception ex)
             {
+                _firebaseInitialized = false;
                 _logger.LogError($"Error initializing Firebase: {ex.Message}");
-                throw;
+                // Don't throw - allow the app to continue even if Firebase initialization fails
             }
+        }
+        else
+        {
+            _firebaseInitialized = true;
         }
     }
 
@@ -75,7 +86,17 @@ public class NotificationService : INotificationService
                 Data = data ?? new Dictionary<string, string>()
             };
 
-            var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
+            // Use the retry mechanism for sending the notification
+            var response = await RetryFirebaseOperationAsync(
+                () => FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message),
+                $"send notification to user {userId}");
+
+            if (response == null)
+            {
+                _logger.LogWarning($"Failed to send notification to user {userId} after multiple attempts");
+                return;
+            }
+
             _logger.LogInformation($"Successfully sent notification to {response.SuccessCount} devices for user {userId}");
 
             // Handle failures if any
@@ -106,8 +127,8 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error sending notification: {ex.Message}");
-            throw;
+            // Log but don't throw exceptions from notification failures
+            _logger.LogError($"Error sending notification to user {userId}: {ex.Message}");
         }
     }
 
@@ -126,13 +147,23 @@ public class NotificationService : INotificationService
                 Data = data ?? new Dictionary<string, string>()
             };
 
-            var response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
+            // Use the retry mechanism for sending the topic notification
+            var response = await RetryFirebaseOperationAsync(
+                () => FirebaseMessaging.DefaultInstance.SendAsync(message),
+                $"send notification to topic {topic}");
+
+            if (response == null)
+            {
+                _logger.LogWarning($"Failed to send notification to topic {topic} after multiple attempts");
+                return;
+            }
+
             _logger.LogInformation($"Successfully sent notification to topic {topic}, message ID: {response}");
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error sending notification to topic: {ex.Message}");
-            throw;
+            // Log but don't throw
+            _logger.LogError($"Error sending notification to topic {topic}: {ex.Message}");
         }
     }
 
@@ -143,15 +174,24 @@ public class NotificationService : INotificationService
             // Sanitize the topic name to conform with FCM rules
             var sanitizedTopic = SanitizeTopicName(topic);
 
-            var response = await FirebaseMessaging.DefaultInstance.SubscribeToTopicAsync(
-                new List<string> { token }, sanitizedTopic);
+            // Use the retry mechanism for subscribing to a topic
+            var response = await RetryFirebaseOperationAsync(
+                () => FirebaseMessaging.DefaultInstance.SubscribeToTopicAsync(
+                    new List<string> { token }, sanitizedTopic),
+                $"subscribe token to topic {sanitizedTopic}");
+
+            if (response == null)
+            {
+                _logger.LogWarning($"Failed to subscribe token to topic {sanitizedTopic} after multiple attempts");
+                return;
+            }
 
             _logger.LogInformation($"Successfully subscribed token to topic '{sanitizedTopic}'. Success count: {response.SuccessCount}");
         }
         catch (Exception ex)
         {
+            // Log but don't throw
             _logger.LogError($"Error subscribing to topic '{topic}': {ex.Message}");
-            throw;
         }
     }
 
@@ -161,24 +201,31 @@ public class NotificationService : INotificationService
         return Regex.Replace(topic.ToLowerInvariant(), @"[^a-z0-9_-]", "_");
     }
 
-
     public async Task UnsubscribeFromTopicAsync(string token, string topic)
     {
         try
         {
-            var response = await FirebaseMessaging.DefaultInstance.UnsubscribeFromTopicAsync(
-                new List<string> { token }, topic);
+            // Use the retry mechanism for unsubscribing from a topic
+            var response = await RetryFirebaseOperationAsync(
+                () => FirebaseMessaging.DefaultInstance.UnsubscribeFromTopicAsync(
+                    new List<string> { token }, topic),
+                $"unsubscribe token from topic {topic}");
+
+            if (response == null)
+            {
+                _logger.LogWarning($"Failed to unsubscribe token from topic {topic} after multiple attempts");
+                return;
+            }
 
             _logger.LogInformation($"Successfully unsubscribed token from topic {topic}. Success count: {response.SuccessCount}");
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error unsubscribing from topic: {ex.Message}");
-            throw;
+            // Log but don't throw
+            _logger.LogError($"Error unsubscribing from topic {topic}: {ex.Message}");
         }
     }
 
-    // trucki/Services/FirebaseNotificationService.cs
     public async Task SaveDeviceTokenAsync(string userId, string token, string deviceType)
     {
         try
@@ -214,26 +261,77 @@ public class NotificationService : INotificationService
 
             _logger.LogInformation($"Device token saved for user {userId}");
 
-            // Subscribe to user roles as topics
-            var user = await _dbContext.Users.FindAsync(userId);
-            if (user != null)
+            // Try to subscribe to user roles as topics, but don't fail if it doesn't work
+            if (_firebaseInitialized)
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                foreach (var role in roles)
+                try
                 {
-                    await SubscribeToTopicAsync(token, role.ToLower());
+                    var user = await _dbContext.Users.FindAsync(userId);
+                    if (user != null)
+                    {
+                        var roles = await _userManager.GetRolesAsync(user);
+                        foreach (var role in roles)
+                        {
+                            await SubscribeToTopicAsync(token, role.ToLower());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to subscribe user {userId} to role topics: {ex.Message}");
+                    // Continue execution - don't throw
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error saving device token: {ex.Message}");
+            _logger.LogError($"Error saving device token for user {userId}: {ex.Message}");
+            // Rethrow this specific exception since it's a core functionality
             throw;
         }
-
     }
-    public async Task<ApiResponseModel<PagedResponse<NotificationResponseModel>>> GetNotificationsAsync(
-    string userId, GetNotificationsQueryDto query)
+
+    // Safe retry mechanism for Firebase operations
+    private async Task<T> RetryFirebaseOperationAsync<T>(Func<Task<T>> operation, string operationName, int maxRetries = 3)
+    {
+        if (!_firebaseInitialized)
+        {
+            _logger.LogWarning($"Cannot perform {operationName}: Firebase is not initialized");
+            return default;
+        }
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Attempt {attempt} failed for {operationName}: {ex.Message}");
+
+                if (attempt == maxRetries)
+                {
+                    _logger.LogError($"All {maxRetries} attempts failed for {operationName}");
+                    return default;
+                }
+
+                // Exponential backoff: wait longer between each retry
+                await Task.Delay(100 * (int)Math.Pow(2, attempt - 1));
+
+                // Try to re-initialize Firebase if we suspect that's the issue
+                if (ex.Message.Contains("not initialized") || FirebaseApp.DefaultInstance == null)
+                {
+                    InitializeFirebase();
+                }
+            }
+        }
+
+        return default;
+    }
+
+    // The repository methods remain unchanged
+    public async Task<ApiResponseModel<PagedResponse<NotificationResponseModel>>> GetNotificationsAsync(string userId, GetNotificationsQueryDto query)
     {
         return await _notificationRepository.GetNotificationsAsync(userId, query);
     }

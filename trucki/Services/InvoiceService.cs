@@ -277,7 +277,7 @@ public class InvoiceService : IInvoiceService
 
             // Generate the PDF using the PDFService
             var pdfBytes = await _pdfService.GenerateInvoicePDFAsync(invoiceId);
-            await File.WriteAllBytesAsync("invoice-debug.pdf", pdfBytes);
+            // await File.WriteAllBytesAsync("invoice-debug.pdf", pdfBytes);
 
             return ApiResponseModel<byte[]>.Success(
                 "Invoice PDF generated successfully",
