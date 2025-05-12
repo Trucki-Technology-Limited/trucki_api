@@ -120,6 +120,19 @@ public class InvoiceService : IInvoiceService
                 // Create an enhanced order summary including locations
                 if (invoice.Order != null)
                 {
+                    // Get all special handling instructions across items
+                    var specialHandlingInstructions = invoice.Order.Items?
+                        .Where(i => !string.IsNullOrEmpty(i.SpecialHandlingInstructions))
+                        .Select(i => i.SpecialHandlingInstructions)
+                        .Distinct()
+                        .ToList() ?? new List<string>();
+
+                    // Build item type breakdown
+                    var itemTypeBreakdown = invoice.Order.Items?
+                        .GroupBy(i => i.Type)
+                        .ToDictionary(g => g.Key, g => g.Count())
+                        ?? new Dictionary<CargoType, int>();
+
                     var orderSummary = new InvoiceCargoOrderSummaryModel
                     {
                         Id = invoice.Order.Id,
@@ -127,12 +140,17 @@ public class InvoiceService : IInvoiceService
                         DeliveryLocation = invoice.Order.DeliveryLocation,
                         DeliveryDateTime = invoice.Order.DeliveryDateTime,
                         TotalItems = invoice.Order.Items?.Count ?? 0,
-                        TotalWeight = invoice.Order.Items?.Sum(i => i.Weight * i.Quantity) ?? 0
+                        TotalWeight = invoice.Order.Items?.Sum(i => i.Weight * i.Quantity) ?? 0,
+                        TotalVolume = invoice.Order.Items?.Sum(i => i.Length * i.Width * i.Height * i.Quantity) ?? 0,
+                        HasFragileItems = invoice.Order.Items?.Any(i => i.IsFragile) ?? false,
+                        ItemTypeBreakdown = itemTypeBreakdown,
+                        SpecialHandlingRequirements = specialHandlingInstructions
                     };
 
                     // Set the Order property to the detailed order summary
                     invoiceResponse.Order = orderSummary;
                 }
+
 
                 invoiceResponses.Add(invoiceResponse);
             }

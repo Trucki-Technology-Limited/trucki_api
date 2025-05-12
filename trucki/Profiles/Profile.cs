@@ -33,7 +33,7 @@ public class Profiles : Profile
         CreateMap<Bid, BidResponseModel>()
          .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Truck.Driver));
         CreateMap<Invoice, InvoiceResponseModel>()
-               .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.Order));
+     .ForMember(dest => dest.Order, opt => opt.Ignore());
         CreateMap<PaymentAccount, BankAccountResponseModel>();
         CreateMap<CargoOrderItem, CargoOrderItemResponseModel>();
         CreateMap<CargoOrders, CargoOrderSummaryModel>()

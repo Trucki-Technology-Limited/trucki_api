@@ -27,8 +27,12 @@ namespace trucki.Models.ResponseModels
         public string PickupLocation { get; set; }
         public string DeliveryLocation { get; set; }
         public DateTime? DeliveryDateTime { get; set; }
-        public int TotalItems { get; set; }
         public decimal TotalWeight { get; set; }
+        public int TotalItems { get; set; }
+        public decimal TotalVolume { get; set; }
+        public bool HasFragileItems { get; set; }
+        public Dictionary<CargoType, int> ItemTypeBreakdown { get; set; }
+        public List<string> SpecialHandlingRequirements { get; set; }
     }
 
     public class BankAccountResponseModel
