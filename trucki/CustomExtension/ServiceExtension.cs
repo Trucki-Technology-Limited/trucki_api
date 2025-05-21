@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.UI.Services;
+using trucki.BackgroundServices;
 using trucki.Interfaces.IRepository;
 using trucki.Interfaces.IServices;
 using trucki.Repositories;
@@ -63,6 +64,10 @@ namespace trucki.CustomExtension
             services.AddScoped<NotificationEventService>();
             services.AddScoped<IPDFService, PDFService>();
             services.AddScoped<IWalletService, WalletService>();
+            services.AddScoped<IDriverWalletRepository, DriverWalletRepository>();
+
+            services.AddScoped<IDriverWalletService, DriverWalletService>();
+            services.AddHostedService<DriverWalletBackgroundService>();
 
         }
 

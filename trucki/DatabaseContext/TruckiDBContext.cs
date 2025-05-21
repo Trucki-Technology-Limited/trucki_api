@@ -134,6 +134,21 @@ namespace trucki.DatabaseContext
             modelBuilder.Entity<CargoOrders>()
                 .Property(o => o.StripePaymentAmount)
                 .IsRequired(false);
+            // Add configurations for new entities
+            modelBuilder.Entity<DriverWallet>()
+                .HasOne(w => w.Driver)
+                .WithOne()
+                .HasForeignKey<DriverWallet>(w => w.DriverId);
+
+            modelBuilder.Entity<DriverWalletTransaction>()
+                .HasOne(t => t.Wallet)
+                .WithMany(w => w.Transactions)
+                .HasForeignKey(t => t.WalletId);
+
+            modelBuilder.Entity<DriverWithdrawalSchedule>()
+                .HasMany(s => s.Transactions)
+                .WithOne()
+                .OnDelete(DeleteBehavior.Restrict);
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -162,6 +177,10 @@ namespace trucki.DatabaseContext
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<CargoOwnerWallet> CargoOwnerWallets { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<DriverWallet> DriverWallets { get; set; }
+        public DbSet<DriverWalletTransaction> DriverWalletTransactions { get; set; }
+        public DbSet<DriverWithdrawalSchedule> DriverWithdrawalSchedules { get; set; }
+
 
     }
 }

@@ -11,16 +11,19 @@ namespace trucki.Services
 {
     public class CargoOrderService : ICargoOrderService
     {
-        private readonly TruckiDBContext _dbContext; // Example EF DbContext
+        private readonly TruckiDBContext _dbContext;
         private readonly IMapper _mapper;
         private readonly IStripeService _stripeService;
         private readonly INotificationService _notificationService;
         private readonly NotificationEventService _notificationEventService;
         private readonly IEmailService _emailService;
         private readonly IWalletService _walletService;
+        private readonly IDriverWalletService _driverWalletService;
+        private readonly IDriverService _driverService;
 
         public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService, INotificationService notificationService,
-    IEmailService emailService, NotificationEventService notificationEventService, IWalletService walletService)
+    IEmailService emailService, NotificationEventService notificationEventService, IWalletService walletService, IDriverWalletService driverWalletService, // Add this
+        IDriverService driverService)
         {
             _dbContext = dbContext;
             _stripeService = stripeService;
@@ -29,6 +32,8 @@ namespace trucki.Services
             _emailService = emailService;
             _notificationEventService = notificationEventService;
             _walletService = walletService;
+            _driverWalletService = driverWalletService;
+            _driverService = driverService;
         }
 
         public async Task<ApiResponseModel<bool>> CreateOrderAsync(CreateCargoOrderDto createOrderDto)
@@ -1176,6 +1181,17 @@ namespace trucki.Services
                 order.DeliveryDateTime = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
+
+                // Credit the driver's wallet with the bid amount
+                if (order.AcceptedBid != null)
+                {
+                    await _driverWalletService.CreditDriverForDeliveryAsync(
+                        _driverService,
+                        order.Id,
+                        order.AcceptedBid.Truck.Driver.Id,
+                        order.AcceptedBid.Amount,
+                        $"Payment for delivery from {order.PickupLocation} to {order.DeliveryLocation}");
+                }
 
                 // Add notification to cargo owner about completed delivery
                 await _notificationEventService.NotifyOrderDelivered(
