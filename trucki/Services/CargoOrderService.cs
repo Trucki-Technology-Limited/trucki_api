@@ -414,8 +414,8 @@ namespace trucki.Services
                     TotalAmount = totalAmount,
                     // Different due dates based on cargo owner type
                     DueDate = order.CargoOwner.OwnerType == CargoOwnerType.Broker
-                        ? DateTime.UtcNow.AddDays(30) // 30 days for brokers
-                        : DateTime.UtcNow.AddDays(7),  // 7 days for shippers
+                        ? DateTime.UtcNow.AddDays(14) // 14 days for brokers
+                        : DateTime.UtcNow.AddDays(2),  // 2 days for shippers
                     Status = InvoiceStatus.Pending
                 };
 
