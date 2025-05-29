@@ -1549,13 +1549,13 @@ namespace trucki.Services
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
-        
+
+        // Main method that routes to appropriate handler
         public async Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId)
         {
             try
             {
                 var order = await _dbContext.Set<CargoOrders>()
-                    .Include(o => o.Bids)
                     .Include(w => w.CargoOwner)
                     .FirstOrDefaultAsync(o => o.Id == orderId);
 
@@ -1564,90 +1564,168 @@ namespace trucki.Services
                     return ApiResponseModel<bool>.Fail("Order not found", 404);
                 }
 
-                // Verify this is a Shipper order with a pending payment
-                if (order.Status != CargoOrderStatus.BiddingInProgress || order.AcceptedBidId == null)
+                // Route to appropriate payment handler based on owner type
+                return order.CargoOwner.OwnerType switch
                 {
-                    return ApiResponseModel<bool>.Fail("Order is not in the correct state for payment", 400);
-                }
-
-                // Find the invoice associated with this order
-                var invoice = await _dbContext.Set<Invoice>()
-                    .FirstOrDefaultAsync(i => i.OrderId == orderId);
-
-                if (invoice == null)
-                {
-                    return ApiResponseModel<bool>.Fail("Invoice not found for this order", 404);
-                }
-
-                // Process wallet portion of payment for mixed payments
-                if (order.PaymentMethod == PaymentMethodType.Mixed && order.WalletPaymentAmount > 0)
-                {
-                    var walletResult = await _walletService.DeductFundsFromWallet(
-                        order.CargoOwnerId,
-                        order.WalletPaymentAmount.Value,
-                        $"Partial payment for Order #{order.Id}",
-                        WalletTransactionType.Payment,
-                        order.Id);
-
-                    if (!walletResult.IsSuccessful)
-                    {
-                        return ApiResponseModel<bool>.Fail(
-                            $"Error processing wallet payment: {walletResult.Message}",
-                            walletResult.StatusCode);
-                    }
-                }
-
-                // Update payment details
-                order.PaymentIntentId = paymentIntentId;
-                order.PaymentDate = DateTime.UtcNow;
-                order.IsPaid = true;
-
-                // Now that payment is confirmed, update the order status
-                order.Status = CargoOrderStatus.DriverSelected;
-
-                // Update invoice status to Paid
-                invoice.Status = InvoiceStatus.Paid;
-                invoice.PaymentApprovedAt = DateTime.UtcNow;
-
-                // Mark other bids as expired
-                foreach (var bid in order.Bids.Where(b => b.Id != order.AcceptedBidId))
-                {
-                    bid.Status = BidStatus.Expired;
-                }
-
-                await _dbContext.SaveChangesAsync();
-
-                // Send payment confirmation notification to cargo owner
-                await _notificationService.SendNotificationAsync(
-                    order.CargoOwner.UserId,
-                    "Payment Successful",
-                    $"Your payment for cargo order to {order.DeliveryLocation} was successful",
-                    new Dictionary<string, string> {
-                { "orderId", order.Id },
-                { "type", "payment_success" }
-                    }
-                );
-
-                if (order.CargoOwner.EmailAddress != null)
-                {
-                    await _emailService.SendPaymentReceiptEmailAsync(
-                        order.CargoOwner.EmailAddress,
-                        order.Id,
-                        order.AcceptedBid.Amount,
-                        order.SystemFee,
-                        order.Tax,
-                        order.TotalAmount,
-                        "USD", // You can make this dynamic based on your currency settings
-                        order.PickupLocation,
-                        order.DeliveryLocation
-                    );
-                }
-
-                return ApiResponseModel<bool>.Success("Payment confirmed and order updated", true, 200);
+                    CargoOwnerType.Shipper => await ProcessShipperPaymentAsync(orderId, paymentIntentId),
+                    CargoOwnerType.Broker => await ProcessBrokerPaymentAsync(orderId, paymentIntentId),
+                    _ => ApiResponseModel<bool>.Fail("Unknown cargo owner type", 400)
+                };
             }
             catch (Exception ex)
             {
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+            }
+        }
+
+        // Shipper payment processing (upfront payment during bid selection)
+        private async Task<ApiResponseModel<bool>> ProcessShipperPaymentAsync(string orderId, string paymentIntentId)
+        {
+            var order = await _dbContext.Set<CargoOrders>()
+                .Include(o => o.Bids)
+                .Include(w => w.CargoOwner)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order.Status != CargoOrderStatus.BiddingInProgress || order.AcceptedBidId == null)
+            {
+                return ApiResponseModel<bool>.Fail("Order is not in the correct state for payment", 400);
+            }
+
+            var invoice = await _dbContext.Set<Invoice>()
+                .FirstOrDefaultAsync(i => i.OrderId == orderId);
+
+            if (invoice == null)
+            {
+                return ApiResponseModel<bool>.Fail("Invoice not found for this order", 404);
+            }
+
+            // Process wallet portion for mixed payments
+            if (order.PaymentMethod == PaymentMethodType.Mixed && order.WalletPaymentAmount > 0)
+            {
+                var walletResult = await _walletService.DeductFundsFromWallet(
+                    order.CargoOwnerId,
+                    order.WalletPaymentAmount.Value,
+                    $"Partial payment for Order #{order.Id}",
+                    WalletTransactionType.Payment,
+                    order.Id);
+
+                if (!walletResult.IsSuccessful)
+                {
+                    return ApiResponseModel<bool>.Fail(
+                        $"Error processing wallet payment: {walletResult.Message}",
+                        walletResult.StatusCode);
+                }
+            }
+
+            // Update payment details
+            order.PaymentIntentId = paymentIntentId;
+            order.PaymentDate = DateTime.UtcNow;
+            order.IsPaid = true;
+            order.Status = CargoOrderStatus.DriverSelected;
+
+            // Update invoice
+            invoice.Status = InvoiceStatus.Paid;
+            invoice.PaymentApprovedAt = DateTime.UtcNow;
+
+            // Mark other bids as expired
+            foreach (var bid in order.Bids.Where(b => b.Id != order.AcceptedBidId))
+            {
+                bid.Status = BidStatus.Expired;
+            }
+
+            await _dbContext.SaveChangesAsync();
+            await SendPaymentConfirmationAsync(order, invoice);
+
+            return ApiResponseModel<bool>.Success("Shipper payment confirmed and order updated", true, 200);
+        }
+
+        // Broker payment processing (payment after delivery via invoice)
+        private async Task<ApiResponseModel<bool>> ProcessBrokerPaymentAsync(string orderId, string paymentIntentId)
+        {
+            var order = await _dbContext.Set<CargoOrders>()
+                .Include(w => w.CargoOwner)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            // Brokers can pay for delivered, completed, or in-transit orders
+            var allowedStatuses = new[]
+            {
+        CargoOrderStatus.Delivered,
+        CargoOrderStatus.Completed,
+        CargoOrderStatus.InTransit
+    };
+
+            if (!allowedStatuses.Contains(order.Status))
+            {
+                return ApiResponseModel<bool>.Fail(
+                    "Broker payments can only be processed for delivered, completed, or in-transit orders", 400);
+            }
+
+            if (order.AcceptedBidId == null)
+            {
+                return ApiResponseModel<bool>.Fail("No accepted bid found for this order", 400);
+            }
+
+            var invoice = await _dbContext.Set<Invoice>()
+                .FirstOrDefaultAsync(i => i.OrderId == orderId);
+
+            if (invoice == null)
+            {
+                return ApiResponseModel<bool>.Fail("Invoice not found for this order", 404);
+            }
+
+            // Update payment details
+            order.PaymentIntentId = paymentIntentId;
+            order.PaymentDate = DateTime.UtcNow;
+            order.IsPaid = true;
+            order.PaymentMethod = PaymentMethodType.Stripe;
+
+            // Update invoice
+            invoice.Status = InvoiceStatus.Paid;
+            invoice.PaymentApprovedAt = DateTime.UtcNow;
+
+            // Move delivered orders to completed
+            if (order.Status == CargoOrderStatus.Delivered)
+            {
+                order.Status = CargoOrderStatus.Completed;
+            }
+
+            await _dbContext.SaveChangesAsync();
+            await SendPaymentConfirmationAsync(order, invoice);
+
+            return ApiResponseModel<bool>.Success("Broker payment confirmed and order updated", true, 200);
+        }
+
+        // Common method for sending payment confirmations
+        private async Task SendPaymentConfirmationAsync(CargoOrders order, Invoice invoice)
+        {
+            // Send notification
+            await _notificationService.SendNotificationAsync(
+                order.CargoOwner.UserId,
+                "Payment Successful",
+                order.CargoOwner.OwnerType == CargoOwnerType.Broker
+                    ? $"Your payment for Invoice #{invoice.InvoiceNumber} was successful"
+                    : $"Your payment for cargo order to {order.DeliveryLocation} was successful",
+                new Dictionary<string, string> {
+            { "orderId", order.Id },
+            { "invoiceId", invoice.Id },
+            { "type", "payment_success" }
+                }
+            );
+
+            // Send email if available
+            if (!string.IsNullOrEmpty(order.CargoOwner.EmailAddress))
+            {
+                await _emailService.SendPaymentReceiptEmailAsync(
+                    order.CargoOwner.EmailAddress,
+                    order.Id,
+                    order.AcceptedBid?.Amount ?? order.TotalAmount,
+                    order.SystemFee,
+                    order.Tax,
+                    invoice.TotalAmount,
+                    "USD",
+                    order.PickupLocation,
+                    order.DeliveryLocation
+                );
             }
         }
         private async Task<bool> DriverHasActiveOrderAsync(string driverId, string excludeOrderId = null)
