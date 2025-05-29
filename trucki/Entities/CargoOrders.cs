@@ -41,7 +41,8 @@ public enum CargoOrderStatus
     Completed,
     PaymentPending,
     PaymentComplete,
-    PaymentOverdue
+    PaymentOverdue,
+    Cancelled
 }
 
 public class CargoOrders : BaseClass

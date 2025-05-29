@@ -68,6 +68,8 @@ namespace trucki.CustomExtension
 
             services.AddScoped<IDriverWalletService, DriverWalletService>();
             services.AddHostedService<DriverWalletBackgroundService>();
+            services.AddScoped<IOrderCancellationService, OrderCancellationService>();
+            services.AddAutoMapper(typeof(OrderCancellationMappingProfile));
 
         }
 

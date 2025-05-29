@@ -24,7 +24,8 @@ namespace trucki.Entities
         PaymentSubmitted,
         PaymentApproved,
         Overdue,
-        Paid
+        Paid,
+        Cancelled
     }
 
     public class PaymentAccount : BaseClass

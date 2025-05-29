@@ -180,6 +180,7 @@ namespace trucki.DatabaseContext
         public DbSet<DriverWallet> DriverWallets { get; set; }
         public DbSet<DriverWalletTransaction> DriverWalletTransactions { get; set; }
         public DbSet<DriverWithdrawalSchedule> DriverWithdrawalSchedules { get; set; }
+        public DbSet<OrderCancellation> OrderCancellations { get; set; }
 
 
     }

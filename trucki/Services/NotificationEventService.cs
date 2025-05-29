@@ -555,5 +555,180 @@ namespace trucki.Services
                 }
             }, "InvoiceOverdue");
         }
+        /// <summary>
+        /// Notify driver when their assigned order is cancelled
+        /// </summary>
+        public async Task NotifyOrderCancelled(
+            string driverId,
+            string orderId,
+            string pickupLocation,
+            string deliveryLocation,
+            string cancellationReason)
+        {
+            try
+            {
+                var driver = await _dbContext.Drivers
+                    .FirstOrDefaultAsync(d => d.Id == driverId);
+
+                if (driver?.UserId == null)
+                {
+                    _logger.LogWarning("Driver not found or has no user account: {DriverId}", driverId);
+                    return;
+                }
+
+                // Create database notification
+                await _notificationService.CreateNotificationAsync(
+                    driver.UserId,
+                    "Order Cancelled",
+                    $"Your assigned order from {pickupLocation} to {deliveryLocation} has been cancelled. Reason: {cancellationReason}",
+                    NotificationType.OrderCancelled,
+                    orderId,
+                    "Order");
+
+                // Send push notification
+                await _notificationService.SendNotificationAsync(
+                    driver.UserId,
+                    "Order Cancelled",
+                    $"Order from {pickupLocation} to {deliveryLocation} has been cancelled",
+                    new Dictionary<string, string>
+                    {
+                        { "orderId", orderId },
+                        { "type", "order_cancelled" },
+                        { "driverId", driverId },
+                        { "pickupLocation", pickupLocation },
+                        { "deliveryLocation", deliveryLocation },
+                        { "reason", cancellationReason }
+                    });
+
+                _logger.LogInformation("Order cancellation notification sent to driver {DriverId} for order {OrderId}",
+                    driverId, orderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending order cancellation notification to driver {DriverId} for order {OrderId}",
+                    driverId, orderId);
+            }
+        }
+
+        /// <summary>
+        /// Notify cargo owner when order cancellation is confirmed
+        /// </summary>
+        public async Task NotifyOrderCancellationConfirmed(
+            string cargoOwnerId,
+            string orderId,
+            string pickupLocation,
+            string deliveryLocation,
+            decimal refundAmount,
+            decimal penaltyAmount)
+        {
+            try
+            {
+                var cargoOwner = await _dbContext.CargoOwners
+                    .FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+
+                if (cargoOwner?.UserId == null)
+                {
+                    _logger.LogWarning("Cargo owner not found or has no user account: {CargoOwnerId}", cargoOwnerId);
+                    return;
+                }
+
+                var message = penaltyAmount > 0
+                    ? $"Your order from {pickupLocation} to {deliveryLocation} has been cancelled. Refund: ${refundAmount:F2} (after ${penaltyAmount:F2} penalty)"
+                    : $"Your order from {pickupLocation} to {deliveryLocation} has been cancelled. Refund: ${refundAmount:F2}";
+
+                // Create database notification
+                await _notificationService.CreateNotificationAsync(
+                    cargoOwner.UserId,
+                    "Order Cancellation Confirmed",
+                    message,
+                    NotificationType.OrderCancelled,
+                    orderId,
+                    "Order");
+
+                // Send push notification
+                await _notificationService.SendNotificationAsync(
+                    cargoOwner.UserId,
+                    "Order Cancellation Confirmed",
+                    $"Order cancellation processed. Refund: ${refundAmount:F2}",
+                    new Dictionary<string, string>
+                    {
+                        { "orderId", orderId },
+                        { "type", "cancellation_confirmed" },
+                        { "cargoOwnerId", cargoOwnerId },
+                        { "refundAmount", refundAmount.ToString("F2") },
+                        { "penaltyAmount", penaltyAmount.ToString("F2") }
+                    });
+
+                _logger.LogInformation("Order cancellation confirmation sent to cargo owner {CargoOwnerId} for order {OrderId}",
+                    cargoOwnerId, orderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending order cancellation confirmation to cargo owner {CargoOwnerId} for order {OrderId}",
+                    cargoOwnerId, orderId);
+            }
+        }
+
+        /// <summary>
+        /// Notify when refund is processed
+        /// </summary>
+        public async Task NotifyRefundProcessed(
+            string cargoOwnerId,
+            string orderId,
+            decimal refundAmount,
+            string refundMethod)
+        {
+            try
+            {
+                var cargoOwner = await _dbContext.CargoOwners
+                    .FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+
+                if (cargoOwner?.UserId == null)
+                {
+                    _logger.LogWarning("Cargo owner not found or has no user account: {CargoOwnerId}", cargoOwnerId);
+                    return;
+                }
+
+                var message = refundMethod.ToLower() switch
+                {
+                    "wallet" => $"Your refund of ${refundAmount:F2} has been added to your wallet",
+                    "stripe" => $"Your refund of ${refundAmount:F2} has been processed to your original payment method",
+                    "invoice" => "Your invoice has been voided - no payment required",
+                    _ => $"Your refund of ${refundAmount:F2} is being processed"
+                };
+
+                // Create database notification
+                await _notificationService.CreateNotificationAsync(
+                    cargoOwner.UserId,
+                    "Refund Processed",
+                    message,
+                    NotificationType.PaymentReceived,
+                    orderId,
+                    "Refund");
+
+                // Send push notification
+                await _notificationService.SendNotificationAsync(
+                    cargoOwner.UserId,
+                    "Refund Processed",
+                    $"Refund of ${refundAmount:F2} processed",
+                    new Dictionary<string, string>
+                    {
+                        { "orderId", orderId },
+                        { "type", "refund_processed" },
+                        { "cargoOwnerId", cargoOwnerId },
+                        { "refundAmount", refundAmount.ToString("F2") },
+                        { "refundMethod", refundMethod }
+                    });
+
+                _logger.LogInformation("Refund processed notification sent to cargo owner {CargoOwnerId} for order {OrderId}",
+                    cargoOwnerId, orderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending refund processed notification to cargo owner {CargoOwnerId} for order {OrderId}",
+                    cargoOwnerId, orderId);
+            }
+        }
+
     }
 }

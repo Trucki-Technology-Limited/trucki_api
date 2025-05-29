@@ -46,6 +46,11 @@ namespace trucki.Entities
         DeliveryDelay,             // For delivery delay notifications
         DeliveryConfirmed,         // For confirmed deliveries
         DriverRated,               // For driver ratings
-        PaymentReleased            // For payment releases to drivers
+        PaymentReleased,          // For payment releases to drivers
+        OrderCancelled,           // When an order is cancelled
+        CancellationApproved,     // When cancellation is approved (if approval needed)
+        RefundProcessed,          // When refund is completed
+        CancellationPenalty,      // When a penalty is applied
+        InvoiceVoided
     }
 }
