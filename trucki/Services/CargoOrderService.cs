@@ -1549,6 +1549,7 @@ namespace trucki.Services
                 return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
             }
         }
+        
         public async Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId)
         {
             try

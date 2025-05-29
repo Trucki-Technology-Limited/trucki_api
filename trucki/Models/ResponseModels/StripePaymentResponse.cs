@@ -38,3 +38,18 @@ public class ConfirmPaymentDto
     [Required]
     public string PaymentIntentId { get; set; }
 }
+
+ public class BrokerPayNowDto
+    {
+        [Required]
+        public string InvoiceId { get; set; }
+    }
+
+    public class BrokerConfirmPaymentDto
+    {
+        [Required]
+        public string InvoiceId { get; set; }
+        
+        [Required]
+        public string PaymentIntentId { get; set; }
+    }

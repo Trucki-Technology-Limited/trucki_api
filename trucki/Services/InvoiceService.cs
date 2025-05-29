@@ -7,17 +7,20 @@ using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 
 namespace trucki.Services;
+
 public class InvoiceService : IInvoiceService
 {
     private readonly TruckiDBContext _dbContext;
     private readonly IMapper _mapper;
     private readonly IPDFService _pdfService;
+    private readonly IWalletService _walletService;
 
-    public InvoiceService(TruckiDBContext dbContext, IMapper mapper, IPDFService pdfService)
+    public InvoiceService(TruckiDBContext dbContext, IMapper mapper, IPDFService pdfService, IWalletService walletService)
     {
         _dbContext = dbContext;
         _mapper = mapper;
         _pdfService = pdfService;
+        _walletService = walletService;
     }
 
     public async Task<ApiResponseModel<InvoiceResponseModel>> GenerateInvoiceAsync(string orderId)
@@ -297,5 +300,196 @@ public class InvoiceService : IInvoiceService
         var random = new Random();
         var randomPart = random.Next(1000, 9999).ToString();
         return $"INV-{dateString}-{randomPart}";
+    }
+    // Add these methods to InvoiceService class
+
+    public async Task<ApiResponseModel<InvoiceResponseModel>> GetInvoiceByIdAsync(string invoiceId)
+    {
+        try
+        {
+            var invoice = await _dbContext.Set<Invoice>()
+                .Include(i => i.Order)
+                    .ThenInclude(o => o.Items)
+                .Include(i => i.Order)
+                    .ThenInclude(o => o.CargoOwner)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null)
+            {
+                return ApiResponseModel<InvoiceResponseModel>.Fail("Invoice not found", 404);
+            }
+
+            var response = _mapper.Map<InvoiceResponseModel>(invoice);
+
+            // Create order summary if order exists
+            if (invoice.Order != null)
+            {
+                var specialHandlingInstructions = invoice.Order.Items?
+                    .Where(i => !string.IsNullOrEmpty(i.SpecialHandlingInstructions))
+                    .Select(i => i.SpecialHandlingInstructions)
+                    .Distinct()
+                    .ToList() ?? new List<string>();
+
+                var itemTypeBreakdown = invoice.Order.Items?
+                    .GroupBy(i => i.Type)
+                    .ToDictionary(g => g.Key, g => g.Count())
+                    ?? new Dictionary<CargoType, int>();
+
+                var orderSummary = new InvoiceCargoOrderSummaryModel
+                {
+                    Id = invoice.Order.Id,
+                    PickupLocation = invoice.Order.PickupLocation,
+                    DeliveryLocation = invoice.Order.DeliveryLocation,
+                    DeliveryDateTime = invoice.Order.DeliveryDateTime,
+                    TotalItems = invoice.Order.Items?.Count ?? 0,
+                    TotalWeight = invoice.Order.Items?.Sum(i => i.Weight * i.Quantity) ?? 0,
+                    TotalVolume = invoice.Order.Items?.Sum(i => i.Length * i.Width * i.Height * i.Quantity) ?? 0,
+                    HasFragileItems = invoice.Order.Items?.Any(i => i.IsFragile) ?? false,
+                    ItemTypeBreakdown = itemTypeBreakdown,
+                    SpecialHandlingRequirements = specialHandlingInstructions
+                };
+
+                response.Order = orderSummary;
+            }
+
+            return ApiResponseModel<InvoiceResponseModel>.Success(
+                "Invoice retrieved successfully",
+                response,
+                200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<InvoiceResponseModel>.Fail($"Error: {ex.Message}", 500);
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> MarkInvoiceAsPaidAsync(string invoiceId, string paymentMethod)
+    {
+        try
+        {
+            var invoice = await _dbContext.Set<Invoice>()
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null)
+            {
+                return ApiResponseModel<bool>.Fail("Invoice not found", 404);
+            }
+
+            invoice.Status = InvoiceStatus.Paid;
+            invoice.PaymentApprovedAt = DateTime.UtcNow;
+            invoice.PaymentNotes = $"Paid via {paymentMethod}";
+
+            await _dbContext.SaveChangesAsync();
+
+            return ApiResponseModel<bool>.Success("Invoice marked as paid", true, 200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> UpdateInvoicePaymentInfoAsync(
+        string invoiceId,
+        string paymentIntentId,
+        decimal walletAmount,
+        decimal stripeAmount)
+    {
+        try
+        {
+            var invoice = await _dbContext.Set<Invoice>()
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null)
+            {
+                return ApiResponseModel<bool>.Fail("Invoice not found", 404);
+            }
+
+            // Store payment information for later confirmation
+            invoice.PaymentNotes = $"Wallet: ${walletAmount:F2}, Stripe: ${stripeAmount:F2}, PaymentIntent: {paymentIntentId}";
+
+            await _dbContext.SaveChangesAsync();
+
+            return ApiResponseModel<bool>.Success("Invoice payment info updated", true, 200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> ProcessBrokerPaymentConfirmationAsync(
+        string invoiceId,
+        string paymentIntentId,
+        string userId)
+    {
+        try
+        {
+            var invoice = await _dbContext.Set<Invoice>()
+                .Include(i => i.Order)
+                    .ThenInclude(o => o.CargoOwner)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null)
+            {
+                return ApiResponseModel<bool>.Fail("Invoice not found", 404);
+            }
+
+            // Verify the invoice belongs to the requesting user
+            var order = await _dbContext.Set<CargoOrders>()
+                .FirstOrDefaultAsync(o => o.Id == invoice.OrderId);
+
+            if (order == null || order.CargoOwnerId != invoice.Order.CargoOwnerId)
+            {
+                return ApiResponseModel<bool>.Fail("Invoice/Order mismatch", 500);
+            }
+
+            if (invoice.Order.CargoOwner.UserId != userId)
+            {
+                return ApiResponseModel<bool>.Fail("Unauthorized", 403);
+            }
+
+            // Extract wallet amount from payment notes if it exists
+            decimal walletAmount = 0;
+            if (!string.IsNullOrEmpty(invoice.PaymentNotes) && invoice.PaymentNotes.Contains("Wallet:"))
+            {
+                var walletPart = invoice.PaymentNotes.Split("Wallet:")[1].Split(",")[0].Trim().Replace("$", "");
+                decimal.TryParse(walletPart, out walletAmount);
+            }
+
+            // Process wallet payment if there was one
+            if (walletAmount > 0)
+            {
+                var walletResult = await _walletService.DeductFundsFromWallet(
+                    order.CargoOwnerId,
+                    walletAmount,
+                    $"Payment for Invoice #{invoice.InvoiceNumber}",
+                    WalletTransactionType.Payment,
+                    invoice.OrderId);
+
+                if (!walletResult.IsSuccessful)
+                {
+                    return ApiResponseModel<bool>.Fail(
+                        $"Error processing wallet payment: {walletResult.Message}",
+                        walletResult.StatusCode);
+                }
+            }
+
+            // Mark invoice as paid
+            invoice.Status = InvoiceStatus.Paid;
+            invoice.PaymentApprovedAt = DateTime.UtcNow;
+            invoice.PaymentNotes += $" | Confirmed: {DateTime.UtcNow} | PaymentIntent: {paymentIntentId}";
+
+            await _dbContext.SaveChangesAsync();
+
+            // Send confirmation notifications if needed
+            // You can add notification logic here
+
+            return ApiResponseModel<bool>.Success("Broker payment confirmed successfully", true, 200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500);
+        }
     }
 }

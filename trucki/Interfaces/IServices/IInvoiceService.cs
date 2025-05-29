@@ -30,10 +30,24 @@ namespace trucki.Interfaces.IServices
         /// Get active bank account details for payment
         /// </summary>
         Task<ApiResponseModel<BankAccountResponseModel>> GetActiveBankAccountAsync();
-        
+
         /// <summary>
         /// Generate PDF for invoice
         /// </summary>
         Task<ApiResponseModel<byte[]>> GenerateInvoicePDFAsync(string invoiceId);
+        Task<ApiResponseModel<InvoiceResponseModel>> GetInvoiceByIdAsync(string invoiceId);
+
+        Task<ApiResponseModel<bool>> MarkInvoiceAsPaidAsync(string invoiceId, string paymentMethod);
+
+        Task<ApiResponseModel<bool>> UpdateInvoicePaymentInfoAsync(
+            string invoiceId,
+            string paymentIntentId,
+            decimal walletAmount,
+            decimal stripeAmount);
+
+        Task<ApiResponseModel<bool>> ProcessBrokerPaymentConfirmationAsync(
+            string invoiceId,
+            string paymentIntentId,
+            string userId);
     }
 }
