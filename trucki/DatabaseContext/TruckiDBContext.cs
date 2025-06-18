@@ -181,6 +181,8 @@ namespace trucki.DatabaseContext
         public DbSet<DriverWalletTransaction> DriverWalletTransactions { get; set; }
         public DbSet<DriverWithdrawalSchedule> DriverWithdrawalSchedules { get; set; }
         public DbSet<OrderCancellation> OrderCancellations { get; set; }
+        public DbSet<DriverPayout> DriverPayouts { get; set; }
+
 
 
     }

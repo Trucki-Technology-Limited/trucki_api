@@ -70,6 +70,15 @@ namespace trucki.CustomExtension
             services.AddHostedService<DriverWalletBackgroundService>();
             services.AddScoped<IOrderCancellationService, OrderCancellationService>();
             services.AddAutoMapper(typeof(OrderCancellationMappingProfile));
+            services.AddScoped<IStripeConnectService, StripeConnectService>();
+            services.AddScoped<IDriverPayoutService, DriverPayoutService>();
+
+            services.AddScoped<IIntegratedPayoutService, IntegratedPayoutService>();
+
+
+            services.AddHostedService<WeeklyPayoutBackgroundService>();
+
+
 
         }
 

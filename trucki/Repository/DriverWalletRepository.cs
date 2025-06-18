@@ -199,11 +199,11 @@ namespace trucki.Repository
                         wallet.Balance += amount;
 
                         // Determine which withdrawal bucket to add this to
-                        // If today is before Thursday, add to PendingWithdrawal, otherwise to NextWithdrawal
+                        // If today is before Tuesday, add to PendingWithdrawal, otherwise to NextWithdrawal
                         var today = DateTime.UtcNow.Date;
                         var dayOfWeek = today.DayOfWeek;
 
-                        if (dayOfWeek <= DayOfWeek.Thursday)
+                        if (dayOfWeek <= DayOfWeek.Tuesday)
                         {
                             // Credit will be part of this week's Friday withdrawal
                             wallet.PendingWithdrawal += amount;
@@ -377,7 +377,7 @@ namespace trucki.Repository
 
                 var today = DateTime.UtcNow.Date;
                 var dayOfWeek = today.DayOfWeek;
-                var isBeforeThursday = dayOfWeek <= DayOfWeek.Thursday;
+                var isBeforeTuesday = dayOfWeek <= DayOfWeek.Tuesday;
 
                 // Process each driver separately to ensure accuracy
                 var driverWallets = await _dbContext.Set<DriverWallet>()
@@ -402,7 +402,7 @@ namespace trucki.Repository
                             bool isForCurrentWeek = IsTransactionForCurrentWeekWithdrawal(
                                 transactionDate, transactionDayOfWeek, today, dayOfWeek);
 
-                            if (isForCurrentWeek && isBeforeThursday)
+                            if (isForCurrentWeek && isBeforeTuesday)
                             {
                                 wallet.PendingWithdrawal += transaction.Amount;
                             }
@@ -576,14 +576,14 @@ namespace trucki.Repository
                 {
                     // Create a default response with zeros if no wallet exists
                     var todayDate = DateTime.UtcNow.Date;
-                    var thursdayOffset = ((int)DayOfWeek.Thursday - (int)todayDate.DayOfWeek + 7) % 7;
+                    var TuesdayOffset = ((int)DayOfWeek.Tuesday - (int)todayDate.DayOfWeek + 7) % 7;
                     var fridayOffset = ((int)DayOfWeek.Friday - (int)todayDate.DayOfWeek + 7) % 7;
 
                     return ApiResponseModel<DriverWithdrawalScheduleResponseModel>.Success(
                         "No wallet found for driver",
                         new DriverWithdrawalScheduleResponseModel
                         {
-                            CurrentWeekCutoffDate = todayDate.AddDays(thursdayOffset),
+                            CurrentWeekCutoffDate = todayDate.AddDays(TuesdayOffset),
                             NextWithdrawalDate = todayDate.AddDays(fridayOffset),
                             AmountDueThisWeek = 0,
                             AmountDueNextWeek = 0,
@@ -597,11 +597,11 @@ namespace trucki.Repository
                 var today = DateTime.UtcNow.Date;
                 var dayOfWeek = today.DayOfWeek;
 
-                // Calculate the date of this week's Thursday (cutoff)
-                var daysUntilThursday = ((int)DayOfWeek.Thursday - (int)dayOfWeek + 7) % 7;
-                if (daysUntilThursday == 0 && dayOfWeek != DayOfWeek.Thursday)
-                    daysUntilThursday = 7;
-                var thursdayCutoff = today.AddDays(daysUntilThursday);
+                // Calculate the date of this week's Tuesday (cutoff)
+                var daysUntilTuesday = ((int)DayOfWeek.Tuesday - (int)dayOfWeek + 7) % 7;
+                if (daysUntilTuesday == 0 && dayOfWeek != DayOfWeek.Tuesday)
+                    daysUntilTuesday = 7;
+                var TuesdayCutoff = today.AddDays(daysUntilTuesday);
 
                 // Calculate the date of this week's Friday (withdrawal)
                 var daysUntilFriday = ((int)DayOfWeek.Friday - (int)dayOfWeek + 7) % 7;
@@ -639,7 +639,7 @@ namespace trucki.Repository
                         .Where(t => t.WalletId == wallet.Id &&
                                t.TransactionType == DriverTransactionType.Delivery &&
                                !t.IsProcessed &&
-                               t.CreatedAt.Date <= thursdayCutoff)
+                               t.CreatedAt.Date <= TuesdayCutoff)
                         .Select(t => t.RelatedOrderId)
                         .ToListAsync();
 
@@ -660,7 +660,7 @@ namespace trucki.Repository
                         .Where(t => t.WalletId == wallet.Id &&
                                t.TransactionType == DriverTransactionType.Delivery &&
                                !t.IsProcessed &&
-                               t.CreatedAt.Date > thursdayCutoff)
+                               t.CreatedAt.Date > TuesdayCutoff)
                         .Select(t => t.RelatedOrderId)
                         .ToListAsync();
 
@@ -676,7 +676,7 @@ namespace trucki.Repository
                 // Create response
                 var response = new DriverWithdrawalScheduleResponseModel
                 {
-                    CurrentWeekCutoffDate = thursdayCutoff,
+                    CurrentWeekCutoffDate = TuesdayCutoff,
                     NextWithdrawalDate = fridayWithdrawal,
                     AmountDueThisWeek = wallet.PendingWithdrawal,
                     AmountDueNextWeek = wallet.NextWithdrawal,
@@ -727,11 +727,11 @@ namespace trucki.Repository
                     var today = DateTime.UtcNow.Date;
                     var dayOfWeek = today.DayOfWeek;
 
-                    // Calculate the date of this week's Thursday (cutoff)
-                    var daysUntilThursday = ((int)DayOfWeek.Thursday - (int)dayOfWeek + 7) % 7;
-                    if (daysUntilThursday == 0 && dayOfWeek != DayOfWeek.Thursday)
-                        daysUntilThursday = 7;
-                    var thursdayCutoff = today.AddDays(daysUntilThursday);
+                    // Calculate the date of this week's Tuesday (cutoff)
+                    var daysUntilTuesday = ((int)DayOfWeek.Tuesday - (int)dayOfWeek + 7) % 7;
+                    if (daysUntilTuesday == 0 && dayOfWeek != DayOfWeek.Tuesday)
+                        daysUntilTuesday = 7;
+                    var TuesdayCutoff = today.AddDays(daysUntilTuesday);
 
                     // Calculate the date of this week's Friday (withdrawal)
                     var daysUntilFriday = ((int)DayOfWeek.Friday - (int)dayOfWeek + 7) % 7;
@@ -743,7 +743,7 @@ namespace trucki.Repository
                         .CountAsync(t => t.WalletId == wallet.Id &&
                                    t.TransactionType == DriverTransactionType.Delivery &&
                                    !t.IsProcessed &&
-                                   t.CreatedAt.Date <= thursdayCutoff);
+                                   t.CreatedAt.Date <= TuesdayCutoff);
 
                     result.Add(new PendingDriverWithdrawalResponseModel
                     {
@@ -920,20 +920,20 @@ namespace trucki.Repository
             var daysToSubtract = (int)currentDayOfWeek;
             var startOfCurrentWeek = today.AddDays(-daysToSubtract);
 
-            // If transaction is from this week and before Thursday cutoff, it's for this week's withdrawal
+            // If transaction is from this week and before Tuesday cutoff, it's for this week's withdrawal
             if (transactionDate >= startOfCurrentWeek)
             {
-                if (transactionDayOfWeek <= DayOfWeek.Thursday)
+                if (transactionDayOfWeek <= DayOfWeek.Tuesday)
                 {
                     return true;
                 }
             }
 
-            // If transaction is from last week after Thursday cutoff, it's for this week's withdrawal
+            // If transaction is from last week after Tuesday cutoff, it's for this week's withdrawal
             var startOfLastWeek = startOfCurrentWeek.AddDays(-7);
             if (transactionDate >= startOfLastWeek && transactionDate < startOfCurrentWeek)
             {
-                if (transactionDayOfWeek > DayOfWeek.Thursday)
+                if (transactionDayOfWeek > DayOfWeek.Tuesday)
                 {
                     return true;
                 }

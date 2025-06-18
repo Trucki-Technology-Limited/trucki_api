@@ -14,6 +14,8 @@ public class CargoOrderItem : BaseClass
     public CargoType Type { get; set; }
     public int Quantity { get; set; }
     public List<string> ItemImages { get; set; } = new();
+
+
 }
 
 public enum CargoType
@@ -80,6 +82,14 @@ public class CargoOrders : BaseClass
     public PaymentMethodType PaymentMethod { get; set; }
     public decimal? WalletPaymentAmount { get; set; }
     public decimal? StripePaymentAmount { get; set; }
+    public bool IsFlagged { get; set; } = false;
+    public string? FlagReason { get; set; }
+    public DateTime? FlaggedAt { get; set; }
+    public string? FlaggedBy { get; set; } // Admin ID who flagged the order
+    public DateTime? FlagResolvedAt { get; set; }
+    public string? FlagResolvedBy { get; set; } // Admin ID who resolved the flag
+    public string? FlagResolutionNotes { get; set; }
+    public decimal? DriverEarnings { get; set; }
 
 }
 
@@ -112,3 +122,21 @@ public enum CargoTruckType
     DumpTruck,
     TankerTruck
 }
+
+  public enum OrderFlagType
+    {
+        PaymentIssue,
+        DeliveryDispute,
+        QualityIssue,
+        CustomerComplaint,
+        DriverMisconduct,
+        DocumentationIssue,
+        Other
+    }
+
+    public enum OrderFlagStatus
+    {
+        Active,
+        Resolved,
+        Dismissed
+    }

@@ -51,6 +51,12 @@ namespace trucki.Entities
         CancellationApproved,     // When cancellation is approved (if approval needed)
         RefundProcessed,          // When refund is completed
         CancellationPenalty,      // When a penalty is applied
-        InvoiceVoided
+        InvoiceVoided,
+        PaymentNotification,      // For payout notifications to drivers
+        AccountUpdate,            // For Stripe account status updates
+        PayoutCompleted,          // When a payout is successfully completed
+        PayoutFailed,             // When a payout fails
+        StripeAccountActivated,   // When Stripe account becomes active
+        StripeOnboardingRequired
     }
 }
