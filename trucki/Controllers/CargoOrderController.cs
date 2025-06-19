@@ -138,5 +138,14 @@ namespace trucki.Controllers
             var result = await _cargoOrderService.UpdateBidAsync(updateBidDto);
             return StatusCode(result.StatusCode, result);
         }
+        [HttpGet("driver/GetAllOrders")]
+        [Authorize(Roles = "driver")]
+        public async Task<ActionResult<ApiResponseModel<PagedResponse<CargoOrderResponseModel>>>> GetAllOrdersForDriver(
+    string driverId,
+    [FromQuery] GetDriverOrdersQueryDto query)
+        {
+            var result = await _cargoOrderService.GetAllOrdersForDriverAsync(driverId, query);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

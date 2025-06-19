@@ -98,4 +98,15 @@ namespace trucki.Models.RequestModel
         public string OrderId { get; set; }
         public string DriverId { get; set; }
     }
+    public class GetDriverOrdersQueryDto
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public CargoOrderStatus? Status { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? SearchTerm { get; set; }
+        public string? SortBy { get; set; } = "CreatedAt";
+        public bool SortDescending { get; set; } = true;
+    }
 }

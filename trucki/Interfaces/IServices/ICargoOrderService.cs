@@ -25,5 +25,6 @@ public interface ICargoOrderService
         Task<ApiResponseModel<DriverSummaryResponseModel>> GetDriverSummaryAsync(string driverId);
         Task<ApiResponseModel<bool>> UpdateOrderPaymentStatusAsync(string orderId, string paymentIntentId);
         Task<ApiResponseModel<bool>> UpdateBidAsync(UpdateBidDto updateBidDto);
+        Task<ApiResponseModel<PagedResponse<CargoOrderResponseModel>>> GetAllOrdersForDriverAsync(string driverId, GetDriverOrdersQueryDto query);
 
 }
