@@ -1780,6 +1780,157 @@ namespace trucki.Services
 
         //     return ratings.Average();
         // }
+
+        public async Task<ApiResponseModel<PagedResponse<CargoOrderResponseModel>>> GetAllOrdersForDriverAsync(string driverId, GetDriverOrdersQueryDto query)
+        {
+            try
+            {
+                // First get the driver with their truck information
+                var driver = await _dbContext.Set<Driver>()
+                    .Include(d => d.Truck)
+                    .FirstOrDefaultAsync(d => d.Id == driverId);
+
+                if (driver == null)
+                {
+                    return ApiResponseModel<PagedResponse<CargoOrderResponseModel>>.Fail(
+                        "Driver not found",
+                        404);
+                }
+
+                if (driver.Truck == null)
+                {
+                    return ApiResponseModel<PagedResponse<CargoOrderResponseModel>>.Fail(
+                        "No truck assigned to this driver",
+                        404);
+                }
+
+                // Build the query for all orders for this driver
+                var ordersQuery = _dbContext.Set<CargoOrders>()
+                    .Include(o => o.CargoOwner)
+                    .Include(o => o.Items)
+                    .Include(o => o.AcceptedBid)
+                    .Include(o => o.Bids.Where(b => b.TruckId == driver.Truck.Id))
+                    .Where(o =>
+                        // Orders where this driver has an accepted bid
+                        (o.AcceptedBid != null && o.AcceptedBid.TruckId == driver.Truck.Id) ||
+                        // Orders where this driver has placed a bid (pending, accepted, or expired)
+                        o.Bids.Any(b => b.TruckId == driver.Truck.Id));
+
+                // Apply status filter if provided
+                if (query.Status.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.Status == query.Status.Value);
+                }
+
+                // Apply date filters if provided
+                if (query.StartDate.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.CreatedAt >= query.StartDate.Value);
+                }
+
+                if (query.EndDate.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.CreatedAt <= query.EndDate.Value);
+                }
+
+                // Apply search filter if provided
+                if (!string.IsNullOrEmpty(query.SearchTerm))
+                {
+                    ordersQuery = ordersQuery.Where(o =>
+                        o.PickupLocation.Contains(query.SearchTerm) ||
+                        o.DeliveryLocation.Contains(query.SearchTerm) ||
+                        o.CargoOwner.Name.Contains(query.SearchTerm));
+                }
+
+                // Apply sorting
+                ordersQuery = query.SortBy?.ToLower() switch
+                {
+                    "pickuplocation" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.PickupLocation)
+                        : ordersQuery.OrderBy(o => o.PickupLocation),
+                    "deliverylocation" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.DeliveryLocation)
+                        : ordersQuery.OrderBy(o => o.DeliveryLocation),
+                    "status" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.Status)
+                        : ordersQuery.OrderBy(o => o.Status),
+                    "deliverydatetime" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.DeliveryDateTime)
+                        : ordersQuery.OrderBy(o => o.DeliveryDateTime),
+                    _ => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.CreatedAt)
+                        : ordersQuery.OrderBy(o => o.CreatedAt)
+                };
+
+                // Get total count
+                var totalCount = await ordersQuery.CountAsync();
+
+                // Apply pagination
+                var orders = await ordersQuery
+                    .Skip((query.PageNumber - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                var orderResponses = new List<CargoOrderResponseModel>();
+
+                foreach (var order in orders)
+                {
+                    // Initialize collections to prevent null reference
+                    order.Items ??= new List<CargoOrderItem>();
+                    order.Documents ??= new List<string>();
+                    order.DeliveryDocuments ??= new List<string>();
+
+                    var orderResponse = _mapper.Map<CargoOrderResponseModel>(order);
+
+                    // Calculate order summary
+                    var summary = await GetOrderSummary(order);
+                    orderResponse.TotalWeight = summary.TotalWeight;
+                    orderResponse.TotalVolume = summary.TotalVolume;
+                    orderResponse.HasFragileItems = summary.HasFragileItems;
+                    orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
+
+                    // Set driver bid information for this specific driver
+                    var driverBid = order.Bids?.FirstOrDefault(b => b.TruckId == driver.Truck.Id);
+                    if (driverBid != null)
+                    {
+                        orderResponse.DriverBidInfo = new DriverBidInfo
+                        {
+                            BidId = driverBid.Id,
+                            Amount = driverBid.Amount,
+                            Status = driverBid.Status,
+                            CreatedAt = driverBid.CreatedAt,
+                            UpdatedAt = driverBid.UpdatedAt
+                        };
+                    }
+
+                    // Clear the bids list as it shouldn't be exposed to drivers
+                    orderResponse.Bids = null;
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                // Create paged response
+                var pagedResponse = new PagedResponse<CargoOrderResponseModel>
+                {
+                    Data = orderResponses,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize)
+                };
+
+                return ApiResponseModel<PagedResponse<CargoOrderResponseModel>>.Success(
+                    $"All cargo orders retrieved successfully. Found {totalCount} orders.",
+                    pagedResponse,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<PagedResponse<CargoOrderResponseModel>>.Fail(
+                    $"Error retrieving all cargo orders: {ex.Message}",
+                    500);
+            }
+        }
     }
 
 }
