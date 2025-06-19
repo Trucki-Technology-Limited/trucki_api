@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using trucki.DatabaseContext;
 using trucki.Entities;
 using trucki.Interfaces.IServices;
 using trucki.Models.RequestModel;
@@ -11,25 +13,24 @@ namespace trucki.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Roles = "cargo owner")]
     public class OrderCancellationController : ControllerBase
     {
-        private readonly IOrderCancellationService _cancellationService;
-        private readonly ICargoOwnerService _cargoOwnerService;
+        private readonly IOrderCancellationService _orderCancellationService;
+        private readonly IStripeService _stripeService;
+        private readonly TruckiDBContext _dbContext;
 
         public OrderCancellationController(
-            IOrderCancellationService cancellationService,
-            ICargoOwnerService cargoOwnerService)
+            IOrderCancellationService orderCancellationService,
+            IStripeService stripeService,
+            TruckiDBContext dbContext)
         {
-            _cancellationService = cancellationService;
-            _cargoOwnerService = cargoOwnerService;
+            _orderCancellationService = orderCancellationService;
+            _stripeService = stripeService;
+            _dbContext = dbContext;
         }
 
-        /// <summary>
-        /// Get cancellation preview showing penalty and refund details
-        /// </summary>
         [HttpGet("preview/{orderId}")]
-        [Authorize(Roles = "cargo owner")]
         public async Task<ActionResult<ApiResponseModel<CancellationPreviewResponseModel>>> GetCancellationPreview(string orderId)
         {
             try
@@ -40,29 +41,25 @@ namespace trucki.Controllers
                     return Unauthorized();
                 }
 
-                // Get cargo owner profile
-                var profileResult = await _cargoOwnerService.GetCargoOwnerProfile(userId);
-                if (!profileResult.IsSuccessful || profileResult.Data == null)
+                // Get cargo owner ID for this user
+                var cargoOwner = await _dbContext.Set<CargoOwner>()
+                    .FirstOrDefaultAsync(co => co.UserId == userId);
+
+                if (cargoOwner == null)
                 {
-                    return StatusCode(profileResult.StatusCode,
-                        ApiResponseModel<CancellationPreviewResponseModel>.Fail(profileResult.Message, profileResult.StatusCode));
+                    return BadRequest(ApiResponseModel<CancellationPreviewResponseModel>.Fail("Cargo owner not found", 404));
                 }
 
-                var result = await _cancellationService.GetCancellationPreviewAsync(orderId, profileResult.Data.Id);
+                var result = await _orderCancellationService.GetCancellationPreviewAsync(orderId, cargoOwner.Id);
                 return StatusCode(result.StatusCode, result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponseModel<CancellationPreviewResponseModel>.Fail(
-                    $"Error getting cancellation preview: {ex.Message}", 500));
+                return StatusCode(500, ApiResponseModel<CancellationPreviewResponseModel>.Fail($"Error: {ex.Message}", 500));
             }
         }
 
-        /// <summary>
-        /// Cancel an order with refund processing
-        /// </summary>
         [HttpPost("cancel")]
-        [Authorize(Roles = "cargo owner")]
         public async Task<ActionResult<ApiResponseModel<OrderCancellationResponseModel>>> CancelOrder([FromBody] CancelOrderRequestDto request)
         {
             try
@@ -73,33 +70,32 @@ namespace trucki.Controllers
                     return Unauthorized();
                 }
 
-                // Get cargo owner profile
-                var profileResult = await _cargoOwnerService.GetCargoOwnerProfile(userId);
-                if (!profileResult.IsSuccessful || profileResult.Data == null)
+                // Get cargo owner ID for this user
+                var cargoOwner = await _dbContext.Set<CargoOwner>()
+                    .FirstOrDefaultAsync(co => co.UserId == userId);
+
+                if (cargoOwner == null)
                 {
-                    return StatusCode(profileResult.StatusCode,
-                        ApiResponseModel<OrderCancellationResponseModel>.Fail(profileResult.Message, profileResult.StatusCode));
+                    return BadRequest(ApiResponseModel<OrderCancellationResponseModel>.Fail("Cargo owner not found", 404));
                 }
 
-                // Set the cargo owner ID from the authenticated user
-                request.CargoOwnerId = profileResult.Data.Id;
+                // Verify the cargo owner ID matches
+                if (request.CargoOwnerId != cargoOwner.Id)
+                {
+                    return BadRequest(ApiResponseModel<OrderCancellationResponseModel>.Fail("Unauthorized", 403));
+                }
 
-                var result = await _cancellationService.CancelOrderAsync(request);
+                var result = await _orderCancellationService.CancelOrderAsync(request);
                 return StatusCode(result.StatusCode, result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponseModel<OrderCancellationResponseModel>.Fail(
-                    $"Error cancelling order: {ex.Message}", 500));
+                return StatusCode(500, ApiResponseModel<OrderCancellationResponseModel>.Fail($"Error: {ex.Message}", 500));
             }
         }
 
-        /// <summary>
-        /// Get cancellation history for the authenticated cargo owner
-        /// </summary>
-        [HttpGet("history")]
-        [Authorize(Roles = "cargo owner")]
-        public async Task<ActionResult<ApiResponseModel<IEnumerable<OrderCancellation>>>> GetCancellationHistory()
+        [HttpPost("create-cancellation-fee-payment-intent")]
+        public async Task<ActionResult<ApiResponseModel<StripePaymentResponse>>> CreateCancellationFeePaymentIntent([FromBody] CreateCancellationFeePaymentIntentDto request)
         {
             try
             {
@@ -109,63 +105,110 @@ namespace trucki.Controllers
                     return Unauthorized();
                 }
 
-                // Get cargo owner profile
-                var profileResult = await _cargoOwnerService.GetCargoOwnerProfile(userId);
-                if (!profileResult.IsSuccessful || profileResult.Data == null)
+                // Get cargo owner and verify they're a broker
+                var cargoOwner = await _dbContext.Set<CargoOwner>()
+                    .FirstOrDefaultAsync(co => co.UserId == userId && co.Id == request.CargoOwnerId);
+
+                if (cargoOwner == null)
                 {
-                    return StatusCode(profileResult.StatusCode,
-                        ApiResponseModel<IEnumerable<OrderCancellation>>.Fail(profileResult.Message, profileResult.StatusCode));
+                    return BadRequest(ApiResponseModel<StripePaymentResponse>.Fail("Cargo owner not found", 404));
                 }
 
-                var result = await _cancellationService.GetCancellationHistoryAsync(profileResult.Data.Id);
-                return StatusCode(result.StatusCode, result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ApiResponseModel<IEnumerable<OrderCancellation>>.Fail(
-                    $"Error retrieving cancellation history: {ex.Message}", 500));
-            }
-        }
-        /// <summary>
-        /// Check if an order can be cancelled (quick endpoint for UI)
-        /// </summary>
-        [HttpGet("can-cancel/{orderId}")]
-        [Authorize(Roles = "cargo owner")]
-        public async Task<ActionResult<ApiResponseModel<bool>>> CanCancelOrder(string orderId)
-        {
-            try
-            {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
+                if (cargoOwner.OwnerType != CargoOwnerType.Broker)
                 {
-                    return Unauthorized();
+                    return BadRequest(ApiResponseModel<StripePaymentResponse>.Fail("This endpoint is only available for brokers", 400));
                 }
 
-                // Get cargo owner profile
-                var profileResult = await _cargoOwnerService.GetCargoOwnerProfile(userId);
-                if (!profileResult.IsSuccessful || profileResult.Data == null)
+                // Verify the order exists and belongs to this broker
+                var order = await _dbContext.Set<CargoOrders>()
+                    .FirstOrDefaultAsync(o => o.Id == request.OrderId && o.CargoOwnerId == request.CargoOwnerId);
+
+                if (order == null)
                 {
-                    return StatusCode(profileResult.StatusCode,
-                        ApiResponseModel<bool>.Fail(profileResult.Message, profileResult.StatusCode));
+                    return NotFound(ApiResponseModel<StripePaymentResponse>.Fail("Order not found", 404));
                 }
 
-                var previewResult = await _cancellationService.GetCancellationPreviewAsync(orderId, profileResult.Data.Id);
+                // Create payment intent for cancellation fee
+                var paymentResponse = await _stripeService.CreatePaymentIntent(
+                    $"cancellation-{request.OrderId}",
+                    request.PenaltyAmount,
+                    request.Currency);
 
-                if (!previewResult.IsSuccessful)
-                {
-                    return StatusCode(previewResult.StatusCode,
-                        ApiResponseModel<bool>.Fail(previewResult.Message, previewResult.StatusCode));
-                }
+                paymentResponse.OrderId = request.OrderId;
 
-                return Ok(ApiResponseModel<bool>.Success(
-                    previewResult.Data.CanCancel ? "Order can be cancelled" : "Order cannot be cancelled",
-                    previewResult.Data.CanCancel,
+                return Ok(ApiResponseModel<StripePaymentResponse>.Success(
+                    "Cancellation fee payment intent created successfully",
+                    paymentResponse,
                     200));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponseModel<bool>.Fail(
-                    $"Error checking cancellation eligibility: {ex.Message}", 500));
+                return StatusCode(500, ApiResponseModel<StripePaymentResponse>.Fail($"Error: {ex.Message}", 500));
+            }
+        }
+
+        [HttpPost("confirm-cancellation-fee-payment")]
+        public async Task<ActionResult<ApiResponseModel<OrderCancellationResponseModel>>> ConfirmCancellationFeePayment([FromBody] ConfirmCancellationFeePaymentDto request)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized();
+                }
+
+                // Verify payment with Stripe first
+                var isSuccessful = await _stripeService.VerifyPaymentStatus(request.PaymentIntentId);
+                if (!isSuccessful)
+                {
+                    return BadRequest(ApiResponseModel<OrderCancellationResponseModel>.Fail("Payment verification failed", 400));
+                }
+
+                // Get cargo owner and verify they're a broker
+                var cargoOwner = await _dbContext.Set<CargoOwner>()
+                    .FirstOrDefaultAsync(co => co.UserId == userId && co.Id == request.CargoOwnerId);
+
+                if (cargoOwner == null)
+                {
+                    return BadRequest(ApiResponseModel<OrderCancellationResponseModel>.Fail("Cargo owner not found", 404));
+                }
+
+                if (cargoOwner.OwnerType != CargoOwnerType.Broker)
+                {
+                    return BadRequest(ApiResponseModel<OrderCancellationResponseModel>.Fail("This endpoint is only available for brokers", 400));
+                }
+
+                // Create cancellation request with payment intent ID
+                var cancelRequest = new CancelOrderRequestDto
+                {
+                    OrderId = request.OrderId,
+                    CargoOwnerId = request.CargoOwnerId,
+                    CancellationReason = request.CancellationReason,
+                    CancellationFeePaymentIntentId = request.PaymentIntentId
+                };
+
+                var result = await _orderCancellationService.CancelOrderAsync(cancelRequest);
+                return StatusCode(result.StatusCode, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponseModel<OrderCancellationResponseModel>.Fail($"Error: {ex.Message}", 500));
+            }
+        }
+
+        [HttpPost("process-refund")]
+        [Authorize(Roles = "admin")] // Only admins can manually process refunds
+        public async Task<ActionResult<ApiResponseModel<bool>>> ProcessCancellationRefund([FromBody] ProcessCancellationRefundDto request)
+        {
+            try
+            {
+                var result = await _orderCancellationService.ProcessCancellationRefundAsync(request);
+                return StatusCode(result.StatusCode, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponseModel<bool>.Fail($"Error: {ex.Message}", 500));
             }
         }
     }
