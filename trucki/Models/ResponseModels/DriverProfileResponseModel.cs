@@ -15,6 +15,7 @@ public class DriverProfileResponseModel
     public bool IsActive { get; set; }
     public string UserId { get; set; }
     public bool HasAcceptedTerms { get; set; }
-     public DriverOnboardingStatus OnboardingStatus { get; set; }
+    public DriverOnboardingStatus OnboardingStatus { get; set; }
     public AllTruckResponseModel? Truck { get; set; }
+    public DriverRatingSummaryModel Rating { get; set; }
 }

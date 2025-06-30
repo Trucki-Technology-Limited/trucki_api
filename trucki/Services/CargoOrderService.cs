@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using trucki.Interfaces.IServices;
 using trucki.DatabaseContext;
 using trucki.Models.RequestModel;
-using AutoMapper; // If you're using EF Core
+using AutoMapper;
+using trucki.Interfaces.IRepository; // If you're using EF Core
 
 namespace trucki.Services
 {
@@ -20,10 +21,11 @@ namespace trucki.Services
         private readonly IWalletService _walletService;
         private readonly IDriverWalletService _driverWalletService;
         private readonly IDriverService _driverService;
+        private readonly IDriverRatingRepository _ratingRepository;
 
         public CargoOrderService(TruckiDBContext dbContext, IMapper mapper, IStripeService stripeService, INotificationService notificationService,
     IEmailService emailService, NotificationEventService notificationEventService, IWalletService walletService, IDriverWalletService driverWalletService, // Add this
-        IDriverService driverService)
+        IDriverService driverService, IDriverRatingRepository ratingRepository)
         {
             _dbContext = dbContext;
             _stripeService = stripeService;
@@ -34,6 +36,7 @@ namespace trucki.Services
             _walletService = walletService;
             _driverWalletService = driverWalletService;
             _driverService = driverService;
+            _ratingRepository = ratingRepository;
         }
 
         public async Task<ApiResponseModel<bool>> CreateOrderAsync(CreateCargoOrderDto createOrderDto)
@@ -817,7 +820,43 @@ namespace trucki.Services
                 orderResponse.TotalVolume = summary.TotalVolume;
                 orderResponse.HasFragileItems = summary.HasFragileItems;
                 orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
-
+                  // Include bids with driver ratings ONLY when order is in bidding progress
+        if (cargoOrder.Status == CargoOrderStatus.BiddingInProgress && orderResponse.Bids != null && orderResponse.Bids.Any())
+        {
+            foreach (var bid in orderResponse.Bids)
+            {
+                if (bid.Driver != null)
+                {
+                    // Get driver rating summary for each bidding driver
+                    var ratingResult = await _ratingRepository.GetDriverRatingSummaryAsync(bid.Driver.Id);
+                    if (ratingResult.IsSuccessful && ratingResult.Data != null)
+                    {
+                        bid.DriverRating = ratingResult.Data;
+                        bid.Driver.Rating = ratingResult.Data;
+                    }
+                    else
+                    {
+                        // Default rating for drivers with no ratings
+                        var defaultRating = new DriverRatingSummaryModel
+                        {
+                            AverageRating = 0,
+                            TotalRatings = 0,
+                            RatingBreakdown = new Dictionary<int, int>
+                            {
+                                { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 }
+                            }
+                        };
+                        bid.DriverRating = defaultRating;
+                        bid.Driver.Rating = defaultRating;
+                    }
+                }
+            }
+        }
+        else if (cargoOrder.Status != CargoOrderStatus.BiddingInProgress)
+        {
+            // Clear bids for orders not in bidding progress (existing behavior)
+            orderResponse.Bids = null;
+        }
                 // Set the Driver property if an accepted bid exists and has a driver
                 if (cargoOrder.AcceptedBid != null &&
                     cargoOrder.AcceptedBid.Truck != null &&

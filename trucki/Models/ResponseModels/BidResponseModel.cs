@@ -1,5 +1,6 @@
 
 namespace trucki.Models.ResponseModels;
+
 public class BidResponseModel
 {
     public string Id { get; set; }
@@ -11,4 +12,5 @@ public class BidResponseModel
     public DateTime UpdatedAt { get; set; }
     public AllTruckResponseModel Truck { get; set; }
     public DriverProfileResponseModel Driver { get; set; }
+    public DriverRatingSummaryModel DriverRating { get; set; }
 }

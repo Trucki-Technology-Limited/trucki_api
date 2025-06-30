@@ -77,7 +77,7 @@ namespace trucki.CustomExtension
 
 
             services.AddHostedService<WeeklyPayoutBackgroundService>();
-
+            services.AddScoped<IDriverRatingRepository, DriverRatingRepository>();
 
 
         }
