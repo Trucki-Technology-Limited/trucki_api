@@ -25,25 +25,15 @@ namespace trucki.Controllers
         [HttpPost("submit")]
         public async Task<ActionResult<ApiResponseModel<bool>>> SubmitRating([FromBody] SubmitRatingDto model)
         {
-            var cargoOwnerId = User.FindFirst("CargoOwnerId")?.Value;
-            if (string.IsNullOrEmpty(cargoOwnerId))
-            {
-                return BadRequest(new ApiResponseModel<bool>
-                {
-                    IsSuccessful = false,
-                    Message = "Only cargo owners can submit ratings",
-                    StatusCode = 400
-                });
-            }
-
-            var result = await _ratingRepository.SubmitRatingAsync(model, cargoOwnerId);
+           
+            var result = await _ratingRepository.SubmitRatingAsync(model, model.CargoOwnerId);
             return StatusCode(result.StatusCode, result);
         }
 
         /// <summary>
         /// Get rating summary for a driver (Average rating, total ratings, breakdown)
         /// </summary>
-        [HttpGet("driver/summary")]
+        [HttpGet("driver/{driverId}/summary")]
         public async Task<ActionResult<ApiResponseModel<DriverRatingSummaryModel>>> GetDriverRatingSummary(string driverId)
         {
             var result = await _ratingRepository.GetDriverRatingSummaryAsync(driverId);
@@ -53,7 +43,7 @@ namespace trucki.Controllers
         /// <summary>
         /// Get all ratings and reviews for a driver (Admin only)
         /// </summary>
-        [HttpGet("driver/all")]
+        [HttpGet("driver/{driverId}/all")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponseModel<IEnumerable<DriverRatingResponseModel>>>> GetDriverRatings(string driverId)
         {
@@ -64,10 +54,20 @@ namespace trucki.Controllers
         /// <summary>
         /// Get rating for a specific order (Driver can see their rating for an order)
         /// </summary>
-        [HttpGet("order")]
+        [HttpGet("order/{orderId}")]
         public async Task<ActionResult<ApiResponseModel<DriverRatingResponseModel>>> GetRatingByOrderId(string orderId)
         {
             var result = await _ratingRepository.GetRatingByOrderIdAsync(orderId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Check if cargo owner has already rated an order
+        /// </summary>
+        [HttpGet("order/has-rated")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> HasCargoOwnerRatedOrder(string orderId,string cargoOwnerId)
+        {
+            var result = await _ratingRepository.HasCargoOwnerRatedOrderAsync(orderId, cargoOwnerId);
             return StatusCode(result.StatusCode, result);
         }
     }

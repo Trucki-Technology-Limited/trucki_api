@@ -30,7 +30,7 @@ namespace trucki.Repository
                             .ThenInclude(t => t.Driver)
                     .FirstOrDefaultAsync(o => o.Id == model.CargoOrderId && 
                                             o.CargoOwnerId == cargoOwnerId &&
-                                            o.Status == CargoOrderStatus.Completed);
+                                            o.Status == CargoOrderStatus.Completed || o.Status == CargoOrderStatus.Delivered);
 
                 if (order == null)
                 {
@@ -249,6 +249,32 @@ namespace trucki.Repository
                 {
                     IsSuccessful = false,
                     Message = $"Error retrieving rating: {ex.Message}",
+                    StatusCode = 500
+                };
+            }
+        }
+
+        public async Task<ApiResponseModel<bool>> HasCargoOwnerRatedOrderAsync(string orderId, string cargoOwnerId)
+        {
+            try
+            {
+                var hasRated = await _context.DriverRatings
+                    .AnyAsync(r => r.CargoOrderId == orderId && r.CargoOwnerId == cargoOwnerId);
+
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = true,
+                    Message = hasRated ? "Cargo owner has already rated this order" : "Cargo owner has not rated this order",
+                    StatusCode = 200,
+                    Data = hasRated
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = $"Error checking rating status: {ex.Message}",
                     StatusCode = 500
                 };
             }

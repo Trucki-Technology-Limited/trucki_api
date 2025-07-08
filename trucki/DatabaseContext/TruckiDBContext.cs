@@ -149,6 +149,26 @@ namespace trucki.DatabaseContext
                 .HasMany(s => s.Transactions)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<DriverRating>(builder =>
+            {
+                builder.HasKey(x => x.Id);
+                builder.HasIndex(x => x.CargoOrderId).IsUnique();
+
+                builder.HasOne(r => r.CargoOrder)
+                    .WithOne()
+                    .HasForeignKey<DriverRating>(r => r.CargoOrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(r => r.Driver)
+                    .WithMany()
+                    .HasForeignKey(r => r.DriverId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(r => r.CargoOwner)
+                    .WithMany()
+                    .HasForeignKey(r => r.CargoOwnerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }

@@ -820,43 +820,43 @@ namespace trucki.Services
                 orderResponse.TotalVolume = summary.TotalVolume;
                 orderResponse.HasFragileItems = summary.HasFragileItems;
                 orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
-                  // Include bids with driver ratings ONLY when order is in bidding progress
-        if (cargoOrder.Status == CargoOrderStatus.BiddingInProgress && orderResponse.Bids != null && orderResponse.Bids.Any())
-        {
-            foreach (var bid in orderResponse.Bids)
-            {
-                if (bid.Driver != null)
+                // Include bids with driver ratings ONLY when order is in bidding progress
+                if (cargoOrder.Status == CargoOrderStatus.BiddingInProgress && orderResponse.Bids != null && orderResponse.Bids.Any())
                 {
-                    // Get driver rating summary for each bidding driver
-                    var ratingResult = await _ratingRepository.GetDriverRatingSummaryAsync(bid.Driver.Id);
-                    if (ratingResult.IsSuccessful && ratingResult.Data != null)
+                    foreach (var bid in orderResponse.Bids)
                     {
-                        bid.DriverRating = ratingResult.Data;
-                        bid.Driver.Rating = ratingResult.Data;
-                    }
-                    else
-                    {
-                        // Default rating for drivers with no ratings
-                        var defaultRating = new DriverRatingSummaryModel
+                        if (bid.Driver != null)
                         {
-                            AverageRating = 0,
-                            TotalRatings = 0,
-                            RatingBreakdown = new Dictionary<int, int>
+                            // Get driver rating summary for each bidding driver
+                            var ratingResult = await _ratingRepository.GetDriverRatingSummaryAsync(bid.Driver.Id);
+                            if (ratingResult.IsSuccessful && ratingResult.Data != null)
+                            {
+                                bid.DriverRating = ratingResult.Data;
+                                bid.Driver.Rating = ratingResult.Data;
+                            }
+                            else
+                            {
+                                // Default rating for drivers with no ratings
+                                var defaultRating = new DriverRatingSummaryModel
+                                {
+                                    AverageRating = 0,
+                                    TotalRatings = 0,
+                                    RatingBreakdown = new Dictionary<int, int>
                             {
                                 { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 }
                             }
-                        };
-                        bid.DriverRating = defaultRating;
-                        bid.Driver.Rating = defaultRating;
+                                };
+                                bid.DriverRating = defaultRating;
+                                bid.Driver.Rating = defaultRating;
+                            }
+                        }
                     }
                 }
-            }
-        }
-        else if (cargoOrder.Status != CargoOrderStatus.BiddingInProgress)
-        {
-            // Clear bids for orders not in bidding progress (existing behavior)
-            orderResponse.Bids = null;
-        }
+                else if (cargoOrder.Status != CargoOrderStatus.BiddingInProgress)
+                {
+                    // Clear bids for orders not in bidding progress (existing behavior)
+                    orderResponse.Bids = null;
+                }
                 // Set the Driver property if an accepted bid exists and has a driver
                 if (cargoOrder.AcceptedBid != null &&
                     cargoOrder.AcceptedBid.Truck != null &&
@@ -1849,11 +1849,16 @@ namespace trucki.Services
                     .Include(o => o.Items)
                     .Include(o => o.AcceptedBid)
                     .Include(o => o.Bids.Where(b => b.TruckId == driver.Truck.Id))
-                    .Where(o =>
-                        // Orders where this driver has an accepted bid
-                        (o.AcceptedBid != null && o.AcceptedBid.TruckId == driver.Truck.Id) ||
-                        // Orders where this driver has placed a bid (pending, accepted, or expired)
-                        o.Bids.Any(b => b.TruckId == driver.Truck.Id));
+                      .Where(o =>
+                // 1. Orders where this driver has an accepted bid
+                (o.AcceptedBid != null && o.AcceptedBid.TruckId == driver.Truck.Id) ||
+                // 2. Orders where this driver has placed a bid (pending, accepted, or expired)
+                o.Bids.Any(b => b.TruckId == driver.Truck.Id) ||
+                // 3. Open orders that the driver hasn't bid on yet (NEW ADDITION)
+                (o.Status == CargoOrderStatus.OpenForBidding ||
+                 o.Status == CargoOrderStatus.BiddingInProgress) &&
+                o.AcceptedBidId == null &&
+                !o.Bids.Any(b => b.TruckId == driver.Truck.Id));
 
                 // Apply status filter if provided
                 if (query.Status.HasValue)

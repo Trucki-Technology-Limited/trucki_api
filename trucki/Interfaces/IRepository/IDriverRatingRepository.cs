@@ -9,5 +9,7 @@ namespace trucki.Interfaces.IRepository
         Task<ApiResponseModel<DriverRatingSummaryModel>> GetDriverRatingSummaryAsync(string driverId);
         Task<ApiResponseModel<IEnumerable<DriverRatingResponseModel>>> GetDriverRatingsAsync(string driverId);
         Task<ApiResponseModel<DriverRatingResponseModel>> GetRatingByOrderIdAsync(string orderId);
+        Task<ApiResponseModel<bool>> HasCargoOwnerRatedOrderAsync(string orderId, string cargoOwnerId);
+    
     }
 }
