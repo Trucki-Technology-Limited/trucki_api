@@ -15,7 +15,7 @@ public class Truck : BaseClass
     public string? TruckOwnerId { get; set; }
     public string? TruckiNumber { get; set; }
     public TruckOwner? TruckOwner { get; set; }
-    public TruckiType TruckType { get; set; }
+    public string TruckType { get; set; }
     public string TruckLicenseExpiryDate { get; set; }
     public string RoadWorthinessExpiryDate { get; set; }
     public string InsuranceExpiryDate { get; set; }
@@ -27,17 +27,6 @@ public class Truck : BaseClass
     
     // Flag to identify if the truck was added by a driver (vs a truck owner)
     public bool IsDriverOwnedTruck { get; set; } = false;
-}
-
-public enum TruckiType
-{
-    Flatbed,
-    BoxBody,
-    BucketBody,
-    Lowbed,
-    ContainerizedBody,
-    Refrigerator,
-    CargoVan
 }
 
 public enum TruckStatus

@@ -8,7 +8,7 @@ public class DriverAddTruckRequestModel
     public string PlateNumber { get; set; }
     public string? TruckName { get; set; }
     public string TruckCapacity { get; set; }
-    public TruckiType TruckType { get; set; }
+    public string TruckType { get; set; }
     public string TruckLicenseExpiryDate { get; set; }
     public string RoadWorthinessExpiryDate { get; set; }
     public string InsuranceExpiryDate { get; set; }

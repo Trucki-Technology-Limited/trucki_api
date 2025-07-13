@@ -13,7 +13,7 @@ public class AllTruckResponseModel
     public string? TruckOwnerId { get; set; }
     public string? DriverName { get; set; }
     public string? TruckOwnerName { get; set; }
-    public TruckiType TruckType { get; set; }
+    public string TruckType { get; set; }
     public string? TruckName { get; set; }
     public string Capacity { get; set; }
     public TruckStatus TruckStatus { get; set; }
@@ -39,7 +39,7 @@ public class AllTruckResponseModel
         public string? DriverName { get; set; }
         public string Capacity { get; set; }
         public string? TruckName { get; set; }
-        public TruckiType TruckType { get; set; }
+        public string TruckType { get; set; }
         public string TruckNumber { get; set; }
     }
     public class TruckStatusCountResponseModel
