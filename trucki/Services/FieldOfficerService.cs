@@ -23,6 +23,11 @@ public class FieldOfficerService : IFieldOfficerService
         var res = await _fieldOfficerRepository.GetAllFieldOfficers(page, size);
         return res;
     }
+    public async Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllSafetyOfficers(int page, int size)
+{
+    var res = await _fieldOfficerRepository.GetAllSafetyOfficers(page, size);
+    return res;
+}
 
     public async Task<ApiResponseModel<bool>> EditOfficer(EditOfficerRequestModel model)
     {

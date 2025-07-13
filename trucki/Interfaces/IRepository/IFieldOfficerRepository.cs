@@ -12,4 +12,5 @@ public interface IFieldOfficerRepository
     Task<ApiResponseModel<string>> DeleteOfficers(string officerId);
     Task<ApiResponseModel<IEnumerable<AllOfficerResponseModel>>> SearchOfficer(string? searchWords);
     Task<ApiResponseModel<string>> ReassignOfficerCompany(string officerId, string newCompanyId);
+    Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllSafetyOfficers(int page, int size);
 }

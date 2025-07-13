@@ -5,6 +5,7 @@ using trucki.Models.RequestModel;
 using trucki.Models.ResponseModels;
 
 namespace trucki.Controllers;
+
 [Route("api/[controller]")]
 [ApiController]
 public class FieldOfficerController : ControllerBase
@@ -68,6 +69,13 @@ public class FieldOfficerController : ControllerBase
     public async Task<ActionResult<ApiResponseModel<string>>> ReassignOfficerCompany(string officerId, string newCompanyId)
     {
         var response = await _fieldOfficerService.ReassignOfficerCompany(officerId, newCompanyId);
+        return StatusCode(response.StatusCode, response);
+    }
+    [HttpGet("GetAllSafetyOfficers")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
+    public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>>> GetAllSafetyOfficers(int page, int size)
+    {
+        var response = await _fieldOfficerService.GetAllSafetyOfficers(page, size);
         return StatusCode(response.StatusCode, response);
     }
 

@@ -119,6 +119,24 @@ public class FieldOfficerRepository : IFieldOfficerRepository
             Data = paginatedList
         };
     }
+    public async Task<ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>> GetAllSafetyOfficers(int page, int size)
+    {
+        var safetyOfficers = await _context.Officers.Where(x => x.OfficerType == OfficerType.SafetyOfficer)
+            .ToListAsync();
+
+        var totalItems = safetyOfficers.Count();
+
+        var data = _mapper.Map<IEnumerable<AllOfficerResponseModel>>(safetyOfficers);
+        var paginatedList = PagedList<AllOfficerResponseModel>.Paginates(data, page, size);
+
+        return new ApiResponseModel<PaginatedListDto<AllOfficerResponseModel>>
+        {
+            IsSuccessful = true,
+            Message = "Safety Officers retrieved successfully",
+            StatusCode = 200,
+            Data = paginatedList
+        };
+    }
 
     public async Task<ApiResponseModel<bool>> EditOfficer(EditOfficerRequestModel model)
     {
