@@ -1,3 +1,4 @@
+using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -704,6 +705,771 @@ public class TruckRepository : ITruckRepository
             StatusCode = 200,
             Data = true
         };
+    }
+    /// <summary>
+    /// Get all trucks with enhanced filtering, pagination, and search
+    /// </summary>
+    public async Task<ApiResponseModel<PagedResponse<EnhancedTruckResponseModel>>> GetAllTrucksEnhancedAsync(GetTrucksQueryDto query)
+    {
+        try
+        {
+            query.ValidateAndNormalize();
+
+            // Build the base query with necessary includes
+            IQueryable<Truck> trucksQuery = _context.Trucks
+                .Include(t => t.Driver)
+                .Include(t => t.TruckOwner);
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(query.SearchTerm))
+            {
+                var searchTerm = query.SearchTerm.ToLower();
+                trucksQuery = trucksQuery.Where(t =>
+                    t.PlateNumber.ToLower().Contains(searchTerm) ||
+                    (t.TruckName != null && t.TruckName.ToLower().Contains(searchTerm)));
+            }
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(query.TruckType))
+            {
+                trucksQuery = trucksQuery.Where(t => t.TruckType == query.TruckType);
+            }
+
+            if (query.TruckStatus.HasValue)
+            {
+                trucksQuery = trucksQuery.Where(t => t.TruckStatus == query.TruckStatus.Value);
+            }
+
+            if (query.ApprovalStatus.HasValue)
+            {
+                trucksQuery = trucksQuery.Where(t => t.ApprovalStatus == query.ApprovalStatus.Value);
+            }
+
+            if (query.IsDriverOwned.HasValue)
+            {
+                trucksQuery = trucksQuery.Where(t => t.IsDriverOwnedTruck == query.IsDriverOwned.Value);
+            }
+
+            if (!string.IsNullOrEmpty(query.TruckOwnerId))
+            {
+                trucksQuery = trucksQuery.Where(t => t.TruckOwnerId == query.TruckOwnerId);
+            }
+
+            // Apply sorting
+            trucksQuery = query.SortBy.ToLower() switch
+            {
+                "platenumber" => query.SortDescending
+                    ? trucksQuery.OrderByDescending(t => t.PlateNumber)
+                    : trucksQuery.OrderBy(t => t.PlateNumber),
+                "truckname" => query.SortDescending
+                    ? trucksQuery.OrderByDescending(t => t.TruckName)
+                    : trucksQuery.OrderBy(t => t.TruckName),
+                "trucktype" => query.SortDescending
+                    ? trucksQuery.OrderByDescending(t => t.TruckType)
+                    : trucksQuery.OrderBy(t => t.TruckType),
+                "truckstatus" => query.SortDescending
+                    ? trucksQuery.OrderByDescending(t => t.TruckStatus)
+                    : trucksQuery.OrderBy(t => t.TruckStatus),
+                "approvalstatus" => query.SortDescending
+                    ? trucksQuery.OrderByDescending(t => t.ApprovalStatus)
+                    : trucksQuery.OrderBy(t => t.ApprovalStatus),
+                _ => query.SortDescending
+                    ? trucksQuery.OrderByDescending(t => t.CreatedAt)
+                    : trucksQuery.OrderBy(t => t.CreatedAt)
+            };
+
+            // Get total count before pagination
+            var totalCount = await trucksQuery.CountAsync();
+
+            // Apply pagination
+            var trucks = await trucksQuery
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            // Build response models with order statistics
+            var enhancedTrucks = new List<EnhancedTruckResponseModel>();
+
+            foreach (var truck in trucks)
+            {
+                var enhancedTruck = await BuildEnhancedTruckResponseModel(truck);
+                enhancedTrucks.Add(enhancedTruck);
+            }
+
+            var pagedResponse = new PagedResponse<EnhancedTruckResponseModel>
+            {
+                Data = enhancedTrucks,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize)
+            };
+
+            return new ApiResponseModel<PagedResponse<EnhancedTruckResponseModel>>
+            {
+                IsSuccessful = true,
+                Message = $"Successfully retrieved {totalCount} trucks",
+                StatusCode = 200,
+                Data = pagedResponse
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<PagedResponse<EnhancedTruckResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = $"Error retrieving trucks: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get comprehensive truck status and approval status counts
+    /// </summary>
+    public async Task<ApiResponseModel<EnhancedTruckStatusCountResponseModel>> GetTruckStatusCountsEnhancedAsync()
+    {
+        try
+        {
+            var trucks = await _context.Trucks.ToListAsync();
+
+            var statusCounts = new EnhancedTruckStatusCountResponseModel
+            {
+                // Truck Status Counts
+                EnRouteCount = trucks.Count(t => t.TruckStatus == TruckStatus.EnRoute),
+                AvailableCount = trucks.Count(t => t.TruckStatus == TruckStatus.Available),
+                BusyCount = trucks.Count(t => t.TruckStatus == TruckStatus.Busy),
+                OutOfServiceCount = trucks.Count(t => t.TruckStatus == TruckStatus.OutOfService),
+
+                // Approval Status Counts
+                PendingCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.Pending),
+                ApprovedCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.Approved),
+                NotApprovedCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.NotApproved),
+                BlockedCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.Blocked),
+
+                // Ownership Counts
+                DriverOwnedTrucks = trucks.Count(t => t.IsDriverOwnedTruck),
+                TruckOwnerOwnedTrucks = trucks.Count(t => !t.IsDriverOwnedTruck)
+            };
+
+            statusCounts.CalculateDerivedProperties();
+
+            return new ApiResponseModel<EnhancedTruckStatusCountResponseModel>
+            {
+                IsSuccessful = true,
+                Message = "Truck status counts retrieved successfully",
+                StatusCode = 200,
+                Data = statusCounts
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<EnhancedTruckStatusCountResponseModel>
+            {
+                IsSuccessful = false,
+                Message = $"Error retrieving truck counts: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get detailed truck information by ID with driver details and trip statistics
+    /// </summary>
+    public async Task<ApiResponseModel<TruckDetailResponseModel>> GetTruckByIdEnhancedAsync(string truckId)
+    {
+        try
+        {
+            var truck = await _context.Trucks
+                .Include(t => t.Driver)
+                .Include(t => t.TruckOwner)
+                .FirstOrDefaultAsync(t => t.Id == truckId);
+
+            if (truck == null)
+            {
+                return new ApiResponseModel<TruckDetailResponseModel>
+                {
+                    IsSuccessful = false,
+                    Message = "Truck not found",
+                    StatusCode = 404,
+                    Data = null
+                };
+            }
+
+            var truckDetail = await BuildTruckDetailResponseModel(truck);
+
+            return new ApiResponseModel<TruckDetailResponseModel>
+            {
+                IsSuccessful = true,
+                Message = "Truck details retrieved successfully",
+                StatusCode = 200,
+                Data = truckDetail
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<TruckDetailResponseModel>
+            {
+                IsSuccessful = false,
+                Message = $"Error retrieving truck details: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+
+    /// <summary>
+    /// Export trucks as CSV based on query filters
+    /// </summary>
+    public async Task<ApiResponseModel<byte[]>> ExportTrucksAsCsvAsync(GetTrucksQueryDto query)
+    {
+        try
+        {
+            // Remove pagination for export (get all matching records)
+            var exportQuery = new GetTrucksQueryDto
+            {
+                PageNumber = 1,
+                PageSize = int.MaxValue,
+                SearchTerm = query.SearchTerm,
+                TruckType = query.TruckType,
+                TruckStatus = query.TruckStatus,
+                ApprovalStatus = query.ApprovalStatus,
+                IsDriverOwned = query.IsDriverOwned,
+                TruckOwnerId = query.TruckOwnerId,
+                SortBy = query.SortBy,
+                SortDescending = query.SortDescending
+            };
+
+            var trucksResponse = await GetAllTrucksEnhancedAsync(exportQuery);
+
+            if (!trucksResponse.IsSuccessful || trucksResponse.Data?.Data == null)
+            {
+                return new ApiResponseModel<byte[]>
+                {
+                    IsSuccessful = false,
+                    Message = "No data available for export",
+                    StatusCode = 404,
+                    Data = null
+                };
+            }
+
+            var csvData = GenerateCsvData(trucksResponse.Data.Data);
+
+            return new ApiResponseModel<byte[]>
+            {
+                IsSuccessful = true,
+                Message = $"Successfully exported {trucksResponse.Data.Data.Count()} trucks",
+                StatusCode = 200,
+                Data = csvData
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<byte[]>
+            {
+                IsSuccessful = false,
+                Message = $"Error exporting trucks: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+
+    /// <summary>
+    /// Update truck approval status with enhanced functionality
+    /// </summary>
+    public async Task<ApiResponseModel<string>> UpdateApprovalStatusEnhancedAsync(string truckId, UpdateApprovalStatusRequest request)
+    {
+        try
+        {
+            var truck = await _context.Trucks.FindAsync(truckId);
+            if (truck == null)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Truck not found",
+                    StatusCode = 404,
+                    Data = null
+                };
+            }
+
+            // Validate rejection reason for negative statuses
+            if ((request.ApprovalStatus == ApprovalStatus.NotApproved ||
+                 request.ApprovalStatus == ApprovalStatus.Blocked) &&
+                string.IsNullOrEmpty(request.RejectionReason))
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Rejection reason is required when marking truck as Not Approved or Blocked",
+                    StatusCode = 400,
+                    Data = null
+                };
+            }
+
+            truck.ApprovalStatus = request.ApprovalStatus;
+
+            // If approved, set truck status to Available (unless it's already assigned)
+            if (request.ApprovalStatus == ApprovalStatus.Approved && truck.TruckStatus == TruckStatus.OutOfService)
+            {
+                truck.TruckStatus = TruckStatus.Available;
+            }
+
+            _context.Trucks.Update(truck);
+            await _context.SaveChangesAsync();
+
+            string statusMessage = request.ApprovalStatus switch
+            {
+                ApprovalStatus.Approved => "Truck approved successfully and set to Available status",
+                ApprovalStatus.NotApproved => $"Truck marked as not approved. Reason: {request.RejectionReason}",
+                ApprovalStatus.Blocked => $"Truck blocked successfully. Reason: {request.RejectionReason}",
+                ApprovalStatus.Pending => "Truck status reset to pending",
+                _ => "Approval status updated successfully"
+            };
+
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = true,
+                Message = statusMessage,
+                StatusCode = 200,
+                Data = truck.Id
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = $"Error updating approval status: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get truck status counts by owner with enhanced details
+    /// </summary>
+    public async Task<ApiResponseModel<EnhancedTruckStatusCountResponseModel>> GetTruckStatusCountsByOwnerIdAsync(string ownerId)
+    {
+        try
+        {
+            var trucks = await _context.Trucks
+                .Where(t => t.TruckOwnerId == ownerId)
+                .ToListAsync();
+
+            if (!trucks.Any())
+            {
+                return new ApiResponseModel<EnhancedTruckStatusCountResponseModel>
+                {
+                    IsSuccessful = false,
+                    Message = "No trucks found for this owner",
+                    StatusCode = 404,
+                    Data = new EnhancedTruckStatusCountResponseModel()
+                };
+            }
+
+            var statusCounts = new EnhancedTruckStatusCountResponseModel
+            {
+                // Truck Status Counts
+                EnRouteCount = trucks.Count(t => t.TruckStatus == TruckStatus.EnRoute),
+                AvailableCount = trucks.Count(t => t.TruckStatus == TruckStatus.Available),
+                BusyCount = trucks.Count(t => t.TruckStatus == TruckStatus.Busy),
+                OutOfServiceCount = trucks.Count(t => t.TruckStatus == TruckStatus.OutOfService),
+
+                // Approval Status Counts
+                PendingCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.Pending),
+                ApprovedCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.Approved),
+                NotApprovedCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.NotApproved),
+                BlockedCount = trucks.Count(t => t.ApprovalStatus == ApprovalStatus.Blocked),
+
+                // All trucks for this owner are truck owner owned
+                DriverOwnedTrucks = 0,
+                TruckOwnerOwnedTrucks = trucks.Count
+            };
+
+            statusCounts.CalculateDerivedProperties();
+
+            return new ApiResponseModel<EnhancedTruckStatusCountResponseModel>
+            {
+                IsSuccessful = true,
+                Message = "Owner truck status counts retrieved successfully",
+                StatusCode = 200,
+                Data = statusCounts
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<EnhancedTruckStatusCountResponseModel>
+            {
+                IsSuccessful = false,
+                Message = $"Error retrieving owner truck counts: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
+    }
+    /// <summary>
+    /// Build enhanced truck response model with order statistics
+    /// </summary>
+    private async Task<EnhancedTruckResponseModel> BuildEnhancedTruckResponseModel(Truck truck)
+    {
+        // Get order statistics
+        var orderStats = await GetTruckOrderStatistics(truck.Id);
+        var currentTrip = await GetCurrentTripInfo(truck.Id);
+
+        return new EnhancedTruckResponseModel
+        {
+            Id = truck.Id,
+            PlateNumber = truck.PlateNumber,
+            TruckName = truck.TruckName,
+            TruckType = truck.TruckType,
+            TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
+            InsuranceExpiryDate = truck.InsuranceExpiryDate,
+            TruckStatus = truck.TruckStatus,
+            ApprovalStatus = truck.ApprovalStatus,
+            TruckCapacity = truck.TruckCapacity,
+            IsDriverOwnedTruck = truck.IsDriverOwnedTruck,
+            Documents = truck.Documents,
+            ExternalTruckPictureUrl = truck.ExternalTruckPictureUrl,
+            CargoSpacePictureUrl = truck.CargoSpacePictureUrl,
+            CreatedAt = truck.CreatedAt,
+
+            // Driver details
+            DriverId = truck.DriverId,
+            DriverName = truck.Driver?.Name,
+            DriverPhone = truck.Driver?.Phone,
+            DriverEmail = truck.Driver?.EmailAddress,
+
+            // Truck owner details
+            TruckOwnerId = truck.TruckOwnerId,
+            TruckOwnerName = truck.TruckOwner?.Name,
+
+            // Order statistics
+            TotalCargoOrders = orderStats.TotalCargoOrders,
+            TotalNormalOrders = orderStats.TotalNormalOrders,
+            IsCurrentlyOnTrip = currentTrip != null,
+            CurrentTripOrderId = currentTrip?.OrderId,
+            CurrentTripType = currentTrip?.OrderType
+        };
+    }
+
+    /// <summary>
+    /// Build detailed truck response model
+    /// </summary>
+    private async Task<TruckDetailResponseModel> BuildTruckDetailResponseModel(Truck truck)
+    {
+        var orderStats = await GetDetailedTruckOrderStatistics(truck.Id);
+        var currentTrip = await GetDetailedCurrentTripInfo(truck.Id);
+
+        var truckDetail = new TruckDetailResponseModel
+        {
+            Id = truck.Id,
+            PlateNumber = truck.PlateNumber,
+            TruckName = truck.TruckName,
+            TruckType = truck.TruckType,
+            TruckCapacity = truck.TruckCapacity,
+            TruckLicenseExpiryDate = truck.TruckLicenseExpiryDate,
+            RoadWorthinessExpiryDate = truck.RoadWorthinessExpiryDate,
+            InsuranceExpiryDate = truck.InsuranceExpiryDate,
+            TruckStatus = truck.TruckStatus,
+            ApprovalStatus = truck.ApprovalStatus,
+            IsDriverOwnedTruck = truck.IsDriverOwnedTruck,
+            Documents = truck.Documents,
+            ExternalTruckPictureUrl = truck.ExternalTruckPictureUrl,
+            CargoSpacePictureUrl = truck.CargoSpacePictureUrl,
+            TruckiNumber = truck.TruckiNumber,
+            CreatedAt = truck.CreatedAt,
+            OrderStatistics = orderStats,
+            CurrentTrip = currentTrip
+        };
+
+        // Add driver details if available
+        if (truck.Driver != null)
+        {
+            truckDetail.DriverDetails = new DriverDetailInfo
+            {
+                Id = truck.Driver.Id,
+                Name = truck.Driver.Name,
+                Phone = truck.Driver.Phone,
+                EmailAddress = truck.Driver.EmailAddress,
+                Country = truck.Driver.Country,
+                IsActive = truck.Driver.IsActive,
+                DriversLicence = truck.Driver.DriversLicence,
+                PassportFile = truck.Driver.PassportFile,
+                OnboardingStatus = truck.Driver.OnboardingStatus
+            };
+        }
+
+        // Add truck owner details if available
+        if (truck.TruckOwner != null)
+        {
+            truckDetail.TruckOwnerDetails = new TruckOwnerDetailInfo
+            {
+                Id = truck.TruckOwner.Id,
+                Name = truck.TruckOwner.Name,
+                Phone = truck.TruckOwner.Phone,
+                EmailAddress = truck.TruckOwner.EmailAddress,
+                Address = truck.TruckOwner.Address
+            };
+        }
+
+        return truckDetail;
+    }
+
+    /// <summary>
+    /// Get basic order statistics for truck
+    /// </summary>
+    private async Task<(int TotalCargoOrders, int TotalNormalOrders)> GetTruckOrderStatistics(string truckId)
+    {
+        // Get cargo orders count where this truck was selected
+        var cargoOrdersCount = await _context.Set<CargoOrders>()
+            .Where(co => co.AcceptedBid != null &&
+                       co.AcceptedBid.TruckId == truckId)
+            .CountAsync();
+
+        // Get normal orders count
+        var normalOrdersCount = await _context.Orders
+            .Where(o => o.TruckId == truckId)
+            .CountAsync();
+
+        return (cargoOrdersCount, normalOrdersCount);
+    }
+
+    /// <summary>
+    /// Get detailed order statistics for truck detail view
+    /// </summary>
+    private async Task<TruckOrderStatistics> GetDetailedTruckOrderStatistics(string truckId)
+    {
+        // Get cargo orders statistics
+        var cargoOrders = await _context.Set<CargoOrders>()
+            .Where(co => co.AcceptedBid != null && co.AcceptedBid.TruckId == truckId)
+            .ToListAsync();
+
+        var completedCargoOrders = cargoOrders.Count(co => co.Status == CargoOrderStatus.Completed);
+
+        // Get normal orders statistics
+        var normalOrders = await _context.Orders
+            .Where(o => o.TruckId == truckId)
+            .ToListAsync();
+
+        var completedNormalOrders = normalOrders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+
+        // Calculate total earnings (you may need to adjust this based on your business logic)
+        var totalEarnings = cargoOrders.Where(co => co.Status == CargoOrderStatus.Completed)
+                                     .Sum(co => co.DriverEarnings ?? 0);
+
+        // Get last trip date
+        var lastCargoOrderDate = cargoOrders.Any() ? cargoOrders.Max(co => co.CreatedAt) : (DateTime?)null;
+        var lastNormalOrderDate = normalOrders.Any() ? normalOrders.Max(o => o.CreatedAt) : (DateTime?)null;
+
+        DateTime? lastTripDate = null;
+        if (lastCargoOrderDate.HasValue && lastNormalOrderDate.HasValue)
+        {
+            lastTripDate = lastCargoOrderDate > lastNormalOrderDate ? lastCargoOrderDate : lastNormalOrderDate;
+        }
+        else if (lastCargoOrderDate.HasValue)
+        {
+            lastTripDate = lastCargoOrderDate;
+        }
+        else if (lastNormalOrderDate.HasValue)
+        {
+            lastTripDate = lastNormalOrderDate;
+        }
+
+        // Check if currently on trip
+        var isOnTrip = await IsCurrentlyOnTrip(truckId);
+
+        return new TruckOrderStatistics
+        {
+            TotalCargoOrders = cargoOrders.Count,
+            CompletedCargoOrders = completedCargoOrders,
+            TotalNormalOrders = normalOrders.Count,
+            CompletedNormalOrders = completedNormalOrders,
+            IsCurrentlyOnTrip = isOnTrip,
+            TotalEarnings = totalEarnings,
+            LastTripDate = lastTripDate
+        };
+    }
+
+    /// <summary>
+    /// Get current trip information
+    /// </summary>
+    private async Task<(string OrderId, string OrderType)?> GetCurrentTripInfo(string truckId)
+    {
+        // Check for active cargo orders
+        var activeCargoOrder = await _context.Set<CargoOrders>()
+            .Where(co => co.AcceptedBid != null &&
+                       co.AcceptedBid.TruckId == truckId &&
+                       (co.Status == CargoOrderStatus.InTransit ||
+                        co.Status == CargoOrderStatus.ReadyForPickup ||
+                        co.Status == CargoOrderStatus.DriverAcknowledged))
+            .FirstOrDefaultAsync();
+
+        if (activeCargoOrder != null)
+        {
+            return (activeCargoOrder.Id, "Cargo");
+        }
+
+        // Check for active normal orders
+        var activeNormalOrder = await _context.Orders
+            .Where(o => o.TruckId == truckId &&
+                       (o.OrderStatus == OrderStatus.InTransit ||
+                        o.OrderStatus == OrderStatus.Loaded ||
+                        o.OrderStatus == OrderStatus.Assigned))
+            .FirstOrDefaultAsync();
+
+        if (activeNormalOrder != null)
+        {
+            return (activeNormalOrder.Id, "Normal");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Get detailed current trip information
+    /// </summary>
+    private async Task<CurrentTripInfo?> GetDetailedCurrentTripInfo(string truckId)
+    {
+        // Check for active cargo orders first
+        var activeCargoOrder = await _context.Set<CargoOrders>()
+            .Include(co => co.CargoOwner)
+            .Where(co => co.AcceptedBid != null &&
+                       co.AcceptedBid.TruckId == truckId &&
+                       (co.Status == CargoOrderStatus.InTransit ||
+                        co.Status == CargoOrderStatus.ReadyForPickup ||
+                        co.Status == CargoOrderStatus.DriverAcknowledged))
+            .FirstOrDefaultAsync();
+
+        if (activeCargoOrder != null)
+        {
+            return new CurrentTripInfo
+            {
+                OrderId = activeCargoOrder.Id,
+                OrderType = "Cargo",
+                Status = activeCargoOrder.Status.ToString(),
+                PickupLocation = activeCargoOrder.PickupLocation,
+                DeliveryLocation = activeCargoOrder.DeliveryLocation,
+                StartDate = activeCargoOrder.PickupDateTime,
+                ExpectedDeliveryDate = activeCargoOrder.DeliveryDateTime,
+                CargoType = activeCargoOrder.Items?.FirstOrDefault()?.Type.ToString() ?? "Mixed",
+                CustomerName = activeCargoOrder.CargoOwner?.Name
+            };
+        }
+
+        // Check for active normal orders
+        var activeNormalOrder = await _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.Routes)
+            .Where(o => o.TruckId == truckId &&
+                       (o.OrderStatus == OrderStatus.InTransit ||
+                        o.OrderStatus == OrderStatus.Loaded ||
+                        o.OrderStatus == OrderStatus.Assigned))
+            .FirstOrDefaultAsync();
+
+        if (activeNormalOrder != null)
+        {
+            return new CurrentTripInfo
+            {
+                OrderId = activeNormalOrder.Id,
+                OrderType = "Normal",
+                Status = activeNormalOrder.OrderStatus.ToString(),
+                PickupLocation = activeNormalOrder.Routes?.FromRoute,
+                DeliveryLocation = activeNormalOrder.DeliveryAddress ?? activeNormalOrder.Routes?.ToRoute,
+                StartDate = activeNormalOrder.StartDate,
+                ExpectedDeliveryDate = activeNormalOrder.EndDate,
+                CargoType = activeNormalOrder.CargoType,
+                CustomerName = activeNormalOrder.Customer?.CustomerName
+            };
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Check if truck is currently on a trip
+    /// </summary>
+    private async Task<bool> IsCurrentlyOnTrip(string truckId)
+    {
+        // Check cargo orders
+        var hasActiveCargoOrder = await _context.Set<CargoOrders>()
+            .AnyAsync(co => co.AcceptedBid != null &&
+                          co.AcceptedBid.TruckId == truckId &&
+                          (co.Status == CargoOrderStatus.InTransit ||
+                           co.Status == CargoOrderStatus.ReadyForPickup ||
+                           co.Status == CargoOrderStatus.DriverAcknowledged));
+
+        if (hasActiveCargoOrder) return true;
+
+        // Check normal orders
+        var hasActiveNormalOrder = await _context.Orders
+            .AnyAsync(o => o.TruckId == truckId &&
+                          (o.OrderStatus == OrderStatus.InTransit ||
+                           o.OrderStatus == OrderStatus.Loaded ||
+                           o.OrderStatus == OrderStatus.Assigned));
+
+        return hasActiveNormalOrder;
+    }
+
+    /// <summary>
+    /// Generate CSV data from truck collection
+    /// </summary>
+    private byte[] GenerateCsvData(IEnumerable<EnhancedTruckResponseModel> trucks)
+    {
+        var csvBuilder = new StringBuilder();
+
+        // Add CSV headers
+        csvBuilder.AppendLine("Id,PlateNumber,TruckName,TruckType,TruckCapacity,TruckStatus,ApprovalStatus," +
+                            "TruckLicenseExpiryDate,InsuranceExpiryDate,DriverName,DriverPhone,DriverEmail," +
+                            "TruckOwnerName,IsDriverOwned,TotalCargoOrders,TotalNormalOrders," +
+                            "IsCurrentlyOnTrip,CurrentTripType,CreatedAt");
+
+        // Add data rows
+        foreach (var truck in trucks)
+        {
+            var csvModel = TruckCsvExportModel.FromEnhancedModel(truck);
+            csvBuilder.AppendLine($"{EscapeCsvValue(csvModel.Id)}," +
+                                $"{EscapeCsvValue(csvModel.PlateNumber)}," +
+                                $"{EscapeCsvValue(csvModel.TruckName)}," +
+                                $"{EscapeCsvValue(csvModel.TruckType)}," +
+                                $"{EscapeCsvValue(csvModel.TruckCapacity)}," +
+                                $"{EscapeCsvValue(csvModel.TruckStatus)}," +
+                                $"{EscapeCsvValue(csvModel.ApprovalStatus)}," +
+                                $"{EscapeCsvValue(csvModel.TruckLicenseExpiryDate)}," +
+                                $"{EscapeCsvValue(csvModel.InsuranceExpiryDate)}," +
+                                $"{EscapeCsvValue(csvModel.DriverName)}," +
+                                $"{EscapeCsvValue(csvModel.DriverPhone)}," +
+                                $"{EscapeCsvValue(csvModel.DriverEmail)}," +
+                                $"{EscapeCsvValue(csvModel.TruckOwnerName)}," +
+                                $"{EscapeCsvValue(csvModel.IsDriverOwned)}," +
+                                $"{csvModel.TotalCargoOrders}," +
+                                $"{csvModel.TotalNormalOrders}," +
+                                $"{EscapeCsvValue(csvModel.IsCurrentlyOnTrip)}," +
+                                $"{EscapeCsvValue(csvModel.CurrentTripType)}," +
+                                $"{EscapeCsvValue(csvModel.CreatedAt)}");
+        }
+
+        return Encoding.UTF8.GetBytes(csvBuilder.ToString());
+    }
+
+    /// <summary>
+    /// Escape CSV values to handle commas, quotes, and newlines
+    /// </summary>
+    private string EscapeCsvValue(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "";
+
+        if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+        {
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
+
+        return value;
     }
 
 }
