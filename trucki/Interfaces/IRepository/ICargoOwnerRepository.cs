@@ -10,4 +10,8 @@ public interface ICargoOwnerRepository
     Task<ApiResponseModel<bool>> DeactivateCargoOwner(string cargoOwnerId);
     Task<ApiResponseModel<List<CargoOrderResponseModel>>> GetCargoOwnerOrders(GetCargoOwnerOrdersQueryDto query);
     Task<ApiResponseModel<CargoOwnerProfileResponseModel>> GetCargoOwnerProfile(string userId);
+        Task<ApiResponseModel<PagedResponse<AdminCargoOwnerResponseModel>>> GetCargoOwnersWithPagination(
+        int pageNumber, int pageSize, string? searchQuery = null);
+    Task<ApiResponseModel<AdminCargoOwnerDetailsResponseModel>> GetCargoOwnerDetailsForAdmin(string cargoOwnerId);
+
 }

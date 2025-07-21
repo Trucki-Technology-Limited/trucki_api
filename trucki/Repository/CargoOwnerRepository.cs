@@ -297,4 +297,121 @@ public class CargoOwnerRepository : ICargoOwnerRepository
             Data = profileResponse
         };
     }
+    public async Task<ApiResponseModel<PagedResponse<AdminCargoOwnerResponseModel>>> GetCargoOwnersWithPagination(
+    int pageNumber, int pageSize, string? searchQuery = null)
+    {
+        try
+        {
+            var query = _context.CargoOwners
+                .Include(co => co.User)
+                .AsQueryable();
+
+            // Apply search filter if provided
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                var searchTerm = searchQuery.Trim().ToLower();
+                query = query.Where(co =>
+                    co.Name.ToLower().Contains(searchTerm) ||
+                    co.EmailAddress.ToLower().Contains(searchTerm) ||
+                    co.CompanyName.ToLower().Contains(searchTerm) ||
+                    co.Phone.Contains(searchTerm));
+            }
+
+            // Get total count for pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination and ordering
+            var cargoOwners = await query
+                .OrderByDescending(co => co.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var cargoOwnerResponses = _mapper.Map<List<AdminCargoOwnerResponseModel>>(cargoOwners);
+
+            // Set IsActive from User entity
+            foreach (var response in cargoOwnerResponses)
+            {
+                var cargoOwner = cargoOwners.First(co => co.Id == response.Id);
+                response.IsActive = cargoOwner.User?.IsActive ?? false;
+            }
+
+            var pagedResponse = new PagedResponse<AdminCargoOwnerResponseModel>
+            {
+                Data = cargoOwnerResponses,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
+
+            return ApiResponseModel<PagedResponse<AdminCargoOwnerResponseModel>>.Success(
+                "Cargo owners retrieved successfully",
+                pagedResponse,
+                200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<PagedResponse<AdminCargoOwnerResponseModel>>.Fail(
+                $"An error occurred while retrieving cargo owners: {ex.Message}",
+                500);
+        }
+    }
+
+    public async Task<ApiResponseModel<AdminCargoOwnerDetailsResponseModel>> GetCargoOwnerDetailsForAdmin(string cargoOwnerId)
+    {
+        try
+        {
+            var cargoOwner = await _context.CargoOwners
+                .Include(co => co.User)
+                .Include(co => co.Orders)
+                .FirstOrDefaultAsync(co => co.Id == cargoOwnerId);
+
+            if (cargoOwner == null)
+            {
+                return ApiResponseModel<AdminCargoOwnerDetailsResponseModel>.Fail(
+                    "Cargo owner not found",
+                    404);
+            }
+
+            var response = _mapper.Map<AdminCargoOwnerDetailsResponseModel>(cargoOwner);
+            response.IsActive = cargoOwner.User?.IsActive ?? false;
+
+            // Calculate order statistics
+            var completedOrders = cargoOwner.Orders.Where(o => o.Status == CargoOrderStatus.Completed).ToList();
+            response.TotalCompletedOrdersCount = completedOrders.Count;
+
+            var pendingOrderStatuses = new[]
+            {
+            CargoOrderStatus.Draft,
+            CargoOrderStatus.OpenForBidding,
+            CargoOrderStatus.BiddingInProgress,
+            CargoOrderStatus.DriverSelected,
+            CargoOrderStatus.DriverAcknowledged
+        };
+            response.PendingOrdersCount = cargoOwner.Orders.Count(o => pendingOrderStatuses.Contains(o.Status));
+
+            response.InTransitOrdersCount = cargoOwner.Orders.Count(o => o.Status == CargoOrderStatus.InTransit);
+
+            // Calculate total order value from accepted bids
+            response.TotalOrderValue = cargoOwner.Orders
+                .Where(o => o.AcceptedBid != null)
+                .Sum(o => o.AcceptedBid.Amount);
+
+            response.LastOrderDate = cargoOwner.Orders
+                .OrderByDescending(o => o.CreatedAt)
+                .FirstOrDefault()?.CreatedAt;
+
+            return ApiResponseModel<AdminCargoOwnerDetailsResponseModel>.Success(
+                "Cargo owner details retrieved successfully",
+                response,
+                200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<AdminCargoOwnerDetailsResponseModel>.Fail(
+                $"An error occurred while retrieving cargo owner details: {ex.Message}",
+                500);
+        }
+    }
 }

@@ -104,5 +104,36 @@ namespace trucki.Services
                 };
             }
         }
+        public async Task<ApiResponseModel<PagedResponse<AdminCargoOwnerResponseModel>>> GetCargoOwnersWithPagination(
+    int pageNumber, int pageSize, string? searchQuery = null)
+        {
+            try
+            {
+                var result = await _cargoOwnerRepository.GetCargoOwnersWithPagination(pageNumber, pageSize, searchQuery);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<PagedResponse<AdminCargoOwnerResponseModel>>.Fail(
+                    $"An error occurred while retrieving cargo owners: {ex.Message}",
+                    500);
+            }
+        }
+
+        public async Task<ApiResponseModel<AdminCargoOwnerDetailsResponseModel>> GetCargoOwnerDetailsForAdmin(string cargoOwnerId)
+        {
+            try
+            {
+                var result = await _cargoOwnerRepository.GetCargoOwnerDetailsForAdmin(cargoOwnerId);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<AdminCargoOwnerDetailsResponseModel>.Fail(
+                    $"An error occurred while retrieving cargo owner details: {ex.Message}",
+                    500);
+            }
+        }
     }
+
 }
