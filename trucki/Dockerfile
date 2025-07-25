@@ -3,13 +3,20 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["trucki.csproj", "."]
-RUN dotnet restore "./trucki.csproj"
+
+# Copy csproj and restore dependencies
+COPY ["trucki/trucki.csproj", "trucki/"]
+RUN dotnet restore "trucki/trucki.csproj"
+
+# Copy everything else and build
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/trucki"
 RUN dotnet build "trucki.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
@@ -19,10 +26,22 @@ RUN dotnet publish "trucki.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:Us
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-COPY otp_template.html /app/
-COPY password_reset_template.html /app/
-COPY welcome_email_template.html /app/
-COPY invoice_email_template.html /app/
-COPY order_template.html /app/
-COPY trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json /app/
+
+# Copy necessary files
+COPY trucki/otp_template.html ./
+COPY trucki/password_reset_template.html ./
+COPY trucki/welcome_email_template.html ./
+COPY trucki/invoice_email_template.html ./
+COPY trucki/order_template.html ./
+COPY trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ./
+
+# Create a non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:80/health || exit 1
+
 ENTRYPOINT ["dotnet", "trucki.dll"]

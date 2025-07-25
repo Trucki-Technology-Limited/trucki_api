@@ -160,7 +160,7 @@ public class EmailService : IEmailService
         string welcomeMessage = "Welcome to Trucki, the smarter way to connect with loads and keep your wheels moving!";
         string actionText = "accepting trips and maximizing your earnings";
         string thankYouText = "joining Trucki, let's hit the road together!";
-        string supportEmail = "info@trucki.com";
+        string supportEmail = "info@trucki.co";
         string helpType = "help";
         List<string> steps = new List<string>
         {
@@ -181,7 +181,7 @@ public class EmailService : IEmailService
                 welcomeMessage = "Welcome to Trucki, your trusted platform for seamless freight shipping!";
                 actionText = "posting loads and connecting with reliable drivers";
                 thankYouText = "choosing Trucki, we're here to power your logistics!";
-                supportEmail = "support@trucki.com";
+                supportEmail = "support@trucki.co";
                 steps = new List<string>
                 {
                     "Post Your First Load – Set pickup & delivery details in minutes.",
@@ -195,7 +195,7 @@ public class EmailService : IEmailService
                 welcomeMessage = "Welcome to Trucki, your all-in-one platform for fleet management and cargo fulfillment!";
                 actionText = "assigning loads to your drivers";
                 thankYouText = "joining Trucki, let's build a smarter, more connected fleet together!";
-                supportEmail = "info@trucki.com";
+                supportEmail = "info@trucki.co";
                 steps = new List<string>
                 {
                     "Add Your Fleet & Drivers – Register trucks & onboard drivers seamlessly.",
