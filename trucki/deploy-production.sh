@@ -7,13 +7,13 @@ echo "🚀 Starting production deployment..."
 source .env.production
 
 # Stop and remove existing containers
-docker-compose -f docker-compose.yml -f docker-compose.production.yml down --remove-orphans
+docker compose -f docker-compose.yml -f docker-compose.production.yml down --remove-orphans
 
 # Remove old images
 docker image prune -f
 
 # Build and start new containers
-docker-compose -f docker-compose.yml -f docker-compose.production.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build
 
 # Wait for container to be healthy
 echo "⏳ Waiting for container to be healthy..."
