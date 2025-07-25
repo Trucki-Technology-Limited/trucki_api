@@ -11,8 +11,8 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY ["trucki/trucki.csproj", "trucki/"]
-RUN dotnet restore "trucki/trucki.csproj"
+COPY ["trucki.csproj", "trucki/"]
+RUN dotnet restore "trucki.csproj"
 
 # Copy everything else and build
 COPY . .
@@ -28,12 +28,12 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Copy necessary files
-COPY trucki/otp_template.html ./
-COPY trucki/password_reset_template.html ./
-COPY trucki/welcome_email_template.html ./
-COPY trucki/invoice_email_template.html ./
-COPY trucki/order_template.html ./
-COPY trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ./
+COPY otp_template.html ./
+COPY password_reset_template.html ./
+COPY welcome_email_template.html ./
+COPY invoice_email_template.html ./
+COPY order_template.html ./
+COPY trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ./
 
 # Create a non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
