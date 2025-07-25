@@ -47,7 +47,7 @@ jobs:
         
     - name: Deploy to production server
       run: |
-        ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << EOF
+        ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
           cd ${{ secrets.PRODUCTION_DEPLOY_PATH }}
           git fetch origin
           git checkout ${{ github.ref_name }}
