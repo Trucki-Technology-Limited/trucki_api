@@ -54,8 +54,9 @@ jobs:
           echo "🚀 Starting staging deployment..."
           
           # Load environment variables
+          set -a
           source .env.staging
-          export $(grep -v '^#' .env.staging | xargs)
+          set +a
           # Stop and remove existing containers
           docker compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans
           
