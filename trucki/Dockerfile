@@ -12,7 +12,7 @@ WORKDIR /src
 
 # Copy csproj and restore dependencies
 COPY ["trucki.csproj", "trucki/"]
-RUN dotnet restore "trucki.csproj"
+RUN dotnet restore "trucki/trucki.csproj"
 
 # Copy everything else and build
 COPY . .
