@@ -23,7 +23,7 @@ jobs:
 
     - name: Create .env.production file
       run: |
-        cat > .env.production << EOL
+        cat > .env.production <<EOL
         PROD_DB_CONNECTION="${{ secrets.PROD_DB_CONNECTION }}"
         PROD_DISCOVERY_URL="${{ secrets.PROD_DISCOVERY_URL }}"
         EMAIL_USERNAME="${{ secrets.EMAIL_USERNAME }}"
