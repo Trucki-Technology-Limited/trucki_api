@@ -26,17 +26,17 @@ jobs:
     - name: Create .env.staging file
       run: |
         cat > .env.staging <<'EOL'
-        STAGING_DB_CONNECTION='${{ secrets.STAGING_DB_CONNECTION }}'
-        STAGING_DISCOVERY_URL='${{ secrets.STAGING_DISCOVERY_URL }}'
-        EMAIL_USERNAME='${{ secrets.EMAIL_USERNAME }}'
-        EMAIL_PASSWORD='${{ secrets.EMAIL_PASSWORD }}'
-        EMAIL_FROM='${{ secrets.EMAIL_FROM }}'
-        EMAIL_SMTP_SERVER='${{ secrets.EMAIL_SMTP_SERVER }}'
-        EMAIL_SMTP_PORT='${{ secrets.EMAIL_SMTP_PORT }}'
-        EMAIL_USE_SSL='${{ secrets.EMAIL_USE_SSL }}'
-        CLOUDINARY_CLOUD_NAME='${{ secrets.CLOUDINARY_CLOUD_NAME }}'
-        CLOUDINARY_API_KEY='${{ secrets.CLOUDINARY_API_KEY }}'
-        CLOUDINARY_API_SECRET='${{ secrets.CLOUDINARY_API_SECRET }}'
+        STAGING_DB_CONNECTION=${{ secrets.STAGING_DB_CONNECTION }}
+        STAGING_DISCOVERY_URL=${{ secrets.STAGING_DISCOVERY_URL }}
+        EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+        EMAIL_SMTP_SERVER=${{ secrets.EMAIL_SMTP_SERVER }}
+        EMAIL_SMTP_PORT=${{ secrets.EMAIL_SMTP_PORT }}
+        EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }}
+        CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+        CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
         EOL
         
     - name: Upload .env.staging to server
@@ -54,9 +54,9 @@ jobs:
           echo "🚀 Starting staging deployment..."
           
           # Load environment variables
-          set -a
+          
           source .env.staging
-          set +a
+          export $(grep -v '^#' .env.staging | xargs)
           # Stop and remove existing containers
           docker compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans
           
