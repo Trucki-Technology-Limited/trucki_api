@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  trucki-api:
+    extends:
+      file: docker-compose.yml
+      service: trucki-api
+    container_name: trucki-api-production
+    ports:
+      - "127.0.0.1:8082:80"
+      - "443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__LocalConnection=${PROD_DB_CONNECTION}
+      - IdentityServerSettings__DiscoveryUrl=${PROD_DISCOVERY_URL}
+      - EmailSetting__Email=${EMAIL_USERNAME}
+      - EmailSetting__Password=${EMAIL_PASSWORD}
+      - EmailSetting__From=${EMAIL_FROM}
+      - EmailSetting__SmtpServer=${EMAIL_SMTP_SERVER}
+      - EmailSetting__SmtpPort=${EMAIL_SMTP_PORT}
+      - EmailSetting__UseSsl=${EMAIL_USE_SSL}
+      - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
+      - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
+      - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trucki-prod.rule=Host(`api.trucki.co`)"
+      - "traefik.http.routers.trucki-prod.tls=true"
+      - "traefik.http.routers.trucki-prod.tls.certresolver=letsencrypt"

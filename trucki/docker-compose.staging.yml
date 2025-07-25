@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  trucki-api:
+    extends:
+      file: docker-compose.yml
+      service: trucki-api
+    container_name: trucki-api-staging
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ConnectionStrings__LocalConnection=${STAGING_DB_CONNECTION}
+      - IdentityServerSettings__DiscoveryUrl=${STAGING_DISCOVERY_URL}
+      - EmailSetting__Email=${EMAIL_USERNAME}
+      - EmailSetting__Password=${EMAIL_PASSWORD}
+      - EmailSetting__From=${EMAIL_FROM}
+      - EmailSetting__SmtpServer=${EMAIL_SMTP_SERVER}
+      - EmailSetting__SmtpPort=${EMAIL_SMTP_PORT}
+      - EmailSetting__UseSsl=${EMAIL_USE_SSL}
+      - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
+      - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
+      - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trucki-staging.rule=Host(`staging-api.trucki.co`)"
+      - "traefik.http.routers.trucki-staging.tls=true"
+      - "traefik.http.routers.trucki-staging.tls.certresolver=letsencrypt"
