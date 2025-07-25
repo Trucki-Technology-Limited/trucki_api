@@ -20,6 +20,22 @@ jobs:
       uses: webfactory/ssh-agent@v0.7.0
       with:
         ssh-private-key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+
+    - name: Create .env.production file
+      run: |
+        cat > .env.production << EOL
+        PROD_DB_CONNECTION="${{ secrets.PROD_DB_CONNECTION }}"
+        PROD_DISCOVERY_URL="${{ secrets.PROD_DISCOVERY_URL }}"
+        EMAIL_USERNAME="${{ secrets.EMAIL_USERNAME }}"
+        EMAIL_PASSWORD="${{ secrets.EMAIL_PASSWORD }}"
+        EMAIL_FROM="${{ secrets.EMAIL_FROM }}"
+        EMAIL_SMTP_SERVER="${{ secrets.EMAIL_SMTP_SERVER }}"
+        EMAIL_SMTP_PORT="${{ secrets.EMAIL_SMTP_PORT }}"
+        EMAIL_USE_SSL="${{ secrets.EMAIL_USE_SSL }}"
+        CLOUDINARY_CLOUD_NAME="${{ secrets.CLOUDINARY_CLOUD_NAME }}"
+        CLOUDINARY_API_KEY="${{ secrets.CLOUDINARY_API_KEY }}"
+        CLOUDINARY_API_SECRET="${{ secrets.CLOUDINARY_API_SECRET }}"
+        EOL
         
     - name: Add production server to known hosts
       run: |
@@ -27,30 +43,12 @@ jobs:
         
     - name: Deploy to production server
       run: |
-        ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+        ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << EOF
           cd ${{ secrets.PRODUCTION_DEPLOY_PATH }}
-          
-          # Pull latest changes
           git fetch origin
           git checkout ${{ github.ref_name }}
           git pull origin ${{ github.ref_name }}
-          
-          # Create environment file
-          cat > .env.production << EOL
-          PROD_DB_CONNECTION="${{ secrets.PROD_DB_CONNECTION }}"
-          PROD_DISCOVERY_URL="${{ secrets.PROD_DISCOVERY_URL }}"
-          EMAIL_USERNAME="${{ secrets.EMAIL_USERNAME }}"
-          EMAIL_PASSWORD="${{ secrets.EMAIL_PASSWORD }}"
-          EMAIL_FROM="${{ secrets.EMAIL_FROM }}"
-          EMAIL_SMTP_SERVER="${{ secrets.EMAIL_SMTP_SERVER }}"
-          EMAIL_SMTP_PORT="${{ secrets.EMAIL_SMTP_PORT }}"
-          EMAIL_USE_SSL="${{ secrets.EMAIL_USE_SSL }}"
-          CLOUDINARY_CLOUD_NAME="${{ secrets.CLOUDINARY_CLOUD_NAME }}"
-          CLOUDINARY_API_KEY="${{ secrets.CLOUDINARY_API_KEY }}"
-          CLOUDINARY_API_SECRET="${{ secrets.CLOUDINARY_API_SECRET }}"
-          EOL
-          
-          # Make deploy script executable and run it
+
           chmod +x deploy-production.sh
           ./deploy-production.sh
         EOF
