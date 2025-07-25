@@ -186,7 +186,7 @@ public class EmailService : IEmailService
                 {
                     "Post Your First Load – Set pickup & delivery details in minutes.",
                     "Get Matched with Verified Drivers – AI-powered load matching for efficiency & cost savings.",
-                    "Track Shipments in Real Time – Monitor every step with GPS tracking."
+                    "Track Shipments in Real Time and Monitor every step with GPS tracking."
                 };
                 break;
 
