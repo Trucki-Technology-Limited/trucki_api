@@ -2,7 +2,7 @@ services:
   trucki-api:
     build: 
       context: .
-      dockerfile: trucki/Dockerfile
+      dockerfile: Dockerfile
     restart: unless-stopped
     networks:
       - trucki-network

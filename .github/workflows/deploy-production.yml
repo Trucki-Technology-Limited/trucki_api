@@ -57,7 +57,7 @@ jobs:
           
           # Load environment variables
           source .env.production
-          
+          export $(grep -v '^#' .env.production | xargs)
           # Stop and remove existing containers
           docker compose -f docker-compose.yml -f docker-compose.production.yml down --remove-orphans
           
