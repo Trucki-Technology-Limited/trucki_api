@@ -56,9 +56,9 @@ jobs:
           echo "🚀 Starting production deployment..."
           
           # Load environment variables
-          
+          set -a
           source .env.production
-          export $(grep -v '^#' .env.production | xargs)
+          set +a
           # Stop and remove existing containers
           docker compose -f docker-compose.yml -f docker-compose.production.yml down --remove-orphans
           
