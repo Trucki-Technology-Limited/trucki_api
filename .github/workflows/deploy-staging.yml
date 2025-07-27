@@ -25,8 +25,8 @@ jobs:
         
     - name: Create .env.staging file
       run: |
-        cat > .env.staging <<EOL
-        STAGING_DB_CONNECTION=${{ secrets.STAGING_DB_CONNECTION }}
+        cat > .env.staging <<'EOL'
+        STAGING_DB_CONNECTION="${{ secrets.STAGING_DB_CONNECTION }}"
         STAGING_DISCOVERY_URL=${{ secrets.STAGING_DISCOVERY_URL }}
         EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }}
         EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
