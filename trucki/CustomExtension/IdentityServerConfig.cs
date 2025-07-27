@@ -17,7 +17,8 @@ public static class IdentityServerConfig
 
         var identityServerConfig = serviceDescriptors.AddIdentityServer(o =>
         {
-            o.IssuerUri = discoveryUrl;
+            // o.IssuerUri = discoveryUrl;
+            o.IssuerUri = null;
             o.InputLengthRestrictions.Scope = 1000;
             o.InputLengthRestrictions.Password = int.MaxValue;
             o.InputLengthRestrictions.UserName = int.MaxValue;
