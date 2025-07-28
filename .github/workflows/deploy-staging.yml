@@ -1,0 +1,94 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop, staging ]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+
+    - name: Add staging server to known hosts
+      run: |
+        ssh-keyscan -H ${{ secrets.STAGING_SERVER_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Create .env.staging file
+      run: |
+        cat > .env.staging <<'EOL'
+        STAGING_DB_CONNECTION="${{ secrets.STAGING_DB_CONNECTION }}"
+        STAGING_DISCOVERY_URL=${{ secrets.STAGING_DISCOVERY_URL }}
+        EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+        EMAIL_SMTP_SERVER=${{ secrets.EMAIL_SMTP_SERVER }}
+        EMAIL_SMTP_PORT=${{ secrets.EMAIL_SMTP_PORT }}
+        EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }}
+        CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+        CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+        EOL
+        
+    - name: Upload .env.staging to server
+      run: |
+        scp .env.staging ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:${{ secrets.STAGING_DEPLOY_PATH }}/.env.staging
+
+    - name: Deploy to staging server
+      run: |
+        ssh ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
+          cd ${{ secrets.STAGING_DEPLOY_PATH }}
+          git fetch origin
+          git checkout ${{ github.ref_name }}
+          git pull origin ${{ github.ref_name }}
+          
+          echo "🚀 Starting staging deployment..."
+          
+          # Load environment variables
+          set -a
+          source .env.staging
+          set +a
+          # Stop and remove existing containers
+          docker compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans
+          
+          # Remove old images
+          docker image prune -f
+          
+          # Build and start new containers
+          docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d --build
+          
+          # Wait for container to be healthy
+          echo "⏳ Waiting for container to be healthy..."
+          timeout 60s bash -c 'until docker exec trucki-api-staging curl -f http://localhost:80/health; do sleep 2; done'
+          
+          echo "✅ Staging deployment completed successfully!"
+          echo "🌐 Application is running at: http://staging-api.trucki.co"
+        EOF
+
+    - name: Verify deployment
+      run: |
+        sleep 30
+        curl -f ${{ secrets.STAGING_DISCOVERY_URL }}/health || exit 1
+        echo "✅ Staging deployment verified successfully!"
+
+    - name: Notify team
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: |
+          🚀 Staging Deployment ${{ job.status }}!
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          URL: ${{ secrets.STAGING_DISCOVERY_URL }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

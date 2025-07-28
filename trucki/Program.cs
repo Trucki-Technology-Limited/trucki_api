@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using trucki.CustomExtension;
 using trucki.DatabaseContext;
 using trucki.Hubs;
-using QuestPDF.Infrastructure; // Make sure this is included
+using QuestPDF.Infrastructure;
 using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2; // <-- Add this
+using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -20,6 +22,7 @@ builder.Services.AddDbConfiguration(config);
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddIdentityServerConfig(config);
 builder.Services.AddDependencyInjection();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -63,7 +66,32 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
     endpoints.MapHub<ChatHub>("/chathub");
 });
-
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        
+        var response = new
+        {
+            status = report.Status.ToString(),
+            totalDuration = report.TotalDuration.TotalMilliseconds,
+            checks = report.Entries.Select(x => new
+            {
+                name = x.Key,
+                status = x.Value.Status.ToString(),
+                description = x.Value.Description,
+                duration = x.Value.Duration.TotalMilliseconds,
+                exception = x.Value.Exception?.Message
+            })
+        };
+        
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
+    }
+});
 QuestPDF.Settings.License = LicenseType.Community;
 app.Run();
 

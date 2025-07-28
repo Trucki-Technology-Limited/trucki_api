@@ -1,0 +1,26 @@
+services:
+  trucki-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - trucki-network
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    volumes:
+      - app-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  trucki-network:
+    driver: bridge
+
+volumes:
+  app-logs:
