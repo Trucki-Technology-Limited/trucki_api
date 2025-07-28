@@ -6,7 +6,6 @@ services:
     container_name: trucki-api-production
     ports:
       - "127.0.0.1:8082:80"
-      - "443:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__LocalConnection=${PROD_DB_CONNECTION}
@@ -20,8 +19,3 @@ services:
       - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
       - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
       - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.trucki-prod.rule=Host(`api.trucki.co`)"
-      - "traefik.http.routers.trucki-prod.tls=true"
-      - "traefik.http.routers.trucki-prod.tls.certresolver=letsencrypt"
