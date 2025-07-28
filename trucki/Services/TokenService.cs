@@ -47,7 +47,7 @@ public class TokenService : ITokenService
             var req = new PasswordTokenRequest
             {
 
-                Address = $"{_config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl2").Value}/connect/token",
+                Address = $"{_config.GetSection("IdentityServerSettings").GetSection("DiscoveryUrl").Value}/connect/token",
                 ClientId = "m2m",
                 ClientSecret = "ClientSecret1",
                 ClientCredentialStyle = ClientCredentialStyle.PostBody,
