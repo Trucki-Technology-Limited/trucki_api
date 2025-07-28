@@ -19,8 +19,3 @@ services:
       - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
       - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
       - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.trucki-staging.rule=Host(`staging-api.trucki.co`)"
-      - "traefik.http.routers.trucki-staging.tls=true"
-      - "traefik.http.routers.trucki-staging.tls.certresolver=letsencrypt"
