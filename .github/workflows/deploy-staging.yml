@@ -58,7 +58,8 @@ jobs:
           source .env.staging
           set +a
           # Stop and remove existing containers
-          docker compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans
+          docker stop trucki-api-staging || true
+          docker rm trucki-api-staging || true
           
           # Remove old images
           docker image prune -f
@@ -71,7 +72,7 @@ jobs:
           timeout 60s bash -c 'until docker exec trucki-api-staging curl -f http://localhost:80/health; do sleep 2; done'
           
           echo "✅ Staging deployment completed successfully!"
-          echo "🌐 Application is running at: http://staging-api.trucki.co"
+          echo "🌐 Application is running at: https://staging-api.trucki.co"
         EOF
 
     - name: Verify deployment

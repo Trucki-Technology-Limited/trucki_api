@@ -60,7 +60,8 @@ jobs:
           source .env.production
           set +a
           # Stop and remove existing containers
-          docker compose -f docker-compose.yml -f docker-compose.production.yml down --remove-orphans
+          docker stop trucki-api-production || true
+          docker rm trucki-api-production || true
           
           # Remove old images
           docker image prune -f
