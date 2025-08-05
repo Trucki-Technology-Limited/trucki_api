@@ -6,6 +6,8 @@ services:
     container_name: trucki-api-production
     ports:
       - "127.0.0.1:8082:80"
+    networks:
+      - production-network
     volumes:
       - app-logs-production:/app/logs
     environment:

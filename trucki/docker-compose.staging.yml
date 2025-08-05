@@ -6,6 +6,8 @@ services:
     container_name: trucki-api-staging
     ports:
       - "127.0.0.1:8081:80"
+    networks:
+      - staging-network
     volumes:
       - app-logs-staging:/app/logs
     environment:
