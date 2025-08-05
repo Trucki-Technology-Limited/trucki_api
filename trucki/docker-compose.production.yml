@@ -1,8 +1,8 @@
 services:
-  trucki-api:
+  trucki-api-production:
     extends:
       file: docker-compose.yml
-      service: trucki-api
+      service: trucki-api-base
     container_name: trucki-api-production
     ports:
       - "127.0.0.1:8082:80"
