@@ -6,6 +6,8 @@ services:
     container_name: trucki-api-production
     ports:
       - "127.0.0.1:8082:80"
+    volumes:
+      - app-logs-production:/app/logs
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__LocalConnection=${PROD_DB_CONNECTION}
@@ -19,3 +21,10 @@ services:
       - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
       - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
       - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
+networks:
+  production-network:
+    driver: bridge
+    name: trucki-production-network
+volumes:
+  app-logs-production:
+    name: trucki-app-logs-production
