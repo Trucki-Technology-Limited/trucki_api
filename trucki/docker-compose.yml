@@ -1,5 +1,5 @@
 services:
-  trucki-api:
+  trucki-api-base:
     build: 
       context: .
       dockerfile: Dockerfile
