@@ -1,5 +1,5 @@
 services:
-  trucki-api:
+  trucki-api-base:
     build: 
       context: .
       dockerfile: Dockerfile
@@ -15,3 +15,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  app-logs:
