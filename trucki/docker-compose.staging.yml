@@ -6,6 +6,10 @@ services:
     container_name: trucki-api-staging
     ports:
       - "127.0.0.1:8081:80"
+    networks:
+      - staging-network
+    volumes:
+      - app-logs-staging:/app/logs
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
       - ConnectionStrings__LocalConnection=${STAGING_DB_CONNECTION}
@@ -19,3 +23,10 @@ services:
       - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
       - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
       - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
+networks:
+  staging-network:
+    driver: bridge
+    name: trucki-staging-network
+volumes:
+  app-logs-staging:
+    name: trucki-app-logs-staging
