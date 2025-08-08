@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Threading.Tasks;
 using trucki.Models.ResponseModels;
 using trucki.Entities;
@@ -1975,6 +1977,651 @@ namespace trucki.Services
                     500);
             }
         }
+               #region Admin Methods
+
+        /// <summary>
+        /// Get cargo orders for admin with advanced filtering, pagination, and search
+        /// </summary>
+        public async Task<ApiResponseModel<PagedResponse<AdminCargoOrderResponseModel>>> GetCargoOrdersForAdminAsync(
+            AdminGetCargoOrdersQueryDto query)
+        {
+            try
+            {
+                // Start with base query including all necessary relationships
+                var ordersQuery = _dbContext.Set<CargoOrders>()
+                    .Include(o => o.CargoOwner)
+                        .ThenInclude(co => co.User)
+                    .Include(o => o.Items)
+                    .Include(o => o.Bids)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                    .AsSplitQuery()
+                    .AsQueryable();
+
+                // Apply search filter
+                if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+                {
+                    var searchTerm = query.SearchTerm.ToLower();
+                    ordersQuery = ordersQuery.Where(o =>
+                        o.CargoOwner.Name.ToLower().Contains(searchTerm) ||
+                        o.CargoOwner.CompanyName.ToLower().Contains(searchTerm) ||
+                        o.CargoOwner.EmailAddress.ToLower().Contains(searchTerm) ||
+                        o.PickupLocation.ToLower().Contains(searchTerm) ||
+                        o.DeliveryLocation.ToLower().Contains(searchTerm) ||
+                        (o.Consignment != null && o.Consignment.ToLower().Contains(searchTerm)) ||
+                        (o.InvoiceNumber != null && o.InvoiceNumber.ToLower().Contains(searchTerm)));
+                }
+
+                // Apply filters
+                if (query.Status.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.Status == query.Status.Value);
+                }
+
+                if (query.PaymentStatus.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.PaymentStatus == query.PaymentStatus.Value);
+                }
+
+                
+                if (!string.IsNullOrWhiteSpace(query.CargoOwnerName))
+                {
+                    var ownerName = query.CargoOwnerName.ToLower();
+                    ordersQuery = ordersQuery.Where(o => o.CargoOwner.Name.ToLower().Contains(ownerName));
+                }
+                
+                // Date filters
+                if (query.CreatedFrom.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.CreatedAt >= query.CreatedFrom.Value);
+                }
+
+                if (query.CreatedTo.HasValue)
+                {
+                    var endDate = query.CreatedTo.Value.Date.AddDays(1).AddTicks(-1);
+                    ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate);
+                }
+                
+                if (query.PaymentMethod.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.PaymentMethod == query.PaymentMethod.Value);
+                }
+
+                if (query.IsFlagged.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.IsFlagged == query.IsFlagged.Value);
+                }
+
+                if (query.IsPaid.HasValue)
+                {
+                    ordersQuery = ordersQuery.Where(o => o.IsPaid == query.IsPaid.Value);
+                }
+
+                if (query.HasAcceptedBid.HasValue)
+                {
+                    if (query.HasAcceptedBid.Value)
+                    {
+                        ordersQuery = ordersQuery.Where(o => o.AcceptedBidId != null);
+                    }
+                    else
+                    {
+                        ordersQuery = ordersQuery.Where(o => o.AcceptedBidId == null);
+                    }
+                }
+
+                // Apply sorting
+                ordersQuery = query.SortBy?.ToLower() switch
+                {
+                    "totalamount" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.TotalAmount)
+                        : ordersQuery.OrderBy(o => o.TotalAmount),
+                    "status" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.Status)
+                        : ordersQuery.OrderBy(o => o.Status),
+                    "paymentstatus" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.PaymentStatus)
+                        : ordersQuery.OrderBy(o => o.PaymentStatus),
+                    "pickupdatetime" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.PickupDateTime)
+                        : ordersQuery.OrderBy(o => o.PickupDateTime),
+                    "deliverydatetime" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.DeliveryDateTime)
+                        : ordersQuery.OrderBy(o => o.DeliveryDateTime),
+                    "cargoownername" => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.CargoOwner.Name)
+                        : ordersQuery.OrderBy(o => o.CargoOwner.Name),
+                    _ => query.SortDescending
+                        ? ordersQuery.OrderByDescending(o => o.CreatedAt)
+                        : ordersQuery.OrderBy(o => o.CreatedAt)
+                };
+
+                // Get total count
+                var totalCount = await ordersQuery.CountAsync();
+
+                // Apply pagination
+                var orders = await ordersQuery
+                    .Skip((query.PageNumber - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                var orderResponses = new List<AdminCargoOrderResponseModel>();
+
+                foreach (var order in orders)
+                {
+                    // Initialize collections to prevent null reference
+                    order.Items ??= new List<CargoOrderItem>();
+                    order.Bids ??= new List<Bid>();
+
+                    var orderResponse = new AdminCargoOrderResponseModel
+                    {
+                        Id = order.Id,
+                        CargoOwnerId = order.CargoOwnerId,
+                        CargoOwnerName = order.CargoOwner?.Name ?? "N/A",
+                        CargoOwnerEmail = order.CargoOwner?.EmailAddress ?? "N/A",
+                        CargoOwnerCompany = order.CargoOwner?.CompanyName ?? "N/A",
+                        PickupLocation = order.PickupLocation,
+                        DeliveryLocation = order.DeliveryLocation,
+                        Status = order.Status,
+                        StatusDisplay = order.Status.ToString(),
+                        PaymentStatus = order.PaymentStatus,
+                        PaymentStatusDisplay = order.PaymentStatus.ToString(),
+                        ItemCount = order.Items?.Count ?? 0,
+                        BidCount = order.Bids?.Count ?? 0,
+                        HasAcceptedBid = !string.IsNullOrEmpty(order.AcceptedBidId),
+                        AcceptedBidId = order.AcceptedBidId,
+                        AcceptedBidAmount = order.AcceptedBid?.Amount,
+                        AcceptedDriverName = order.AcceptedBid?.Truck?.Driver?.Name,
+                        AcceptedTruckPlateNumber = order.AcceptedBid?.Truck?.PlateNumber,
+                        TotalAmount = order.TotalAmount,
+                        SystemFee = order.SystemFee,
+                        Tax = order.Tax,
+                        Consignment = order.Consignment,
+                        PickupDateTime = order.PickupDateTime,
+                        DeliveryDateTime = order.DeliveryDateTime,
+                        InvoiceNumber = order.InvoiceNumber,
+                        PaymentDueDate = order.PaymentDueDate,
+                        IsPaid = order.IsPaid,
+                        PaymentMethod = order.PaymentMethod,
+                        WalletPaymentAmount = order.WalletPaymentAmount,
+                        StripePaymentAmount = order.StripePaymentAmount,
+                        IsFlagged = order.IsFlagged,
+                        FlagReason = order.FlagReason,
+                        FlaggedAt = order.FlaggedAt,
+                        FlaggedBy = order.FlaggedBy,
+                        CreatedAt = order.CreatedAt,
+                        UpdatedAt = order.UpdatedAt
+                    };
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                // Create paged response
+                var pagedResponse = new PagedResponse<AdminCargoOrderResponseModel>
+                {
+                    Data = orderResponses,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize)
+                };
+
+                return ApiResponseModel<PagedResponse<AdminCargoOrderResponseModel>>.Success(
+                    $"Cargo orders retrieved successfully. Found {totalCount} orders.",
+                    pagedResponse,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<PagedResponse<AdminCargoOrderResponseModel>>.Fail(
+                    $"Error retrieving cargo orders: {ex.Message}",
+                    500);
+            }
+        }
+
+        /// <summary>
+        /// Get detailed cargo order information for admin
+        /// </summary>
+        public async Task<ApiResponseModel<AdminCargoOrderDetailsResponseModel>> GetCargoOrderDetailsForAdminAsync(string orderId)
+        {
+            try
+            {
+                var order = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.CargoOwner)
+                        .ThenInclude(co => co.User)
+                    .Include(o => o.Items)
+                    .Include(o => o.Bids)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                    .Include(o => o.Bids)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.TruckOwner)
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<AdminCargoOrderDetailsResponseModel>.Fail(
+                        "Cargo order not found",
+                        404);
+                }
+
+                // Initialize collections
+                order.Items ??= new List<CargoOrderItem>();
+                order.Bids ??= new List<Bid>();
+                order.Documents ??= new List<string>();
+                order.DeliveryDocuments ??= new List<string>();
+
+                // Get cargo owner summary with additional stats
+                var cargoOwnerStats = await GetCargoOwnerStats(order.CargoOwnerId);
+
+                var response = new AdminCargoOrderDetailsResponseModel
+                {
+                    Id = order.Id,
+                    CargoOwnerId = order.CargoOwnerId,
+                    CargoOwnerName = order.CargoOwner?.Name ?? "N/A",
+                    CargoOwnerEmail = order.CargoOwner?.EmailAddress ?? "N/A",
+                    CargoOwnerCompany = order.CargoOwner?.CompanyName ?? "N/A",
+                    PickupLocation = order.PickupLocation,
+                    PickupLocationLat = order.PickupLocationLat,
+                    PickupLocationLong = order.PickupLocationLong,
+                    DeliveryLocation = order.DeliveryLocation,
+                    DeliveryLocationLat = order.DeliveryLocationLat,
+                    DeliveryLocationLong = order.DeliveryLocationLong,
+                    Status = order.Status,
+                    StatusDisplay = order.Status.ToString(),
+                    PaymentStatus = order.PaymentStatus,
+                    PaymentStatusDisplay = order.PaymentStatus.ToString(),
+                    ItemCount = order.Items.Count,
+                    BidCount = order.Bids.Count,
+                    HasAcceptedBid = !string.IsNullOrEmpty(order.AcceptedBidId),
+                    AcceptedBidId = order.AcceptedBidId,
+                    AcceptedBidAmount = order.AcceptedBid?.Amount,
+                    AcceptedDriverName = order.AcceptedBid?.Truck?.Driver?.Name,
+                    AcceptedTruckPlateNumber = order.AcceptedBid?.Truck?.PlateNumber,
+                    TotalAmount = order.TotalAmount,
+                    SystemFee = order.SystemFee,
+                    Tax = order.Tax,
+                    Consignment = order.Consignment,
+                    PickupDateTime = order.PickupDateTime,
+                    ActualPickupDateTime = order.ActualPickupDateTime,
+                    DeliveryDateTime = order.DeliveryDateTime,
+                    InvoiceNumber = order.InvoiceNumber,
+                    PaymentDueDate = order.PaymentDueDate,
+                    PaymentIntentId = order.PaymentIntentId,
+                    PaymentDate = order.PaymentDate,
+                    IsPaid = order.IsPaid,
+                    PaymentMethod = order.PaymentMethod,
+                    WalletPaymentAmount = order.WalletPaymentAmount,
+                    StripePaymentAmount = order.StripePaymentAmount,
+                    DriverEarnings = order.DriverEarnings,
+                    IsFlagged = order.IsFlagged,
+                    FlagReason = order.FlagReason,
+                    FlaggedAt = order.FlaggedAt,
+                    FlaggedBy = order.FlaggedBy,
+                    CreatedAt = order.CreatedAt,
+                    UpdatedAt = order.UpdatedAt,
+                    Documents = order.Documents,
+                    DeliveryDocuments = order.DeliveryDocuments,
+
+                    // Related entities
+                    CargoOwner = new AdminCargoOwnerSummaryModel
+                    {
+                        Id = order.CargoOwner.Id,
+                        Name = order.CargoOwner.Name,
+                        Email = order.CargoOwner.EmailAddress,
+                        Phone = order.CargoOwner.Phone,
+                        CompanyName = order.CargoOwner.CompanyName,
+                        Address = order.CargoOwner.Address,
+                        OwnerType = order.CargoOwner.OwnerType,
+                        IsActive = order.CargoOwner.User?.IsActive ?? false,
+                        CreatedAt = order.CargoOwner.CreatedAt,
+                        TotalOrders = cargoOwnerStats.TotalOrders,
+                        CompletedOrders = cargoOwnerStats.CompletedOrders,
+                        TotalSpent = cargoOwnerStats.TotalSpent
+                    },
+
+                    Items = order.Items.Select(item => new CargoOrderItemDetailsModel
+                    {
+                        Id = item.Id,
+                        Description = item.Description,
+                        Weight = item.Weight,
+                        Length = item.Length,
+                        Width = item.Width,
+                        Height = item.Height,
+                        IsFragile = item.IsFragile,
+                        SpecialHandlingInstructions = item.SpecialHandlingInstructions,
+                        Type = item.Type,
+                        Quantity = item.Quantity,
+                        ItemImages = item.ItemImages
+                    }).ToList(),
+
+                    Bids = order.Bids.Select(bid => new AdminBidDetailsModel
+                    {
+                        Id = bid.Id,
+                        TruckId = bid.TruckId,
+                        TruckPlateNumber = bid.Truck?.PlateNumber ?? "N/A",
+                        TruckType = bid.Truck?.TruckType ?? "N/A",
+                        DriverId = bid.Truck?.DriverId ?? "N/A",
+                        DriverName = bid.Truck?.Driver?.Name ?? "N/A",
+                        DriverPhone = bid.Truck?.Driver?.Phone ?? "N/A",
+                        TruckOwnerId = bid.Truck?.TruckOwnerId,
+                        TruckOwnerName = bid.Truck?.TruckOwner?.Name,
+                        Amount = bid.Amount,
+                        Status = bid.Status,
+                        CreatedAt = bid.CreatedAt,
+                        UpdatedAt = bid.UpdatedAt,
+                        IsAccepted = bid.Id == order.AcceptedBidId
+                    }).ToList(),
+
+                    AcceptedBid = order.AcceptedBid != null ? new AdminBidDetailsModel
+                    {
+                        Id = order.AcceptedBid.Id,
+                        TruckId = order.AcceptedBid.TruckId,
+                        TruckPlateNumber = order.AcceptedBid.Truck?.PlateNumber ?? "N/A",
+                        TruckType = order.AcceptedBid.Truck?.TruckType ?? "N/A",
+                        DriverId = order.AcceptedBid.Truck?.DriverId ?? "N/A",
+                        DriverName = order.AcceptedBid.Truck?.Driver?.Name ?? "N/A",
+                        DriverPhone = order.AcceptedBid.Truck?.Driver?.Phone ?? "N/A",
+                        TruckOwnerId = order.AcceptedBid.Truck?.TruckOwnerId,
+                        TruckOwnerName = order.AcceptedBid.Truck?.TruckOwner?.Name,
+                        Amount = order.AcceptedBid.Amount,
+                        Status = order.AcceptedBid.Status,
+                        CreatedAt = order.AcceptedBid.CreatedAt,
+                        UpdatedAt = order.AcceptedBid.UpdatedAt,
+                        IsAccepted = true
+                    } : null,
+
+                    // Audit trail
+                    AuditTrail = new AdminCargoOrderAuditTrail
+                    {
+                        CreatedAt = order.CreatedAt,
+                        LastStatusChange = order.UpdatedAt,
+                        LastPaymentUpdate = order.PaymentDate,
+                        FlaggedAt = order.FlaggedAt,
+                        FlaggedBy = order.FlaggedBy,
+                        StatusHistory = new List<CargoOrderAuditEntry>() // This would need to be implemented with audit table
+                    }
+                };
+
+                return ApiResponseModel<AdminCargoOrderDetailsResponseModel>.Success(
+                    "Cargo order details retrieved successfully",
+                    response,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<AdminCargoOrderDetailsResponseModel>.Fail(
+                    $"Error retrieving cargo order details: {ex.Message}",
+                    500);
+            }
+        }
+
+        /// <summary>
+        /// Get cargo order statistics for admin dashboard
+        /// </summary>
+        public async Task<ApiResponseModel<AdminCargoOrderStatisticsResponseModel>> GetCargoOrderStatisticsForAdminAsync(
+            DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                var currentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                var lastMonth = currentMonth.AddMonths(-1);
+                var nextMonth = currentMonth.AddMonths(1);
+
+                var baseQuery = _dbContext.Set<CargoOrders>().AsQueryable();
+
+                // Apply date filter if provided
+                if (fromDate.HasValue)
+                {
+                    baseQuery = baseQuery.Where(o => o.CreatedAt >= fromDate.Value);
+                }
+                if (toDate.HasValue)
+                {
+                    var endDate = toDate.Value.Date.AddDays(1).AddTicks(-1);
+                    baseQuery = baseQuery.Where(o => o.CreatedAt <= endDate);
+                }
+
+                var totalOrders = await baseQuery.CountAsync();
+                var totalOrdersThisMonth = await baseQuery.CountAsync(o => o.CreatedAt >= currentMonth && o.CreatedAt < nextMonth);
+                var totalOrdersLastMonth = await baseQuery.CountAsync(o => o.CreatedAt >= lastMonth && o.CreatedAt < currentMonth);
+
+                var totalRevenue = await baseQuery.SumAsync(o => o.TotalAmount);
+                var totalRevenueThisMonth = await baseQuery
+                    .Where(o => o.CreatedAt >= currentMonth && o.CreatedAt < nextMonth)
+                    .SumAsync(o => o.TotalAmount);
+                var totalRevenueLastMonth = await baseQuery
+                    .Where(o => o.CreatedAt >= lastMonth && o.CreatedAt < currentMonth)
+                    .SumAsync(o => o.TotalAmount);
+
+                var totalSystemFees = await baseQuery.SumAsync(o => o.SystemFee);
+                var totalTaxes = await baseQuery.SumAsync(o => o.Tax);
+
+                var activeStatuses = new[]
+                {
+                    CargoOrderStatus.OpenForBidding,
+                    CargoOrderStatus.BiddingInProgress,
+                    CargoOrderStatus.DriverSelected,
+                    CargoOrderStatus.DriverAcknowledged,
+                    CargoOrderStatus.ReadyForPickup,
+                    CargoOrderStatus.InTransit
+                };
+
+                var activeOrders = await baseQuery.CountAsync(o => activeStatuses.Contains(o.Status));
+                var completedOrders = await baseQuery.CountAsync(o => o.Status == CargoOrderStatus.Completed);
+                var cancelledOrders = await baseQuery.CountAsync(o => o.Status == CargoOrderStatus.Cancelled);
+                var flaggedOrders = await baseQuery.CountAsync(o => o.IsFlagged);
+                var overduePayments = await baseQuery.CountAsync(o => 
+                    o.PaymentDueDate.HasValue && 
+                    o.PaymentDueDate < DateTime.UtcNow && 
+                    !o.IsPaid);
+
+                var averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+                // Status breakdown
+                var statusBreakdown = await baseQuery
+                    .GroupBy(o => o.Status)
+                    .Select(g => new CargoOrderStatusCount
+                    {
+                        Status = g.Key,
+                        StatusDisplay = g.Key.ToString(),
+                        Count = g.Count(),
+                        Percentage = totalOrders > 0 ? Math.Round((decimal)g.Count() / totalOrders * 100, 2) : 0
+                    })
+                    .ToListAsync();
+
+                // Payment status breakdown
+                var paymentStatusBreakdown = await baseQuery
+                    .GroupBy(o => o.PaymentStatus)
+                    .Select(g => new PaymentStatusCount
+                    {
+                        Status = g.Key,
+                        StatusDisplay = g.Key.ToString(),
+                        Count = g.Count(),
+                        Percentage = totalOrders > 0 ? Math.Round((decimal)g.Count() / totalOrders * 100, 2) : 0
+                    })
+                    .ToListAsync();
+
+                // Monthly trends (last 12 months)
+                var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-12);
+                var monthlyTrends = await baseQuery
+                    .Where(o => o.CreatedAt >= twelveMonthsAgo)
+                    .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
+                    .Select(g => new MonthlyOrderTrend
+                    {
+                        Year = g.Key.Year,
+                        Month = g.Key.Month,
+                        MonthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(g.Key.Month),
+                        OrderCount = g.Count(),
+                        Revenue = g.Sum(o => o.TotalAmount)
+                    })
+                    .OrderBy(x => x.Year)
+                    .ThenBy(x => x.Month)
+                    .ToListAsync();
+
+                var statistics = new AdminCargoOrderStatisticsResponseModel
+                {
+                    TotalOrders = totalOrders,
+                    TotalOrdersThisMonth = totalOrdersThisMonth,
+                    TotalOrdersLastMonth = totalOrdersLastMonth,
+                    TotalRevenue = totalRevenue,
+                    TotalRevenueThisMonth = totalRevenueThisMonth,
+                    TotalRevenueLastMonth = totalRevenueLastMonth,
+                    TotalSystemFees = totalSystemFees,
+                    TotalTaxes = totalTaxes,
+                    ActiveOrders = activeOrders,
+                    CompletedOrders = completedOrders,
+                    CancelledOrders = cancelledOrders,
+                    FlaggedOrders = flaggedOrders,
+                    OverduePayments = overduePayments,
+                    AverageOrderValue = averageOrderValue,
+                    StatusBreakdown = statusBreakdown,
+                    PaymentStatusBreakdown = paymentStatusBreakdown,
+                    MonthlyTrends = monthlyTrends,
+                    LastUpdated = DateTime.UtcNow
+                };
+
+                return ApiResponseModel<AdminCargoOrderStatisticsResponseModel>.Success(
+                    "Statistics retrieved successfully",
+                    statistics,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<AdminCargoOrderStatisticsResponseModel>.Fail(
+                    $"Error retrieving statistics: {ex.Message}",
+                    500);
+            }
+        }
+
+        /// <summary>
+        /// Flag or unflag a cargo order
+        /// </summary>
+        public async Task<ApiResponseModel<bool>> FlagCargoOrderAsync(string orderId, bool isFlagged, string? flagReason, string adminUserId)
+        {
+            try
+            {
+                var order = await _dbContext.Set<CargoOrders>()
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Cargo order not found", 404);
+                }
+
+                order.IsFlagged = isFlagged;
+                order.FlagReason = isFlagged ? flagReason : null;
+                order.FlaggedAt = isFlagged ? DateTime.UtcNow : null;
+                order.FlaggedBy = isFlagged ? adminUserId : null;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                await _dbContext.SaveChangesAsync();
+
+                var action = isFlagged ? "flagged" : "unflagged";
+                return ApiResponseModel<bool>.Success(
+                    $"Cargo order {action} successfully",
+                    true,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail(
+                    $"Error updating flag status: {ex.Message}",
+                    500);
+            }
+        }
+
+        /// <summary>
+        /// Update cargo order status by admin
+        /// </summary>
+        public async Task<ApiResponseModel<bool>> UpdateCargoOrderStatusByAdminAsync(
+            string orderId, CargoOrderStatus status, string? reason, string adminUserId)
+        {
+            try
+            {
+                var order = await _dbContext.Set<CargoOrders>()
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Cargo order not found", 404);
+                }
+
+                var oldStatus = order.Status;
+                order.Status = status;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                // Log status change (you might want to implement an audit table)
+                // await LogStatusChange(orderId, oldStatus, status, adminUserId, reason);
+
+                await _dbContext.SaveChangesAsync();
+
+                return ApiResponseModel<bool>.Success(
+                    $"Cargo order status updated from {oldStatus} to {status}",
+                    true,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail(
+                    $"Error updating status: {ex.Message}",
+                    500);
+            }
+        }
+        /// <summary>
+        /// Get cargo orders summary by status
+        /// </summary>
+        public async Task<ApiResponseModel<List<CargoOrderStatusSummaryModel>>> GetCargoOrdersSummaryAsync()
+        {
+            try
+            {
+                var summary = await _dbContext.Set<CargoOrders>()
+                    .GroupBy(o => o.Status)
+                    .Select(g => new CargoOrderStatusSummaryModel
+                    {
+                        Status = g.Key,
+                        StatusDisplay = g.Key.ToString(),
+                        Count = g.Count(),
+                        TotalValue = g.Sum(o => o.TotalAmount)
+                    })
+                    .OrderBy(s => s.Status)
+                    .ToListAsync();
+
+                return ApiResponseModel<List<CargoOrderStatusSummaryModel>>.Success(
+                    "Summary retrieved successfully",
+                    summary,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<List<CargoOrderStatusSummaryModel>>.Fail(
+                    $"Error retrieving summary: {ex.Message}",
+                    500);
+            }
+        }
+
+        /// <summary>
+        /// Helper method to get cargo owner statistics
+        /// </summary>
+        private async Task<(int TotalOrders, int CompletedOrders, decimal TotalSpent)> GetCargoOwnerStats(string cargoOwnerId)
+        {
+            var orders = await _dbContext.Set<CargoOrders>()
+                .Where(o => o.CargoOwnerId == cargoOwnerId)
+                .ToListAsync();
+
+            var totalOrders = orders.Count;
+            var completedOrders = orders.Count(o => o.Status == CargoOrderStatus.Completed);
+            var totalSpent = orders.Where(o => o.IsPaid).Sum(o => o.TotalAmount);
+
+            return (totalOrders, completedOrders, totalSpent);
+        }
+
+        #endregion
     }
 
 }

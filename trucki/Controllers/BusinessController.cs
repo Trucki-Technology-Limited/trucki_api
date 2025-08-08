@@ -28,8 +28,30 @@ public class BusinessController : ControllerBase
 
     [HttpGet("GetAllBusiness")]
     [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<AllBusinessResponseModel>>> GetAllBusiness()
+    public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>>> GetAllBusiness(
+      [FromQuery] int pageNumber = 1,
+      [FromQuery] int pageSize = 10)
     {
+        // Validate pagination parameters
+        if (pageNumber < 1)
+        {
+            return BadRequest(new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Page number must be greater than 0",
+                StatusCode = 400
+            });
+        }
+
+        if (pageSize < 1 || pageSize > 100)
+        {
+            return BadRequest(new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Page size must be between 1 and 100",
+                StatusCode = 400
+            });
+        }
 
         var roles = User.Claims
                       .Where(c => c.Type == ClaimTypes.Role)
@@ -40,7 +62,8 @@ public class BusinessController : ControllerBase
         {
             return Unauthorized();
         }
-        var business = await _businessService.GetAllBusiness(roles, userId);
+
+        var business = await _businessService.GetAllBusiness(roles, userId, pageNumber, pageSize);
         return StatusCode(business.StatusCode, business);
     }
 

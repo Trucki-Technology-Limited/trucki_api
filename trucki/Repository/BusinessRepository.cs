@@ -50,72 +50,95 @@ public class BusinessRepository : IBusinessRepository
         };
     }
 
-    public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId)
+    public async Task<ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId, int pageNumber, int pageSize)
     {
-        // Determine if the user has high-level roles
-        bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
-        bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
-
-        List<Business> businesses;
-
-        if (isManager)
+        try
         {
-            // Map userId to ManagerId
-            var manager = await _context.Managers
-                .FirstOrDefaultAsync(m => m.UserId == userId && m.IsActive);
+            // Determine if the user has high-level roles
+            bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+            bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
 
-            if (manager == null)
+            IQueryable<Business> businessesQuery;
+
+            if (isManager)
             {
-                return new ApiResponseModel<List<AllBusinessResponseModel>>
+                // Map userId to ManagerId
+                var manager = await _context.Managers
+                    .FirstOrDefaultAsync(m => m.UserId == userId && m.IsActive);
+
+                if (manager == null)
                 {
-                    Data = null,
-                    IsSuccessful = false,
-                    Message = "Manager not found for the given user.",
-                    StatusCode = 404
-                };
+                    return new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+                    {
+                        Data = null,
+                        IsSuccessful = false,
+                        Message = "Manager not found for the given user.",
+                        StatusCode = 404
+                    };
+                }
+
+                // Managers can only access businesses they manage
+                businessesQuery = _context.Businesses
+                    .Where(b => b.managerId == manager.Id);
             }
-            // Managers can access businesses they manage
-            businesses = await _context.Businesses
-                .Where(b => b.managerId == manager.Id)
-                .ToListAsync();
-        }
-        else if (isFieldOfficer)
-        {
-            // Map userId to ManagerId
-            var officer = await _context.Officers
-                .FirstOrDefaultAsync(m => m.UserId == userId);
-            if (officer == null)
+            else if (isFieldOfficer)
             {
-                return new ApiResponseModel<List<AllBusinessResponseModel>>
+                // Map userId to OfficerId
+                var officer = await _context.Officers
+                    .FirstOrDefaultAsync(o => o.UserId == userId && o.IsActive);
+
+                if (officer == null)
                 {
-                    Data = null,
-                    IsSuccessful = false,
-                    Message = "officer not found for the given user.",
-                    StatusCode = 404
-                };
+                    return new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+                    {
+                        Data = null,
+                        IsSuccessful = false,
+                        Message = "Field officer not found for the given user.",
+                        StatusCode = 404
+                    };
+                }
+
+                // Field officers can only access the single business they are assigned to
+                businessesQuery = _context.Businesses
+                    .Where(b => b.Id == officer.CompanyId);
             }
-            // Field officers can only access the single business they are assigned to
-            businesses = await _context.Businesses
-                .Where(b => b.Id == officer.CompanyId)
-                .ToListAsync();
-        }
-        else
-        {
-            // Other users can access all active businesses
-            businesses = await _context.Businesses
-                .ToListAsync();
-        }
+            else
+            {
+                // Other users can access all businesses
+                businessesQuery = _context.Businesses;
+            }
 
-        // Map the business entities to the response model
-        var businessResponseModels = _mapper.Map<List<AllBusinessResponseModel>>(businesses);
+            // Apply pagination using the existing PaginatedListDto helper
+            var paginatedBusinesses = await PagedList<Business>.PaginatesAsync(businessesQuery, pageNumber, pageSize);
 
-        return new ApiResponseModel<List<AllBusinessResponseModel>>
+            // Map the business entities to the response model
+            var businessResponseModels = _mapper.Map<List<AllBusinessResponseModel>>(paginatedBusinesses.Data);
+
+            // Create the paginated response with mapped data
+            var result = new PaginatedListDto<AllBusinessResponseModel>
+            {
+                MetaData = paginatedBusinesses.MetaData,
+                Data = businessResponseModels
+            };
+
+            return new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+            {
+                IsSuccessful = true,
+                Message = "Businesses retrieved successfully",
+                StatusCode = 200,
+                Data = result
+            };
+        }
+        catch (Exception ex)
         {
-            IsSuccessful = true,
-            Message = "Businesses retrieved successfully",
-            StatusCode = 200,
-            Data = businessResponseModels
-        };
+            return new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = $"Error retrieving businesses: {ex.Message}",
+                StatusCode = 500,
+                Data = null
+            };
+        }
     }
 
 
