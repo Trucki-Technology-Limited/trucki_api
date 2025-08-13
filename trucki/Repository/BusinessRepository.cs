@@ -196,36 +196,85 @@ public class BusinessRepository : IBusinessRepository
         };
     }
 
-    public async Task<ApiResponseModel<BusinessResponseModel>> GetBusinessById(string id)
+   public async Task<ApiResponseModel<BusinessResponseModel>> GetBusinessById(string id)
+{
+    // Retrieve the business by ID including its routes
+    var business = await _context.Businesses
+        .Include(b => b.Routes)
+        .FirstOrDefaultAsync(b => b.Id == id);
+
+    // Check if business with the provided ID exists
+    if (business == null)
     {
-        // Retrieve the business by ID including its routes
-        var business = await _context.Businesses
-            .Include(b => b.Routes)
-            .FirstOrDefaultAsync(b => b.Id == id);
-
-        // Check if business with the provided ID exists
-        if (business == null)
-        {
-            return new ApiResponseModel<BusinessResponseModel>
-            {
-                IsSuccessful = false,
-                Message = "Business not found",
-                StatusCode = 404,
-                Data = null
-            };
-        }
-
-        // Map the business entity to a response model
-        var businessResponseModel = _mapper.Map<BusinessResponseModel>(business);
-
         return new ApiResponseModel<BusinessResponseModel>
         {
-            IsSuccessful = true,
-            Message = "Business retrieved successfully",
-            StatusCode = 200,
-            Data = businessResponseModel
+            IsSuccessful = false,
+            Message = "Business not found",
+            StatusCode = 404,
+            Data = null
         };
     }
+
+    // Calculate business metrics
+    var businessMetrics = await CalculateBusinessMetrics(id);
+
+    // Map the business entity to a response model
+    var businessResponseModel = _mapper.Map<BusinessResponseModel>(business);
+    
+    // Add the calculated metrics
+    businessResponseModel.Metrics = businessMetrics;
+
+    return new ApiResponseModel<BusinessResponseModel>
+    {
+        IsSuccessful = true,
+        Message = "Business retrieved successfully",
+        StatusCode = 200,
+        Data = businessResponseModel
+    };
+}
+
+private async Task<BusinessMetrics> CalculateBusinessMetrics(string businessId)
+{
+    // Get all orders for this business
+    var orders = await _context.Orders
+        .Include(o => o.Routes)
+        .Where(o => o.BusinessId == businessId)
+        .ToListAsync();
+
+    // Get all transactions for this business
+    var transactions = await _context.Transactions
+        .Where(t => t.BusinessId == businessId)
+        .ToListAsync();
+
+    // Get customer count for this business
+    var customerCount = await _context.Customers
+        .Where(c => c.BusinessId == businessId)
+        .CountAsync();
+
+    // Calculate metrics
+    var totalOrders = orders.Count;
+    var totalCustomers = customerCount;
+    
+    // Calculate GTV (Gross Transaction Value) from routes
+    var totalGTV = orders
+        .Where(o => o.Routes != null)
+        .Sum(o => (decimal)(o.Routes.Gtv));
+
+    // Calculate Total Payout (sum of all transaction amounts)
+    var totalPayout = transactions.Sum(t => t.Amount);
+
+    // Calculate Total Revenue (GTV - Payout, representing trucki's commission/revenue)
+    var totalRevenue = totalGTV - totalPayout;
+
+    return new BusinessMetrics
+    {
+        TotalOrders = totalOrders,
+        TotalCustomers = totalCustomers,
+        TotalGTV = totalGTV,
+        TotalPayout = totalPayout,
+        TotalRevenue = totalRevenue
+    };
+}
 
     public async Task<ApiResponseModel<bool>> EditBusiness(EditBusinessRequestModel model)
     {

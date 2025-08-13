@@ -11,6 +11,17 @@ public class BusinessResponseModel
     public bool isActive { get; set; }
     public List<RouteResponseModel>? Routes { get; set; }
     public DateTime CreatedAt { get; set; }
-
     public DateTime UpdatedAt { get; set; }
+    
+    // New Business Metrics
+    public BusinessMetrics Metrics { get; set; }
+}
+
+public class BusinessMetrics
+{
+    public int TotalOrders { get; set; }
+    public int TotalCustomers { get; set; }
+    public decimal TotalGTV { get; set; }
+    public decimal TotalPayout { get; set; }
+    public decimal TotalRevenue { get; set; }
 }
