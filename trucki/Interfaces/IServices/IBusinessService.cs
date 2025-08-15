@@ -6,7 +6,7 @@ namespace trucki.Interfaces.IServices;
 public interface IBusinessService
 {
     Task<ApiResponseModel<bool>> CreateNewBusiness(CreateNewBusinessRequestModel request);
-    Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId);
+    Task<ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId, int pageNumber, int pageSize);
     Task<ApiResponseModel<bool>> AddRouteToBusiness(AddRouteToBusinessRequestModel model);
     Task<ApiResponseModel<BusinessResponseModel>> GetBusinessById(string id);
     Task<ApiResponseModel<bool>> EditBusiness(EditBusinessRequestModel model);

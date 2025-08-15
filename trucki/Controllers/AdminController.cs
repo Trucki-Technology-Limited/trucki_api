@@ -13,12 +13,14 @@ namespace trucki.Controllers
     {
         private readonly IAdminService _adminService;
         private readonly ICargoOwnerService _cargoOwnerService;
+        private readonly ICargoOrderService _cargoOrderService;
 
 
-        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService)
+        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService)
         {
             _adminService = adminService;
             _cargoOwnerService = cargoOwnerService;
+            _cargoOrderService = cargoOrderService;
         }
 
         [HttpGet("GetDashboardData")]
@@ -90,6 +92,134 @@ namespace trucki.Controllers
             }
 
             var response = await _cargoOwnerService.GetCargoOwnerDetailsForAdmin(cargoOwnerId);
+            return StatusCode(response.StatusCode, response);
+        }
+         /// <summary>
+        /// Get all cargo orders with advanced filtering, pagination, and search for admin
+        /// </summary>
+        [HttpGet("cargo-orders")]
+        [Authorize(Roles = "admin,manager,finance")]
+        public async Task<ActionResult<ApiResponseModel<PagedResponse<AdminCargoOrderResponseModel>>>> GetCargoOrders(
+            [FromQuery] AdminGetCargoOrdersQueryDto query)
+        {
+            // Validate query parameters
+            query.ValidateAndNormalize();
+
+            var response = await _cargoOrderService.GetCargoOrdersForAdminAsync(query);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Get cargo order details by ID for admin
+        /// </summary>
+        [HttpGet("cargo-order")]
+        [Authorize(Roles = "admin,manager,finance")]
+        public async Task<ActionResult<ApiResponseModel<AdminCargoOrderDetailsResponseModel>>> GetCargoOrderDetails(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return BadRequest(ApiResponseModel<AdminCargoOrderDetailsResponseModel>.Fail(
+                    "Order ID is required",
+                    400));
+            }
+
+            var response = await _cargoOrderService.GetCargoOrderDetailsForAdminAsync(orderId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Get cargo orders statistics for admin dashboard
+        /// </summary>
+        [HttpGet("cargo-orders/statistics")]
+        [Authorize(Roles = "admin,manager,finance")]
+        public async Task<ActionResult<ApiResponseModel<AdminCargoOrderStatisticsResponseModel>>> GetCargoOrderStatistics(
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null)
+        {
+            var response = await _cargoOrderService.GetCargoOrderStatisticsForAdminAsync(fromDate, toDate);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Flag or unflag a cargo order
+        /// </summary>
+        [HttpPost("cargo-orders/flag")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> FlagCargoOrder(
+            string orderId,
+            [FromBody] FlagCargoOrderRequestModel model)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Order ID is required",
+                    400));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Invalid request data",
+                    400));
+            }
+
+            // Get admin user ID from claims
+            var adminUserId = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(adminUserId))
+            {
+                return Unauthorized(ApiResponseModel<bool>.Fail(
+                    "User not authenticated",
+                    401));
+            }
+
+            var response = await _cargoOrderService.FlagCargoOrderAsync(orderId, model.IsFlagged, model.FlagReason, adminUserId);
+            return StatusCode(response.StatusCode, response);
+        }
+        
+        /// <summary>
+        /// Get cargo orders summary by status
+        /// </summary>
+        [HttpGet("cargo-orders/summary")]
+        [Authorize(Roles = "admin,manager,finance")]
+        public async Task<ActionResult<ApiResponseModel<List<CargoOrderStatusSummaryModel>>>> GetCargoOrdersSummary()
+        {
+            var response = await _cargoOrderService.GetCargoOrdersSummaryAsync();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Update cargo order status (admin override)
+        /// </summary>
+        [HttpPatch("cargo-orders/status")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> UpdateCargoOrderStatus(
+            string orderId,
+            [FromBody] UpdateCargoOrderStatusRequestModel model)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Order ID is required",
+                    400));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Invalid request data",
+                    400));
+            }
+
+            // Get admin user ID from claims
+            var adminUserId = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(adminUserId))
+            {
+                return Unauthorized(ApiResponseModel<bool>.Fail(
+                    "User not authenticated",
+                    401));
+            }
+
+            var response = await _cargoOrderService.UpdateCargoOrderStatusByAdminAsync(orderId, model.Status, model.Reason, adminUserId);
             return StatusCode(response.StatusCode, response);
         }
     }

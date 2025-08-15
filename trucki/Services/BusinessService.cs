@@ -23,21 +23,27 @@ public class BusinessService : IBusinessService
         }
         return new ApiResponseModel<bool> { IsSuccessful = createBusiness.IsSuccessful, Message = createBusiness.Message, StatusCode = createBusiness.StatusCode };
     }
-    public async Task<ApiResponseModel<List<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId)
+   public async Task<ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>> GetAllBusiness(List<string> userRoles, string userId, int pageNumber, int pageSize)
+{
+    var getBusinesses = await _businessRepository.GetAllBusiness(userRoles, userId, pageNumber, pageSize);
+    if (getBusinesses.IsSuccessful)
     {
-        var getBusinesses = await _businessRepository.GetAllBusiness(userRoles, userId);
-        if (getBusinesses.IsSuccessful)
+        return new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
         {
-            return new ApiResponseModel<List<AllBusinessResponseModel>>
-            {
-                IsSuccessful = getBusinesses.IsSuccessful,
-                Message = getBusinesses.Message,
-                StatusCode = getBusinesses.StatusCode,
-                Data = getBusinesses.Data
-            };
-        }
-        return new ApiResponseModel<List<AllBusinessResponseModel>> { IsSuccessful = getBusinesses.IsSuccessful, Message = getBusinesses.Message, StatusCode = getBusinesses.StatusCode };
+            IsSuccessful = getBusinesses.IsSuccessful,
+            Message = getBusinesses.Message,
+            StatusCode = getBusinesses.StatusCode,
+            Data = getBusinesses.Data
+        };
     }
+    return new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
+    {
+        IsSuccessful = getBusinesses.IsSuccessful,
+        Message = getBusinesses.Message,
+        StatusCode = getBusinesses.StatusCode,
+        Data = null
+    };
+}
     public async Task<ApiResponseModel<bool>> AddRouteToBusiness(AddRouteToBusinessRequestModel model)
     {
         var addRoute = await _businessRepository.AddRouteToBusiness(model);

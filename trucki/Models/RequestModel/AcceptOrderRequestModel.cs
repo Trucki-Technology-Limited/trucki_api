@@ -25,3 +25,33 @@ public class AssignOrderToTruckAsTransporter
         public string? Quantity { get; set; }
         public DateTime? CreatedAt { get; set; }
     }
+    
+ public class GetAllOrdersRequestModel
+ {
+     public DateTime? StartDate { get; set; }
+     public DateTime? EndDate { get; set; }
+     public string? TruckNo { get; set; }
+     public OrderStatus? Status { get; set; }
+     public DateTime? CreatedAt { get; set; }
+    
+     // Pagination parameters
+     public int PageNumber { get; set; } = 1;
+     public int PageSize { get; set; } = 10;
+    
+     // Optional sorting
+     public string? SortBy { get; set; } = "CreatedAt";
+     public bool SortDescending { get; set; } = true;
+    
+     // Optional search term
+     public string? SearchTerm { get; set; }
+    
+     // Method to validate and normalize parameters
+     public void ValidateAndNormalize()
+     {
+         PageNumber = PageNumber < 1 ? 1 : PageNumber;
+         PageSize = PageSize < 1 ? 10 : PageSize > 100 ? 100 : PageSize;
+        
+         if (string.IsNullOrWhiteSpace(SortBy))
+             SortBy = "CreatedAt";
+     }
+ }

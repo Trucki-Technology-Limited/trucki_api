@@ -9,8 +9,10 @@ public interface IOrderRepository
     Task<ApiResponseModel<string>> CreateNewOrder(CreateOrderRequestModel model);
     Task<ApiResponseModel<string>> EditOrder(EditOrderRequestModel model);
     Task<ApiResponseModel<string>> AssignTruckToOrder(AssignTruckRequestModel model);
-    Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders(List<string> userRoles,
-string userId);
+    Task<ApiResponseModel<PaginatedListDto<AllOrderResponseModel>>> GetAllOrders(
+        List<string> userRoles, 
+        string userId, 
+        GetAllOrdersRequestModel request);
     Task<ApiResponseModel<OrderResponseModel>> GetOrderById(string orderId);
     Task<ApiResponseModel<bool>> UploadOrderManifest(UploadOrderManifestRequestModel model);
     Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetOrdersByStatus(OrderStatus orderStatus);

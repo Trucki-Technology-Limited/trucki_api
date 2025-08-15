@@ -10,7 +10,8 @@ public class Profiles : Profile
     public Profiles()
     {
         CreateMap<AllBusinessResponseModel, Business>().ReverseMap();
-        CreateMap<BusinessResponseModel, Business>().ReverseMap();
+        CreateMap<Business, BusinessResponseModel>()
+            .ForMember(dest => dest.Metrics, opt => opt.Ignore());
         CreateMap<ManagersBusinessResponseModel, Business>().ReverseMap();
         CreateMap<RouteResponseModel, Routes>().ReverseMap();
         CreateMap<AllManagerResponseModel, Manager>().ReverseMap();
