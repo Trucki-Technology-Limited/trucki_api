@@ -44,20 +44,52 @@ public class OrderController : ControllerBase
     }
     [HttpGet("GetAllOrders")]
     [Authorize(Roles = "admin,manager,field officer,finance,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<IEnumerable<AllOrderResponseModel>>>> GetAllOrders()
+    public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllOrderResponseModel>>>> GetAllOrders(
+        [FromQuery] GetAllOrdersRequestModel request)
     {
-
-        var roles = User.Claims
-                      .Where(c => c.Type == ClaimTypes.Role)
-                      .Select(c => c.Value)
-                      .ToList();
-        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        try
         {
-            return Unauthorized();
+            // Validate pagination parameters
+            if (request.PageNumber < 1)
+            {
+                return BadRequest(new ApiResponseModel<PaginatedListDto<AllOrderResponseModel>>
+                {
+                    IsSuccessful = false,
+                    Message = "Page number must be greater than 0",
+                    StatusCode = 400
+                });
+            }
+
+            if (request.PageSize < 1 || request.PageSize > 100)
+            {
+                return BadRequest(new ApiResponseModel<PaginatedListDto<AllOrderResponseModel>>
+                {
+                    IsSuccessful = false,
+                    Message = "Page size must be between 1 and 100",
+                    StatusCode = 400
+                });
+            }
+
+            var roles = User.Claims
+                .Where(c => c.Type == ClaimTypes.Role)
+                .Select(c => c.Value)
+                .ToList();
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // Validate and normalize request parameters
+            request.ValidateAndNormalize();
+
+            var response = await _orderService.GetAllOrders(roles, userId, request);
+            return StatusCode(response.StatusCode, response);
         }
-        var response = await _orderService.GetAllOrders(roles, userId);
-        return StatusCode(response.StatusCode, response);
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponseModel<PaginatedListDto<AllOrderResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred: {ex.Message}",
+                StatusCode = 500
+            });
+        }
     }
     [HttpGet("GetOrderById")]
     [Authorize(Roles = "admin,manager,finance,field officer,driver,chiefmanager")]

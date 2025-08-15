@@ -31,11 +31,12 @@ public class OrderService : IOrderService
         return res;
     }
 
-    public async Task<ApiResponseModel<IEnumerable<AllOrderResponseModel>>> GetAllOrders(List<string> userRoles,
-string userId)
+    public async Task<ApiResponseModel<PaginatedListDto<AllOrderResponseModel>>> GetAllOrders(
+        List<string> userRoles, 
+        string userId, 
+        GetAllOrdersRequestModel request)
     {
-        var res = await _orderRepository.GetAllOrders(userRoles, userId);
-        return res;
+        return await _orderRepository.GetAllOrders(userRoles, userId, request);
     }
     public async Task<ApiResponseModel<OrderResponseModel>> GetOrderById(string orderId)
     {
