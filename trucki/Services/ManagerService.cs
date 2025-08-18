@@ -73,14 +73,19 @@ string userId)
         return res;
     }
 
-    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(List<string> userRoles,string userId)
+    public async Task<ApiResponseModel<PaginatedListDto<TransactionResponseModel>>> GetTransactionsByManager(
+        List<string> userRoles, 
+        string userId, 
+        GetTransactionsByManagerRequestModel request)
     {
-        var res = await _managerRepository.GetTransactionsByManager(userRoles,userId);
+        var res = await _managerRepository.GetTransactionsByManager(userRoles, userId, request);
         return res;
     }
-    public async Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(string userId)
+    public async Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(
+        List<string> userRoles, 
+        string userId)
     {
-        var res = await _managerRepository.GetTransactionSummaryResponseModel(userId);
+        var res = await _managerRepository.GetTransactionSummaryResponseModel(userRoles, userId);
         return res;
     }
     public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByFinancialManager(string userId)

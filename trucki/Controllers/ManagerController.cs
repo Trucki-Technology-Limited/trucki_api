@@ -80,31 +80,60 @@ public class ManagerController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionsByManager")]
-    [Authorize(Roles = "manager,finance,chiefmanager")]
-    public async Task<ActionResult<ApiResponseModel<List<TransactionResponseModel>>>> GetTransactionsByManager()
+    [Authorize(Roles = "manager,finance,chiefmanager,field officer")]
+    public async Task<ActionResult<ApiResponseModel<PaginatedListDto<TransactionResponseModel>>>> GetTransactionsByManager(
+        [FromQuery] GetTransactionsByManagerRequestModel request)
     {
         var roles = User.Claims
-                      .Where(c => c.Type == ClaimTypes.Role)
-                      .Select(c => c.Value)
-                      .ToList();
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
-        var response = await _managerService.GetTransactionsByManager(roles, userId);
+
+        // Validate request parameters
+        if (request.PageNumber < 1)
+        {
+            return BadRequest(new ApiResponseModel<PaginatedListDto<TransactionResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Page number must be greater than 0",
+                StatusCode = 400
+            });
+        }
+
+        if (request.PageSize < 1 || request.PageSize > 100)
+        {
+            return BadRequest(new ApiResponseModel<PaginatedListDto<TransactionResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Page size must be between 1 and 100",
+                StatusCode = 400
+            });
+        }
+
+        var response = await _managerService.GetTransactionsByManager(roles, userId, request);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionSummaryResponseModel")]
-    [Authorize(Roles = "manager,finance,chiefmanager")]
+    [Authorize(Roles = "manager,finance,chiefmanager,field officer")]
     public async Task<ActionResult<ApiResponseModel<TransactionSummaryResponseModel>>> GetTransactionSummaryResponseModel()
     {
+        var roles = User.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
-        var response = await _managerService.GetTransactionSummaryResponseModel(userId);
+
+        var response = await _managerService.GetTransactionSummaryResponseModel(roles, userId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetTransactionsByFinancialManager")]

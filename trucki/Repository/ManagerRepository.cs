@@ -377,140 +377,335 @@ string userId)
         };
     }
 
-    public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByManager(List<string> userRoles, string userId)
+   public async Task<ApiResponseModel<PaginatedListDto<TransactionResponseModel>>> GetTransactionsByManager(
+    List<string> userRoles, 
+    string userId, 
+    GetTransactionsByManagerRequestModel request)
+{
+    // Validate and normalize request parameters
+    request.ValidateAndNormalize();
+    
+    bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+    bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
+    bool isChiefManager = userRoles.Any(role => role.Equals("chiefmanager", StringComparison.OrdinalIgnoreCase));
+    bool isFinance = userRoles.Any(role => role.Equals("finance", StringComparison.OrdinalIgnoreCase));
+
+    List<string> businessIds = new List<string>();
+
+    if (isManager)
     {
-        bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
-        bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
-
-        List<string> businessIds = new List<string>();
-
-        if (isManager)
+        // Get the manager
+        var manager = await _context.Managers.Include(e => e.Company).FirstOrDefaultAsync(e => e.UserId == userId);
+        if (manager == null)
         {
-            // Get the manager
-            var manager = await _context.Managers.Include(e => e.Company).FirstOrDefaultAsync(e => e.UserId == userId);
-            if (manager == null)
+            return new ApiResponseModel<PaginatedListDto<TransactionResponseModel>>
             {
-                return new ApiResponseModel<List<TransactionResponseModel>>
-                {
-                    IsSuccessful = false,
-                    Message = "Manager not found",
-                    StatusCode = 404 // Not Found
-                };
-            }
-
-            // Get the businesses managed by this manager
-            businessIds = await _context.Businesses
-                .Where(b => b.managerId == manager.Id)
-                .Select(b => b.Id)
-                .ToListAsync();
+                IsSuccessful = false,
+                Message = "Manager not found",
+                StatusCode = 404
+            };
         }
-        else if (isFieldOfficer)
+
+        // Get the businesses managed by this manager
+        businessIds = await _context.Businesses
+            .Where(b => b.managerId == manager.Id)
+            .Select(b => b.Id)
+            .ToListAsync();
+    }
+    else if (isFieldOfficer)
+    {
+        // Get the officer
+        var officer = await _context.Officers.FirstOrDefaultAsync(e => e.UserId == userId);
+        if (officer == null)
         {
-            // Get the officer
-            var officer = await _context.Officers.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (officer == null)
+            return new ApiResponseModel<PaginatedListDto<TransactionResponseModel>>
             {
-                return new ApiResponseModel<List<TransactionResponseModel>>
-                {
-                    IsSuccessful = false,
-                    Message = "Officer not found",
-                    StatusCode = 404 // Not Found
-                };
-            }
-
-            // Get the businesses under the officer's company
-            businessIds = await _context.Businesses
-                .Where(b => b.Id == officer.CompanyId)
-                .Select(b => b.Id)
-                .ToListAsync();
-        }
-        else
-        {
-            // If the user has no specific roles, fetch all businesses
-            businessIds = await _context.Businesses
-                .Select(b => b.Id)
-                .ToListAsync();
+                IsSuccessful = false,
+                Message = "Officer not found",
+                StatusCode = 404
+            };
         }
 
-        // Retrieve transactions that belong to those businesses
-        var transactions = _context.Transactions
-            .Where(t => businessIds.Contains(t.BusinessId))
-            .Include(t => t.Order)
-            .Include(t => t.Truck).ThenInclude(e => e.TruckOwner)
-            .Include(t => t.Business) // If you want to include the Business details
-            .ToList();
-        var responseModels = transactions.Select(t => new TransactionResponseModel
+        // Get the businesses under the officer's company
+        businessIds = await _context.Businesses
+            .Where(b => b.Id == officer.CompanyId)
+            .Select(b => b.Id)
+            .ToListAsync();
+    }
+    else if (isChiefManager || isFinance)
+    {
+        // If the user is chief manager or finance, fetch all businesses
+        businessIds = await _context.Businesses
+            .Select(b => b.Id)
+            .ToListAsync();
+    }
+    else
+    {
+        return new ApiResponseModel<PaginatedListDto<TransactionResponseModel>>
         {
-            TransactionId = t.Id,
-            TransactionDate = t.TransactionDate,
-            TransactionType = t.Type,
-            Amount = t.Amount,
-            OrderId = t.Order.Id,
-            CargoType = t.Order.CargoType,
-            OrderStatus = t.Order.OrderStatus,
-            BusinessId = t.Business.Id,
-            BusinessName = t.Business.Name,
-            truckOwner = t.Truck?.TruckOwner?.Name,
-            TruckId = t.Truck?.Id, // Use null-conditional operator to handle potential null
-            TruckNo = t.Truck?.PlateNumber
-        }).ToList();
-        return new ApiResponseModel<List<TransactionResponseModel>>
-        {
-            Data = responseModels,
-            IsSuccessful = true,
-            Message = "Dashboard data",
-            StatusCode = 200
+            IsSuccessful = false,
+            Message = "Unauthorized access",
+            StatusCode = 403
         };
     }
-    public async Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(string userId)
+
+    // Build the query with includes
+    var transactionsQuery = _context.Transactions
+        .Where(t => businessIds.Contains(t.BusinessId))
+        .Include(t => t.Order)
+        .Include(t => t.Truck).ThenInclude(e => e.TruckOwner)
+        .Include(t => t.Business)
+        .AsQueryable();
+
+    // Apply filters
+    if (request.StartDate.HasValue)
     {
-        var manager = await _context.Managers.Include(e => e.Company).Where(e => e.UserId == userId).FirstOrDefaultAsync();
+        transactionsQuery = transactionsQuery.Where(t => t.TransactionDate >= request.StartDate.Value);
+    }
+
+    if (request.EndDate.HasValue)
+    {
+        transactionsQuery = transactionsQuery.Where(t => t.TransactionDate <= request.EndDate.Value);
+    }
+
+    if (request.TransactionType.HasValue)
+    {
+        transactionsQuery = transactionsQuery.Where(t => t.Type == request.TransactionType.Value);
+    }
+
+    if (!string.IsNullOrEmpty(request.BusinessId))
+    {
+        transactionsQuery = transactionsQuery.Where(t => t.BusinessId == request.BusinessId);
+    }
+
+    // Apply search term filtering
+    if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+    {
+        var searchTerm = request.SearchTerm.ToLower();
+        transactionsQuery = transactionsQuery.Where(t => 
+            t.Business.Name.ToLower().Contains(searchTerm) ||
+            (t.Truck != null && t.Truck.TruckOwner != null && t.Truck.TruckOwner.Name.ToLower().Contains(searchTerm)) ||
+            (t.Truck != null && t.Truck.PlateNumber.ToLower().Contains(searchTerm)) ||
+            t.Order.CargoType.ToLower().Contains(searchTerm));
+    }
+
+    // Apply sorting
+    transactionsQuery = request.SortBy.ToLower() switch
+    {
+        "transactiondate" => request.SortDescending
+            ? transactionsQuery.OrderByDescending(t => t.TransactionDate)
+            : transactionsQuery.OrderBy(t => t.TransactionDate),
+        "amount" => request.SortDescending
+            ? transactionsQuery.OrderByDescending(t => t.Amount)
+            : transactionsQuery.OrderBy(t => t.Amount),
+        "transactiontype" => request.SortDescending
+            ? transactionsQuery.OrderByDescending(t => t.Type)
+            : transactionsQuery.OrderBy(t => t.Type),
+        "businessname" => request.SortDescending
+            ? transactionsQuery.OrderByDescending(t => t.Business.Name)
+            : transactionsQuery.OrderBy(t => t.Business.Name),
+        "truckowner" => request.SortDescending
+            ? transactionsQuery.OrderByDescending(t => t.Truck.TruckOwner.Name)
+            : transactionsQuery.OrderBy(t => t.Truck.TruckOwner.Name),
+        _ => request.SortDescending
+            ? transactionsQuery.OrderByDescending(t => t.TransactionDate)
+            : transactionsQuery.OrderBy(t => t.TransactionDate)
+    };
+
+    // Get total count before pagination
+    var totalCount = await transactionsQuery.CountAsync();
+
+    // Apply pagination
+    var transactions = await transactionsQuery
+        .Skip((request.PageNumber - 1) * request.PageSize)
+        .Take(request.PageSize)
+        .ToListAsync();
+
+    // Map to response models
+    var responseModels = transactions.Select(t => new TransactionResponseModel
+    {
+        TransactionId = t.Id,
+        TransactionDate = t.TransactionDate,
+        TransactionType = t.Type,
+        Amount = t.Amount,
+        OrderId = t.Order.Id,
+        CargoType = t.Order.CargoType,
+        OrderStatus = t.Order.OrderStatus,
+        BusinessId = t.Business.Id,
+        BusinessName = t.Business.Name,
+        truckOwner = t.Truck?.TruckOwner?.Name,
+        TruckId = t.Truck?.Id,
+        TruckNo = t.Truck?.PlateNumber
+    }).ToList();
+
+    // Create paginated result
+    var paginatedResult = new PaginatedListDto<TransactionResponseModel>
+    {
+        Data = responseModels,
+        MetaData = new PageMeta
+        {
+            Page = request.PageNumber,
+            PerPage = request.PageSize,
+            Total = totalCount,
+            TotalPages = totalCount % request.PageSize == 0 
+                ? totalCount / request.PageSize 
+                : totalCount / request.PageSize + 1
+        }
+    };
+
+    return new ApiResponseModel<PaginatedListDto<TransactionResponseModel>>
+    {
+        Data = paginatedResult,
+        IsSuccessful = true,
+        Message = totalCount > 0 ? "Transactions retrieved successfully" : "No transactions found",
+        StatusCode = 200
+    };
+}
+   public async Task<ApiResponseModel<TransactionSummaryResponseModel>> GetTransactionSummaryResponseModel(
+    List<string> userRoles, 
+    string userId)
+{
+    bool isManager = userRoles.Any(role => role.Equals("manager", StringComparison.OrdinalIgnoreCase));
+    bool isFieldOfficer = userRoles.Any(role => role.Equals("field officer", StringComparison.OrdinalIgnoreCase));
+    bool isChiefManager = userRoles.Any(role => role.Equals("chiefmanager", StringComparison.OrdinalIgnoreCase));
+    bool isFinance = userRoles.Any(role => role.Equals("finance", StringComparison.OrdinalIgnoreCase));
+
+    List<string> businessIds = new List<string>();
+    string userRoleDescription = "";
+
+    if (isManager)
+    {
+        // Get the manager
+        var manager = await _context.Managers.Include(e => e.Company).FirstOrDefaultAsync(e => e.UserId == userId);
         if (manager == null)
         {
             return new ApiResponseModel<TransactionSummaryResponseModel>
             {
                 IsSuccessful = false,
                 Message = "Manager not found",
-                StatusCode = 404 // Not Found
+                StatusCode = 404
             };
         }
+
         // Get the businesses managed by this manager
-        var managedBusinesses = await _context.Businesses
+        businessIds = await _context.Businesses
             .Where(b => b.managerId == manager.Id)
-            .Select(b => b.Id) // Get only the business IDs
+            .Select(b => b.Id)
             .ToListAsync();
-
-        // Retrieve transactions that belong to those businesses
-        var transactions = await _context.Transactions
-            .Where(t => managedBusinesses.Contains(t.BusinessId))
-            .Include(t => t.Order)
-            .ThenInclude(o => o.Routes) // This will now include the Routes for each Order
-            .ToListAsync();
-
-        // Calculate total order count
-        int totalOrderCount = transactions.Count;
-
-        // Calculate total payout (60% and 40% combined)
-        decimal totalPayout = transactions.Sum(t => t.Amount);
-
-        // Calculate total GTV by summing GTV from associated orders
-        decimal totalGtv = transactions.Sum(t => (decimal)t.Order.Routes.Gtv); // Assuming your Order entity has a Routes navigation property
-
-        var response = new TransactionSummaryResponseModel
+        
+        userRoleDescription = "Manager";
+    }
+    else if (isFieldOfficer)
+    {
+        // Get the officer
+        var officer = await _context.Officers.FirstOrDefaultAsync(e => e.UserId == userId);
+        if (officer == null)
         {
-            TotalOrderCount = totalOrderCount,
-            TotalPayout = totalPayout,
-            TotalGtv = totalGtv
-        };
+            return new ApiResponseModel<TransactionSummaryResponseModel>
+            {
+                IsSuccessful = false,
+                Message = "Officer not found",
+                StatusCode = 404
+            };
+        }
 
+        // Get the businesses under the officer's company
+        businessIds = await _context.Businesses
+            .Where(b => b.Id == officer.CompanyId)
+            .Select(b => b.Id)
+            .ToListAsync();
+        
+        userRoleDescription = "Field Officer";
+    }
+    else if (isChiefManager)
+    {
+        // Chief Manager can see all businesses
+        businessIds = await _context.Businesses
+            .Select(b => b.Id)
+            .ToListAsync();
+        
+        userRoleDescription = "Chief Manager";
+    }
+    else if (isFinance)
+    {
+        // Finance can see all businesses
+        businessIds = await _context.Businesses
+            .Select(b => b.Id)
+            .ToListAsync();
+        
+        userRoleDescription = "Finance";
+    }
+    else
+    {
         return new ApiResponseModel<TransactionSummaryResponseModel>
         {
-            Data = response,
-            IsSuccessful = true,
-            Message = "Manager dashboard data retrieved successfully",
-            StatusCode = 200
+            IsSuccessful = false,
+            Message = "Unauthorized access or role not recognized",
+            StatusCode = 403
         };
     }
+
+    // If no businesses found for the user's role
+    if (!businessIds.Any())
+    {
+        return new ApiResponseModel<TransactionSummaryResponseModel>
+        {
+            IsSuccessful = true,
+            Message = "No businesses found for your role",
+            StatusCode = 200,
+            Data = new TransactionSummaryResponseModel
+            {
+                TotalOrderCount = 0,
+                TotalPayout = 0,
+                TotalGtv = 0,
+                TotalPrice = 0,
+                TotalRevenue = 0,
+            }
+        };
+    }
+
+    // Retrieve transactions that belong to those businesses
+    var transactions = await _context.Transactions
+        .Where(t => businessIds.Contains(t.BusinessId))
+        .Include(t => t.Order)
+        .ThenInclude(o => o.Routes) // Include the Routes for each Order
+        .ToListAsync();
+
+    // Filter out transactions where Order or Routes is null to avoid null reference errors
+    var validTransactions = transactions.Where(t => t.Order != null && t.Order.Routes != null).ToList();
+
+    // Calculate total order count
+    int totalOrderCount = validTransactions.Count;
+
+    // Calculate total payout (sum of all transaction amounts)
+    decimal totalPayout = validTransactions.Sum(t => t.Amount);
+
+    // Calculate total GTV by summing GTV from associated orders
+    decimal totalGtv = validTransactions.Sum(t => (decimal)t.Order.Routes.Gtv);
+
+    // Calculate total price by summing Price from associated routes
+    decimal totalPrice = validTransactions.Sum(t => (decimal)t.Order.Routes.Price);
+
+    // Calculate total revenue (GTV - Price)
+    decimal totalRevenue = totalPrice - totalGtv ;
+
+    var response = new TransactionSummaryResponseModel
+    {
+        TotalOrderCount = totalOrderCount,
+        TotalPayout = totalPayout,
+        TotalGtv = totalGtv,
+        TotalPrice = totalPrice,
+        TotalRevenue = totalRevenue,
+    };
+
+    return new ApiResponseModel<TransactionSummaryResponseModel>
+    {
+        Data = response,
+        IsSuccessful = true,
+        Message = $"{userRoleDescription} transaction summary retrieved successfully",
+        StatusCode = 200
+    };
+}
 
     public async Task<ApiResponseModel<List<TransactionResponseModel>>> GetTransactionsByFinancialManager(string userId)
     {
