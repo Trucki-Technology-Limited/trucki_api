@@ -18,6 +18,30 @@ namespace trucki.Controllers
             _logger = logger;
         }
 
+    public class ExportRequest
+    {
+        public int? ChunkSize { get; set; } = 1000;
+    }
+    public class DatabaseImportModel
+    {
+        public Dictionary<string, JsonElement> Tables { get; set; } = new();
+        public ImportMetadata ExportMetadata { get; set; } = new();
+    }
+
+    public class ImportMetadata
+    {
+        public DateTime ExportDate { get; set; }
+        public List<string> Tables { get; set; } = new();
+        public string Version { get; set; }
+    }
+ 
+
+    public class SelectiveExportRequest
+    {
+        public List<string> TableNames { get; set; } = new();
+        public int? ChunkSize { get; set; } = 1000;
+    }
+
         [HttpPost("export-all")]
         public async Task<IActionResult> ExportAllData()
         {
@@ -40,6 +64,7 @@ namespace trucki.Controllers
                     
                     if (dbSet != null)
                     {
+                        // Use reflection to call ToListAsync on the DbSet
                         var method = typeof(EntityFrameworkQueryableExtensions)
                             .GetMethods()
                             .Where(m => m.Name == "ToListAsync" && m.GetParameters().Length == 2)
@@ -47,6 +72,7 @@ namespace trucki.Controllers
                             .MakeGenericMethod(entityType);
 
                         var data = await (dynamic)method.Invoke(null, new[] { dbSet, CancellationToken.None });
+
                         exportData[property.Name] = data;
                         
                         _logger.LogInformation($"Exported {property.Name}: {((IEnumerable<object>)data).Count()} records");
@@ -103,6 +129,83 @@ namespace trucki.Controllers
             }
         }
 
+        [HttpPost("export-all-stream")]
+public async Task<IActionResult> ExportAllStream([FromBody] ExportRequest request)
+{
+    int chunkSize = request.ChunkSize ?? 1000;
+    var fileName = $"database_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+
+    await using var stream = System.IO.File.Create(filePath);
+    await using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+
+    writer.WriteStartObject();
+
+    // 1. Decide table order (manual or derived from EF model)
+    var dbSetProperties = _context.GetType().GetProperties()
+        .Where(p => p.PropertyType.IsGenericType &&
+                    p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
+        .OrderBy(p => p.Name) // TODO: replace with FK-aware ordering
+        .ToList();
+
+    foreach (var property in dbSetProperties)
+    {
+        var entityType = property.PropertyType.GetGenericArguments()[0];
+        var dbSet = (IQueryable<object>)property.GetValue(_context)!;
+
+        writer.WritePropertyName(property.Name);
+        writer.WriteStartArray();
+
+        int page = 0;
+        List<object> batch;
+
+        do
+        {
+            batch = await dbSet.Skip(page * chunkSize).Take(chunkSize).ToListAsync();
+            var jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
+
+            foreach (var record in batch)
+            {
+                JsonSerializer.Serialize(writer, record, entityType, jsonOptions);
+            }
+
+            page++;
+        }
+        while (batch.Count == chunkSize);
+
+        writer.WriteEndArray();
+        await writer.FlushAsync();
+
+        _logger.LogInformation($"Exported {property.Name} in {page} batches");
+    }
+
+    // Metadata
+    writer.WritePropertyName("ExportMetadata");
+    JsonSerializer.Serialize(writer, new
+    {
+        ExportDate = DateTime.UtcNow,
+        Tables = dbSetProperties.Select(p => p.Name).ToList(),
+        Version = "1.0"
+    });
+
+    writer.WriteEndObject();
+    await writer.FlushAsync();
+
+    return Ok(new
+    {
+        Success = true,
+        Message = "Database export completed with streaming",
+        FileName = fileName,
+        FilePath = filePath
+    });
+}
+
+
         [HttpPost("export-selective")]
         public async Task<IActionResult> ExportSelectiveData([FromBody] List<string> tableNames)
         {
@@ -127,12 +230,11 @@ namespace trucki.Controllers
                     {
                         var method = typeof(EntityFrameworkQueryableExtensions)
                             .GetMethods()
-                            .Where(m => m.Name == "ToListAsync" && m.GetParameters().Length == 2)
+                            .Where(m => m.Name == "ToListAsync" && m.GetParameters().Length == 1)
                             .First()
                             .MakeGenericMethod(entityType);
 
-                        var data = await (dynamic)method.Invoke(null, new[] { dbSet, CancellationToken.None });
-
+                        var data = await (dynamic)method.Invoke(null, new[] { dbSet });
                         exportData[property.Name] = data;
                         
                         _logger.LogInformation($"Exported {property.Name}: {((IEnumerable<object>)data).Count()} records");
