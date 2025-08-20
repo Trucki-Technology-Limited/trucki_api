@@ -649,4 +649,136 @@ public class DriverRepository : IDriverRepository
             };
         }
     }
+    public async Task<ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>> GetAllDriversPaginated(GetAllDriversRequestModel request)
+{
+    try
+    {
+        // Start with base query
+        IQueryable<Driver> driversQuery = _context.Drivers.Include(d => d.User);
+
+        // Apply search filters
+        if (!string.IsNullOrWhiteSpace(request.Name))
+        {
+            driversQuery = driversQuery.Where(d => d.Name.ToLower().Contains(request.Name.ToLower()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            driversQuery = driversQuery.Where(d => d.EmailAddress.ToLower().Contains(request.Email.ToLower()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Country))
+        {
+            driversQuery = driversQuery.Where(d => d.Country.ToLower() == request.Country.ToLower());
+        }
+
+        // Apply sorting
+        driversQuery = request.SortBy?.ToLower() switch
+        {
+            "name" => request.SortDescending
+                ? driversQuery.OrderByDescending(d => d.Name)
+                : driversQuery.OrderBy(d => d.Name),
+            "email" => request.SortDescending
+                ? driversQuery.OrderByDescending(d => d.EmailAddress)
+                : driversQuery.OrderBy(d => d.EmailAddress),
+            "country" => request.SortDescending
+                ? driversQuery.OrderByDescending(d => d.Country)
+                : driversQuery.OrderBy(d => d.Country),
+            "createdat" => request.SortDescending
+                ? driversQuery.OrderByDescending(d => d.CreatedAt)
+                : driversQuery.OrderBy(d => d.CreatedAt),
+            _ => request.SortDescending
+                ? driversQuery.OrderByDescending(d => d.CreatedAt)
+                : driversQuery.OrderBy(d => d.CreatedAt)
+        };
+
+        // Get total count before pagination
+        var totalCount = await driversQuery.CountAsync();
+
+        // Apply pagination
+        var drivers = await driversQuery
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync();
+
+        // Map to response models
+        var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
+
+        // Create paginated result
+        var paginatedResult = new PaginatedListDto<AllDriverResponseModel>
+        {
+            Data = driverResponseModels,
+            MetaData = new PageMeta
+            {
+                Page = request.PageNumber,
+                PerPage = request.PageSize,
+                Total = totalCount,
+                TotalPages = totalCount % request.PageSize == 0 
+                    ? totalCount / request.PageSize 
+                    : totalCount / request.PageSize + 1
+            }
+        };
+
+        return new ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>
+        {
+            Data = paginatedResult,
+            IsSuccessful = true,
+            Message = totalCount > 0 
+                ? $"Successfully retrieved {drivers.Count} of {totalCount} drivers"
+                : "No drivers found matching the criteria",
+            StatusCode = 200
+        };
+    }
+    catch (Exception ex)
+    {
+        return new ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>
+        {
+            Data = null,
+            IsSuccessful = false,
+            Message = $"An error occurred while retrieving drivers: {ex.Message}",
+            StatusCode = 500
+        };
+    }
+}
+
+public async Task<ApiResponseModel<AdminDriverSummaryResponseModel>> GetAdminDriversSummary()
+{
+    try
+    {
+        var drivers = await _context.Drivers.ToListAsync();
+
+        var summary = new AdminDriverSummaryResponseModel
+        {
+            TotalDrivers = drivers.Count,
+            TotalUSDrivers = drivers.Count(d => d.Country?.ToUpper() == "US" || d.Country?.ToUpper() == "USA"),
+            TotalNigerianDrivers = drivers.Count(d => d.Country?.ToUpper() == "NG" || d.Country?.ToUpper() == "NIGERIA"),
+            ActiveDrivers = drivers.Count(d => d.IsActive),
+            InactiveDrivers = drivers.Count(d => !d.IsActive)
+        };
+
+        // Group drivers by country
+        summary.DriversByCountry = drivers
+            .GroupBy(d => d.Country?.ToUpper() ?? "UNKNOWN")
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        return new ApiResponseModel<AdminDriverSummaryResponseModel>
+        {
+            Data = summary,
+            IsSuccessful = true,
+            Message = "Driver summary retrieved successfully",
+            StatusCode = 200
+        };
+    }
+    catch (Exception ex)
+    {
+        return new ApiResponseModel<AdminDriverSummaryResponseModel>
+        {
+            Data = null,
+            IsSuccessful = false,
+            Message = $"An error occurred while retrieving driver summary: {ex.Message}",
+            StatusCode = 500
+        };
+    }
+}
+    
 }
