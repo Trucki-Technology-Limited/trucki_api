@@ -79,3 +79,21 @@ public class UpdateDriverProfilePhotoRequestModel
     [Url]
     public string ProfilePhotoUrl { get; set; }
 }
+
+public class GetAllDriversRequestModel
+{
+    [Range(1, int.MaxValue, ErrorMessage = "Page number must be greater than 0")]
+    public int PageNumber { get; set; } = 1;
+
+    [Range(1, 100, ErrorMessage = "Page size must be between 1 and 100")]
+    public int PageSize { get; set; } = 10;
+
+    // Search filters
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    public string? Country { get; set; }
+
+    // Sorting
+    public string? SortBy { get; set; } = "name"; // name, email, country, createdat
+    public bool SortDescending { get; set; } = false;
+}

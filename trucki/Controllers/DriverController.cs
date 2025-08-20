@@ -209,5 +209,31 @@ public class DriverController : ControllerBase
 
         return StatusCode(response.StatusCode, response);
     }
+    [HttpGet("GetAllDriversPaginated")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>>> GetAllDriversPaginated(
+        [FromQuery] GetAllDriversRequestModel request)
+    {
+        // Validate the request
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>
+            {
+                IsSuccessful = false,
+                Message = "Invalid request parameters",
+                StatusCode = 400
+            });
+        }
 
+        var response = await _driverService.GetAllDriversPaginated(request);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpGet("GetDriversSummary")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult<ApiResponseModel<AdminDriverSummaryResponseModel>>> GetDriversSummary()
+    {
+        var response = await _driverService.GetAdminDriversSummary();
+        return StatusCode(response.StatusCode, response);
+    }
 }

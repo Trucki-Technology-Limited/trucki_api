@@ -99,4 +99,15 @@ public class DriverService : IDriverService
         var res = await _driverRepository.UpdateDriverOnboardingStatus(driverId, status);
         return res;
     }
+    public async Task<ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>> GetAllDriversPaginated(GetAllDriversRequestModel request)
+    {
+        var response = await _driverRepository.GetAllDriversPaginated(request);
+        return response;
+    }
+
+    public async Task<ApiResponseModel<AdminDriverSummaryResponseModel>> GetAdminDriversSummary()
+    {
+        var response = await _driverRepository.GetAdminDriversSummary();
+        return response;
+    }
 }

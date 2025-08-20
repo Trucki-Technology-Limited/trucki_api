@@ -19,7 +19,15 @@ namespace trucki.Models.ResponseModels
 
         public string PassportFile { get; set; }
     }
-
+    public class AdminDriverSummaryResponseModel
+    {
+        public int TotalDrivers { get; set; }
+        public int TotalUSDrivers { get; set; }
+        public int TotalNigerianDrivers { get; set; }
+        public int ActiveDrivers { get; set; }
+        public int InactiveDrivers { get; set; }
+        public Dictionary<string, int> DriversByCountry { get; set; } = new Dictionary<string, int>();
+    }
     public class DriverResponseModel
     {
         public string Id { get; set; }
