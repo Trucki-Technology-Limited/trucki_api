@@ -19,7 +19,7 @@ public class CustomerController : ControllerBase
 
 
     [HttpPost("AddNewCustomer")]
-    [Authorize(Roles = "admin,manager,chiefmanager")]
+    [Authorize(Roles = "admin,manager,chiefmanager,field officer")]
     public async Task<ActionResult<ApiResponseModel<string>>> AddNewCustomer([FromBody] AddCustomerRequestModel model)
     {
         var response = await _customerService.AddNewCustomer(model);

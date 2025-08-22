@@ -27,7 +27,7 @@ public class BusinessController : ControllerBase
     }
 
     [HttpGet("GetAllBusiness")]
-    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager,finance")]
     public async Task<ActionResult<ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>>> GetAllBusiness(
       [FromQuery] int pageNumber = 1,
       [FromQuery] int pageSize = 10)
@@ -76,7 +76,7 @@ public class BusinessController : ControllerBase
     }
 
     [HttpGet("GetBusinessById")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager,finance")]
     public async Task<ActionResult<ApiResponseModel<BusinessResponseModel>>> GetBusinessById(string businessId)
     {
         var business = await _businessService.GetBusinessById(businessId);
@@ -139,7 +139,7 @@ public class BusinessController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpGet("GetRoutesByBusinessId")]
-    [Authorize(Roles = "admin,manager,field officer,chiefmanager")]
+    [Authorize(Roles = "admin,manager,field officer,chiefmanager,finance")]
     public async Task<ActionResult<ApiResponseModel<List<RouteResponseModel>>>> GetRoutesByBusinessId(string businessId)
     {
         var response = await _businessService.GetRoutesByBusinessId(businessId);
