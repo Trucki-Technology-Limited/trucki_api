@@ -5,6 +5,7 @@ using trucki.DatabaseContext;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using trucki.Entities;
 
 namespace trucki.Controllers
 {
@@ -20,6 +21,98 @@ namespace trucki.Controllers
             _context = context;
             _logger = logger;
         }
+        
+        [HttpPost("import-table")]
+public async Task<IActionResult> ImportTableData([FromBody] ImportRequest request)
+{
+    try
+    {
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), request.FileName);
+
+        if (!System.IO.File.Exists(filePath))
+        {
+            return BadRequest(new
+            {
+                Success = false,
+                Message = $"File '{request.FileName}' not found in root directory"
+            });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.TableName))
+        {
+            return BadRequest(new
+            {
+                Success = false,
+                Message = "TableName is required"
+            });
+        }
+
+        _logger.LogInformation($"Starting import of table {request.TableName} from file: {request.FileName}");
+
+        var importResults = new Dictionary<string, ImportResult>();
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using var document = await JsonDocument.ParseAsync(fileStream);
+
+            if (document.RootElement.TryGetProperty(request.TableName, out var tableData))
+            {
+                var result = await ImportTable(request.TableName, tableData, document);
+                importResults[request.TableName] = result;
+
+                if (result.Added > 0)
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                _logger.LogInformation($"Imported {request.TableName}: {result.Added} new, {result.Skipped} skipped");
+
+                await transaction.CommitAsync();
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = $"Table {request.TableName} imported successfully",
+                    ImportResults = importResults,
+                    TotalRecordsAdded = result.Added,
+                    TotalRecordsSkipped = result.Skipped
+                });
+            }
+            else
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = $"Table '{request.TableName}' not found in file"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, $"Error occurred while importing table {request.TableName}");
+            return BadRequest(new
+            {
+                Success = false,
+                Message = $"Error occurred while importing table {request.TableName}",
+                Error = ex.Message
+            });
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error occurred during import");
+        return BadRequest(new
+        {
+            Success = false,
+            Message = "Error occurred during import",
+            Error = ex.Message
+        });
+    }
+}
+
 
         [HttpPost("import-all")]
         public async Task<IActionResult> ImportAllData([FromBody] ImportRequest request)
@@ -170,103 +263,164 @@ namespace trucki.Controllers
             _logger.LogInformation("Completed updating CargoOrders with AcceptedBidId references");
         }
 
-        private async Task<ImportResult> ImportTable(string tableName, JsonElement tableData, JsonDocument fullDocument)
+// Replace your entire ImportTable method with this updated version:
+
+private async Task<ImportResult> ImportTable(string tableName, JsonElement tableData, JsonDocument fullDocument)
+{
+    var dbSetProperty = _context.GetType().GetProperty(tableName);
+    if (dbSetProperty == null)
+    {
+        throw new InvalidOperationException($"Table {tableName} not found in context");
+    }
+
+    var entityType = dbSetProperty.PropertyType.GetGenericArguments()[0];
+    var dbSet = dbSetProperty.GetValue(_context);
+
+    if (dbSet == null)
+    {
+        throw new InvalidOperationException($"DbSet for {tableName} is null");
+    }
+
+    var result = new ImportResult();
+
+    var options = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    // Process each record in the array
+    foreach (var recordElement in tableData.EnumerateArray())
+    {
+        if (tableName == "Routes" || tableName == "RoutesEnumerable")
         {
-            var dbSetProperty = _context.GetType().GetProperty(tableName);
-            if (dbSetProperty == null)
+            // First, deserialize the route
+            var entity = JsonSerializer.Deserialize<Routes>(recordElement.GetRawText(), options);
+            if (entity == null) continue;
+
+            // Clear the Business navigation property to prevent conflicts
+            entity.Business = null;
+
+            // Handle Business mapping if Business data exists in the JSON
+            if (recordElement.TryGetProperty("Business", out var businessElement))
             {
-                throw new InvalidOperationException($"Table {tableName} not found in context");
-            }
+                Business? existingBusiness = null;
 
-            var entityType = dbSetProperty.PropertyType.GetGenericArguments()[0];
-            var dbSet = dbSetProperty.GetValue(_context);
-
-            if (dbSet == null)
-            {
-                throw new InvalidOperationException($"DbSet for {tableName} is null");
-            }
-
-            var result = new ImportResult();
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReferenceHandler = ReferenceHandler.IgnoreCycles,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-
-            // Process each record in the array
-            foreach (var recordElement in tableData.EnumerateArray())
-            {
-                try
+                // Try to find existing business by Id first
+                if (businessElement.TryGetProperty("Id", out var businessIdElement))
                 {
-                    var entity = JsonSerializer.Deserialize(recordElement.GetRawText(), entityType, options);
-                    if (entity == null) continue;
-
-                    // Get primary key value
-                    var idProperty = entityType.GetProperty("Id");
-                    if (idProperty == null)
+                    var businessId = businessIdElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(businessId))
                     {
-                        // If no Id property, just add the entity
-                        var addMethod = dbSet.GetType().GetMethod("Add", new[] { entityType });
+                        existingBusiness = await _context.Businesses
+                            .FirstOrDefaultAsync(b => b.Id == businessId);
+                    }
+                }
+
+                // If not found by Id, try by Name
+                if (existingBusiness == null && businessElement.TryGetProperty("Name", out var businessNameElement))
+                {
+                    var businessName = businessNameElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(businessName))
+                    {
+                        existingBusiness = await _context.Businesses
+                            .FirstOrDefaultAsync(b => b.Name == businessName);
+                    }
+                }
+
+                if (existingBusiness != null)
+                {
+                    // Set the BusinessId foreign key
+                    entity.BusinessId = existingBusiness.Id;
+                    entity.Business = existingBusiness;
+                    _logger.LogDebug($"Attached existing business {existingBusiness.Name} to route {entity.Name}");
+                }
+                else
+                {
+                    // Create new business if it doesn't exist
+                    var newBusiness = JsonSerializer.Deserialize<Business>(businessElement.GetRawText(), options);
+                    if (newBusiness != null)
+                    {
+                        // Clear circular references
+                        newBusiness.Routes = null;
+                        newBusiness.Customers = null;
+                        
+                        _context.Businesses.Add(newBusiness);
+                        await _context.SaveChangesAsync(); // Save to get the Id
+                        
+                        entity.BusinessId = newBusiness.Id;
+                        entity.Business = newBusiness;
+                        _logger.LogDebug($"Created new business {newBusiness.Name} for route {entity.Name}");
+                    }
+                }
+            }
+
+            // Now handle the Route itself
+            var existingRoute = await _context.RoutesEnumerable.FindAsync(entity.Id);
+            if (existingRoute != null)
+            {
+                // Update specific properties you want to change
+                existingRoute.Name = entity.Name;
+                existingRoute.FromRoute = entity.FromRoute;
+                existingRoute.ToRoute = entity.ToRoute;
+                existingRoute.Price = entity.Price;
+                existingRoute.Gtv = entity.Gtv;
+                existingRoute.IsActive = entity.IsActive;
+                existingRoute.Ntons = entity.Ntons;
+                existingRoute.FromRouteLat = entity.FromRouteLat;
+                existingRoute.FromRouteLng = entity.FromRouteLng;
+                existingRoute.ToRouteLat = entity.ToRouteLat;
+                existingRoute.ToRouteLng = entity.ToRouteLng;
+                existingRoute.BusinessId = entity.BusinessId;
+                existingRoute.Business = entity.Business;
+                existingRoute.UpdatedAt = DateTime.UtcNow; // Update timestamp
+                
+                // Save immediately after each update
+                await _context.SaveChangesAsync();
+                result.Updated++;
+                _logger.LogDebug($"Updated and saved route {entity.Name} with BusinessId: {entity.BusinessId}");
+            }
+            else
+            {
+                // Add new route
+                _context.RoutesEnumerable.Add(entity);
+                result.Added++;
+                _logger.LogDebug($"Added new route {entity.Name}");
+            }
+        }
+        else
+        {
+            // Handle other entity types
+            var entity = JsonSerializer.Deserialize(recordElement.GetRawText(), entityType, options);
+            
+            if (entity != null)
+            {
+                var idProperty = entityType.GetProperty("Id");
+                var idValue = idProperty?.GetValue(entity);
+                
+                if (idValue != null)
+                {
+                    var existsInDb = await EntityExistsInDatabase(tableName, idValue);
+                    if (!existsInDb)
+                    {
+                        ClearAllNavigationProperties(entity, entityType);
+                        
+                        var addMethod = dbSet.GetType().GetMethod("Add");
                         addMethod?.Invoke(dbSet, new[] { entity });
                         result.Added++;
-                        continue;
-                    }
-
-                    var idValue = idProperty.GetValue(entity);
-
-                    // Check if entity already exists in database using raw SQL to avoid tracking
-                    var existsInDb = await EntityExistsInDatabase(tableName, idValue);
-
-                    if (existsInDb)
-                    {
-                        // Skip duplicate - preserve existing data
-                        result.Skipped++;
-                        _logger.LogDebug($"Skipping existing entity in {tableName} with Id: {idValue}");
                     }
                     else
                     {
-                        // Clear all navigation properties to avoid tracking conflicts
-                        ClearAllNavigationProperties(entity, entityType);
-                        
-                        // Special handling for CargoOrders: temporarily set AcceptedBidId to null
-                        if (tableName == "CargoOrders")
-                        {
-                            var acceptedBidIdProperty = entityType.GetProperty("AcceptedBidId");
-                            if (acceptedBidIdProperty != null)
-                            {
-                                acceptedBidIdProperty.SetValue(entity, null);
-                            }
-                        }
-                        
-                        // Fix null Documents for Trucks
-                        if (tableName == "Trucks" && entity.GetType().GetProperty("Documents")?.GetValue(entity) == null)
-                        {
-                            entity.GetType().GetProperty("Documents")?.SetValue(entity, new List<string>());
-                        }
-                        
-                        // Fix null ImageUrls for ChatMessages
-                        if (tableName == "ChatMessages" && entity.GetType().GetProperty("ImageUrls")?.GetValue(entity) == null)
-                        {
-                            entity.GetType().GetProperty("ImageUrls")?.SetValue(entity, new List<string>());
-                        }
-                        
-                        // Set the entity state to Added explicitly
-                        var entry = _context.Entry(entity);
-                        entry.State = EntityState.Added;
-                        result.Added++;
+                        result.Skipped++;
                     }
                 }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException($"Error processing entity in table {tableName}: {ex.Message}", ex);
-                }
             }
-
-            return result;
         }
+    }
 
+    return result;
+}
         private async Task<bool> EntityExistsInDatabase(string tableName, object idValue)
         {
             try
@@ -476,11 +630,13 @@ namespace trucki.Controllers
     public class ImportRequest
     {
         public string FileName { get; set; } = string.Empty;
+        public string? TableName { get; set; } // Optional for single-table imports
     }
 
     public class ImportResult
     {
         public int Added { get; set; } = 0;
         public int Skipped { get; set; } = 0;
+        public int Updated { get; set; } = 0;
     }
 }

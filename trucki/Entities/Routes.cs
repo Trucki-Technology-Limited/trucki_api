@@ -17,7 +17,7 @@
 
         public bool IsActive { get; set; }
         public float Gtv { get; set; }
-
+        public string? BusinessId { get; set; }
         public Business? Business { get; set; }
     }
 }
