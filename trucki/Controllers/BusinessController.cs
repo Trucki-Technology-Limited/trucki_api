@@ -32,6 +32,7 @@ public class BusinessController : ControllerBase
       [FromQuery] int pageNumber = 1,
       [FromQuery] int pageSize = 10)
     {
+        
         // Validate pagination parameters
         if (pageNumber < 1)
         {
