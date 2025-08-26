@@ -222,5 +222,21 @@ namespace trucki.Controllers
             var response = await _cargoOrderService.UpdateCargoOrderStatusByAdminAsync(orderId, model.Status, model.Reason, adminUserId);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("cargo-financial-summary")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<CargoFinancialSummaryResponse>>> GetCargoFinancialSummary(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate)
+        {
+            // Set default date range if not provided (last 30 days)
+            if (startDate == default(DateTime))
+                startDate = DateTime.UtcNow.AddDays(-30).Date;
+    
+            if (endDate == default(DateTime))
+                endDate = DateTime.UtcNow.Date;
+
+            var response = await _adminService.GetCargoFinancialSummary(startDate, endDate);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

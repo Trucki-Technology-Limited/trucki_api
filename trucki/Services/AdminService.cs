@@ -40,5 +40,11 @@ public class AdminService : IAdminService
         var res = await _adminRepository.GetOrderStatistics(startDate, endDate);
         return res;
     }
+    
+    public async Task<ApiResponseModel<CargoFinancialSummaryResponse>> GetCargoFinancialSummary(DateTime startDate, DateTime endDate)
+    {
+        var response = await _adminRepository.GetCargoFinancialSummary(startDate, endDate);
+        return response;
+    }
 
 }

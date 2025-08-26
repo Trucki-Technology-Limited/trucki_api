@@ -59,10 +59,30 @@ namespace trucki.Models.ResponseModels
         public int FlaggedOrders { get; set; }
         public int InTransitOrders { get; set; }
         public int TotalOrders { get; set; }
-        public List<MonthlyOrderStats> MonthlyData { get; set; } // Monthly data breakdown
+    
+        // Country-specific breakdown
+        public CountryOrderStats NigeriaStats { get; set; }
+        public CountryOrderStats USStats { get; set; }
+    
+        // Combined monthly data
+        public List<MonthlyOrderStats> MonthlyData { get; set; }
+    
+        // Additional summary information
+        public DateTime DateRange { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
     }
 
-
+    public class CountryOrderStats
+    {
+        public string Country { get; set; }
+        public int CompletedOrders { get; set; }
+        public int FlaggedOrders { get; set; }
+        public int InTransitOrders { get; set; }
+        public int TotalOrders { get; set; }
+        public List<MonthlyOrderStats> MonthlyData { get; set; }
+    }
+    
     public class MonthlyOrderStats
     {
         public string Month { get; set; }
@@ -70,6 +90,10 @@ namespace trucki.Models.ResponseModels
         public int FlaggedOrders { get; set; }
         public int InTransitOrders { get; set; }
         public int TotalOrders { get; set; }
+    
+        // Country-specific counts
+        public int NigeriaOrders { get; set; }
+        public int USOrders { get; set; }
     }
     public class OrderResponseModelForMobile
     {
