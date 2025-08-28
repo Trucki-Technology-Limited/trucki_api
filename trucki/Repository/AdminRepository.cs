@@ -495,7 +495,7 @@ public async Task<ApiResponseModel<CargoFinancialSummaryResponse>> GetCargoFinan
         // Get all relevant cargo orders with related data in date range
         var ordersData = await _context.CargoOrders
             .Where(co => co.CreatedAt >= startDate && co.CreatedAt <= endDate)
-            .Where(co => co.AcceptedBidId != null) // Only orders with accepted bids
+            //.Where(co => co.AcceptedBidId != null) // Only orders with accepted bids
             .Select(co => new
             {
                 co.Id,
