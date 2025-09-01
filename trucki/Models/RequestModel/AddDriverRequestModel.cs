@@ -97,3 +97,14 @@ public class GetAllDriversRequestModel
     public string? SortBy { get; set; } = "name"; // name, email, country, createdat
     public bool SortDescending { get; set; } = false;
 }
+
+public class UpdateDotNumberRequestModel
+{
+    [Required]
+    public string DriverId { get; set; }
+
+    [Required]
+    [StringLength(12, MinimumLength = 7, ErrorMessage = "DOT number must be between 7 and 12 characters")]
+    [RegularExpression(@"^\d+$", ErrorMessage = "DOT number must contain only digits")]
+    public string DotNumber { get; set; }
+}

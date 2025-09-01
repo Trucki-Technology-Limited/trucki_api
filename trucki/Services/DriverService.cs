@@ -110,4 +110,10 @@ public class DriverService : IDriverService
         var response = await _driverRepository.GetAdminDriversSummary();
         return response;
     }
+
+    public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequestModel model)
+    {
+        var response = await _driverRepository.UpdateDotNumber(model);
+        return response;
+    }
 }

@@ -18,6 +18,9 @@ namespace trucki.Entities
         public string? TruckOwnerId { get; set; }
         public TruckOwner? TruckOwner { get; set; }
         public string? DriversLicence { get; set; }
+        
+        // DOT Number - Required for US drivers, optional for others
+        public string? DotNumber { get; set; }
 
         public string? PassportFile { get; set; }
         public bool IsActive { get; set; } = true;

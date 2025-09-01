@@ -236,4 +236,26 @@ public class DriverController : ControllerBase
         var response = await _driverService.GetAdminDriversSummary();
         return StatusCode(response.StatusCode, response);
     }
+
+    [HttpPost("UpdateDotNumber")]
+    [Authorize(Roles = "driver")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> UpdateDotNumber([FromBody] UpdateDotNumberRequestModel model)
+    {
+        // Get the current user ID from the token
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        // For security, verify the driver is updating their own DOT number
+        var driverProfile = await _driverService.GetDriverProfileById(userId);
+        if (driverProfile.Data?.Id != model.DriverId)
+        {
+            return ApiResponseModel<bool>.Fail("You can only update your own DOT number", StatusCodes.Status403Forbidden);
+        }
+
+        var response = await _driverService.UpdateDotNumber(model);
+        return StatusCode(response.StatusCode, response);
+    }
 }

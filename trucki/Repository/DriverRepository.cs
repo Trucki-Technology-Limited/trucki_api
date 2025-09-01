@@ -780,5 +780,88 @@ public async Task<ApiResponseModel<AdminDriverSummaryResponseModel>> GetAdminDri
         };
     }
 }
+
+public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequestModel model)
+{
+    try
+    {
+        var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == model.DriverId);
+
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                Data = false,
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        // Validate DOT number based on driver's country
+        if (driver.Country == "US")
+        {
+            if (string.IsNullOrEmpty(model.DotNumber))
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "DOT number is required for US drivers",
+                    StatusCode = 400
+                };
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.DotNumber, @"^\d{7,12}$"))
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "DOT number must be 7-12 digits for US drivers",
+                    StatusCode = 400
+                };
+            }
+        }
+
+        // Check if DOT number already exists for another driver
+        var existingDotNumber = await _context.Drivers
+            .FirstOrDefaultAsync(d => d.DotNumber == model.DotNumber && d.Id != model.DriverId);
+        
+        if (existingDotNumber != null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                Data = false,
+                IsSuccessful = false,
+                Message = "This DOT number is already in use by another driver",
+                StatusCode = 400
+            };
+        }
+
+        driver.DotNumber = model.DotNumber;
+        driver.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            Data = true,
+            IsSuccessful = true,
+            Message = "DOT number updated successfully",
+            StatusCode = 200
+        };
+    }
+    catch (Exception ex)
+    {
+        return new ApiResponseModel<bool>
+        {
+            Data = false,
+            IsSuccessful = false,
+            Message = $"An error occurred while updating DOT number: {ex.Message}",
+            StatusCode = 500
+        };
+    }
+}
     
 }
