@@ -297,7 +297,7 @@ public class DriverPayoutService : IDriverPayoutService
                 .Where(o => o.AcceptedBid != null &&
                            o.AcceptedBid.Truck != null &&
                            o.AcceptedBid.Truck.DriverId == driverId &&
-                           o.Status == CargoOrderStatus.Completed &&
+                           o.Status == CargoOrderStatus.Delivered &&
                            !o.IsFlagged &&
                            o.UpdatedAt >= nextPeriodStart &&
                            o.UpdatedAt <= nextPeriodEnd)
@@ -408,7 +408,7 @@ public class DriverPayoutService : IDriverPayoutService
             .Where(o => o.AcceptedBid != null &&
                        o.AcceptedBid.Truck != null &&
                        o.AcceptedBid.Truck.DriverId == driverId &&
-                       o.Status == CargoOrderStatus.Completed &&
+                       o.Status == CargoOrderStatus.Delivered &&
                        !o.IsFlagged &&
                        o.UpdatedAt >= startDate &&
                        o.UpdatedAt <= endDate &&

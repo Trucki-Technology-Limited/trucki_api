@@ -394,7 +394,7 @@ private async Task<CountryOrderStats> GetUSOrderStats(DateTime startDate, DateTi
     var stats = new CountryOrderStats
     {
         Country = "United States",
-        CompletedOrders = cargoOrders.Count(co => co.Status == CargoOrderStatus.Delivered || co.Status == CargoOrderStatus.Completed),
+        CompletedOrders = cargoOrders.Count(co => co.Status == CargoOrderStatus.Delivered),
         FlaggedOrders = cargoOrders.Count(co => co.IsFlagged),
         InTransitOrders = cargoOrders.Count(co => co.Status == CargoOrderStatus.InTransit),
         TotalOrders = cargoOrders.Count
@@ -407,7 +407,7 @@ private async Task<CountryOrderStats> GetUSOrderStats(DateTime startDate, DateTi
         if (monthlyData.ContainsKey(monthName))
         {
             var current = monthlyData[monthName];
-            int completedCount = (order.Status == CargoOrderStatus.Delivered || order.Status == CargoOrderStatus.Completed) ? 1 : 0;
+            int completedCount = (order.Status == CargoOrderStatus.Delivered) ? 1 : 0;
             int flaggedCount = order.IsFlagged ? 1 : 0;
             int inTransitCount = order.Status == CargoOrderStatus.InTransit ? 1 : 0;
 
@@ -680,8 +680,7 @@ private CustomerTypeFinancials CalculateCustomerTypeFinancials(IEnumerable<dynam
     var customerOrders = ordersList.Where(o => (CargoOwnerType)o.CargoOwnerType == customerType).ToList();
     var customerInvoices = invoicesList.Where(i => (CargoOwnerType)i.OrderCargoOwnerType == customerType).ToList();
     
-    var completedOrders = customerOrders.Where(o => (CargoOrderStatus)o.Status == CargoOrderStatus.Completed || 
-                                                   (CargoOrderStatus)o.Status == CargoOrderStatus.Delivered).ToList();
+    var completedOrders = customerOrders.Where(o => (CargoOrderStatus)o.Status == CargoOrderStatus.Delivered).ToList();
     var paidOrders = customerOrders.Where(o => (bool)o.IsPaid).ToList();
     
     var totalRevenue = customerOrders.Sum(o => (decimal)o.SystemFee);
@@ -800,7 +799,7 @@ private List<MonthlyFinancialData> CalculateMonthlyBreakdown(IEnumerable<dynamic
             DriverPayouts = monthDriverPayouts.Where(dp => (bool)dp.IsProcessed).Sum(dp => (decimal)dp.Amount),
             NewInvoices = monthInvoices.Sum(i => (decimal)i.TotalAmount),
             InvoicesPaid = monthInvoices.Where(i => (InvoiceStatus)i.Status == InvoiceStatus.Paid).Sum(i => (decimal)i.TotalAmount),
-            CompletedOrders = monthOrders.Count(o => (CargoOrderStatus)o.Status == CargoOrderStatus.Completed || (CargoOrderStatus)o.Status == CargoOrderStatus.Delivered),
+            CompletedOrders = monthOrders.Count(o => (CargoOrderStatus)o.Status == CargoOrderStatus.Delivered),
             NewCustomers = monthOrders.Select(o => (string)o.CargoOwnerId).Distinct().Count(),
             ShipperRevenue = monthOrders.Where(o => (CargoOwnerType)o.CargoOwnerType == CargoOwnerType.Shipper).Sum(o => (decimal)o.SystemFee),
             BrokerRevenue = monthOrders.Where(o => (CargoOwnerType)o.CargoOwnerType == CargoOwnerType.Broker).Sum(o => (decimal)o.SystemFee)

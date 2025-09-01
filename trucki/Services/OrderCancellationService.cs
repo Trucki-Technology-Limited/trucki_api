@@ -398,7 +398,6 @@ namespace trucki.Services
                 CargoOrderStatus.DriverAcknowledged => (true, "Order can be cancelled"),
                 CargoOrderStatus.InTransit => (false, "Cannot cancel order in transit"),
                 CargoOrderStatus.Delivered => (false, "Cannot cancel delivered order"),
-                CargoOrderStatus.Completed => (false, "Cannot cancel completed order"),
                 CargoOrderStatus.PaymentOverdue => (false, "Cannot cancel order with overdue payment"),
                 CargoOrderStatus.Cancelled => (false, "Cannot cancel order with overdue payment"),
                 _ => (false, "Invalid order status")

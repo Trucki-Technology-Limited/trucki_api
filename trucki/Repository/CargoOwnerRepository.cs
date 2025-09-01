@@ -378,7 +378,7 @@ public class CargoOwnerRepository : ICargoOwnerRepository
             response.IsActive = cargoOwner.User?.IsActive ?? false;
 
             // Calculate order statistics
-            var completedOrders = cargoOwner.Orders.Where(o => o.Status == CargoOrderStatus.Completed).ToList();
+            var completedOrders = cargoOwner.Orders.Where(o => o.Status == CargoOrderStatus.Delivered).ToList();
             response.TotalCompletedOrdersCount = completedOrders.Count;
 
             var pendingOrderStatuses = new[]
