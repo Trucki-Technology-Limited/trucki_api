@@ -268,7 +268,7 @@ namespace trucki.Controllers
                     .ToListAsync();
 
                 var completedOrders = await _dbContext.Set<CargoOrders>()
-                    .Where(o => o.Status == CargoOrderStatus.Completed && 
+                    .Where(o => o.Status == CargoOrderStatus.Delivered && 
                                o.UpdatedAt >= start && o.UpdatedAt <= end)
                     .ToListAsync();
 

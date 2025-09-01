@@ -40,7 +40,6 @@ public enum CargoOrderStatus
     ReadyForPickup,
     InTransit,
     Delivered,
-    Completed,
     PaymentPending,
     PaymentComplete,
     PaymentOverdue,

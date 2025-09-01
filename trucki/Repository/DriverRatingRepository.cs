@@ -30,7 +30,7 @@ namespace trucki.Repository
                             .ThenInclude(t => t.Driver)
                     .FirstOrDefaultAsync(o => o.Id == model.CargoOrderId && 
                                             o.CargoOwnerId == cargoOwnerId &&
-                                            o.Status == CargoOrderStatus.Completed || o.Status == CargoOrderStatus.Delivered);
+                                            o.Status == CargoOrderStatus.Delivered);
 
                 if (order == null)
                 {

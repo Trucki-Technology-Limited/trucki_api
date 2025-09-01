@@ -1249,7 +1249,7 @@ public class TruckRepository : ITruckRepository
             .Where(co => co.AcceptedBid != null && co.AcceptedBid.TruckId == truckId)
             .ToListAsync();
 
-        var completedCargoOrders = cargoOrders.Count(co => co.Status == CargoOrderStatus.Completed);
+        var completedCargoOrders = cargoOrders.Count(co => co.Status == CargoOrderStatus.Delivered);
 
         // Get normal orders statistics
         var normalOrders = await _context.Orders
@@ -1259,7 +1259,7 @@ public class TruckRepository : ITruckRepository
         var completedNormalOrders = normalOrders.Count(o => o.OrderStatus == OrderStatus.Delivered);
 
         // Calculate total earnings (you may need to adjust this based on your business logic)
-        var totalEarnings = cargoOrders.Where(co => co.Status == CargoOrderStatus.Completed)
+        var totalEarnings = cargoOrders.Where(co => co.Status == CargoOrderStatus.Delivered)
                                      .Sum(co => co.DriverEarnings ?? 0);
 
         // Get last trip date

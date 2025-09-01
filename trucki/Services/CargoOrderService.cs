@@ -1353,8 +1353,10 @@ namespace trucki.Services
                     .Include(o => o.AcceptedBid)
                     .Where(o =>
                         o.AcceptedBid != null &&
-                        o.AcceptedBid.TruckId == driver.Truck.Id &&
-                        (o.Status == CargoOrderStatus.Delivered))
+                        o.AcceptedBid.TruckId == driver.Truck.Id 
+                        &&
+                        (o.Status == CargoOrderStatus.Delivered)
+                        )
                     .OrderByDescending(o => o.CreatedAt)
                     .ToListAsync();
 
@@ -1691,7 +1693,6 @@ namespace trucki.Services
             var allowedStatuses = new[]
             {
         CargoOrderStatus.Delivered,
-        CargoOrderStatus.Completed,
         CargoOrderStatus.InTransit
     };
 
@@ -1724,11 +1725,7 @@ namespace trucki.Services
             invoice.Status = InvoiceStatus.Paid;
             invoice.PaymentApprovedAt = DateTime.UtcNow;
 
-            // Move delivered orders to completed
-            if (order.Status == CargoOrderStatus.Delivered)
-            {
-                order.Status = CargoOrderStatus.Completed;
-            }
+            // Order remains in Delivered status after payment approval
 
             await _dbContext.SaveChangesAsync();
             await SendPaymentConfirmationAsync(order, invoice);
@@ -2413,7 +2410,7 @@ namespace trucki.Services
                 };
 
                 var activeOrders = await baseQuery.CountAsync(o => activeStatuses.Contains(o.Status));
-                var completedOrders = await baseQuery.CountAsync(o => o.Status == CargoOrderStatus.Completed);
+                var completedOrders = await baseQuery.CountAsync(o => o.Status == CargoOrderStatus.Delivered);
                 var cancelledOrders = await baseQuery.CountAsync(o => o.Status == CargoOrderStatus.Cancelled);
                 var flaggedOrders = await baseQuery.CountAsync(o => o.IsFlagged);
                 var overduePayments = await baseQuery.CountAsync(o => 
@@ -2615,7 +2612,7 @@ namespace trucki.Services
                 .ToListAsync();
 
             var totalOrders = orders.Count;
-            var completedOrders = orders.Count(o => o.Status == CargoOrderStatus.Completed);
+            var completedOrders = orders.Count(o => o.Status == CargoOrderStatus.Delivered);
             var totalSpent = orders.Where(o => o.IsPaid).Sum(o => o.TotalAmount);
 
             return (totalOrders, completedOrders, totalSpent);
