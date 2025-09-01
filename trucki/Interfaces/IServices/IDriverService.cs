@@ -24,4 +24,5 @@ public interface IDriverService
     Task<ApiResponseModel<bool>> UpdateDriverOnboardingStatus(string driverId, DriverOnboardingStatus status);
     Task<ApiResponseModel<PaginatedListDto<AllDriverResponseModel>>> GetAllDriversPaginated(GetAllDriversRequestModel request);
     Task<ApiResponseModel<AdminDriverSummaryResponseModel>> GetAdminDriversSummary();
+    Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequestModel model);
 }
