@@ -219,8 +219,7 @@ namespace trucki.Repository
                         _dbContext.Set<DriverWallet>().Update(wallet);
                         await _dbContext.SaveChangesAsync();
 
-                        // Mark order as completed
-                        order.Status = CargoOrderStatus.Completed;
+                        // Order remains in Delivered status - no status change needed
                         await _dbContext.SaveChangesAsync();
 
                         // Commit transaction
@@ -577,7 +576,11 @@ namespace trucki.Repository
                     // Create a default response with zeros if no wallet exists
                     var todayDate = DateTime.UtcNow.Date;
                     var TuesdayOffset = ((int)DayOfWeek.Tuesday - (int)todayDate.DayOfWeek + 7) % 7;
+                    if (TuesdayOffset == 0) // If today is Tuesday, next cutoff is next Tuesday
+                        TuesdayOffset = 7;
                     var fridayOffset = ((int)DayOfWeek.Friday - (int)todayDate.DayOfWeek + 7) % 7;
+                    if (fridayOffset == 0) // If today is Friday, next withdrawal is next Friday
+                        fridayOffset = 7;
 
                     return ApiResponseModel<DriverWithdrawalScheduleResponseModel>.Success(
                         "No wallet found for driver",
@@ -599,13 +602,13 @@ namespace trucki.Repository
 
                 // Calculate the date of this week's Tuesday (cutoff)
                 var daysUntilTuesday = ((int)DayOfWeek.Tuesday - (int)dayOfWeek + 7) % 7;
-                if (daysUntilTuesday == 0 && dayOfWeek != DayOfWeek.Tuesday)
+                if (daysUntilTuesday == 0) // If today is Tuesday, next cutoff is next Tuesday
                     daysUntilTuesday = 7;
                 var TuesdayCutoff = today.AddDays(daysUntilTuesday);
 
                 // Calculate the date of this week's Friday (withdrawal)
                 var daysUntilFriday = ((int)DayOfWeek.Friday - (int)dayOfWeek + 7) % 7;
-                if (daysUntilFriday == 0 && dayOfWeek != DayOfWeek.Friday)
+                if (daysUntilFriday == 0) // If today is Friday, next withdrawal is next Friday
                     daysUntilFriday = 7;
                 var fridayWithdrawal = today.AddDays(daysUntilFriday);
 
@@ -729,13 +732,13 @@ namespace trucki.Repository
 
                     // Calculate the date of this week's Tuesday (cutoff)
                     var daysUntilTuesday = ((int)DayOfWeek.Tuesday - (int)dayOfWeek + 7) % 7;
-                    if (daysUntilTuesday == 0 && dayOfWeek != DayOfWeek.Tuesday)
+                    if (daysUntilTuesday == 0) // If today is Tuesday, next cutoff is next Tuesday
                         daysUntilTuesday = 7;
                     var TuesdayCutoff = today.AddDays(daysUntilTuesday);
 
                     // Calculate the date of this week's Friday (withdrawal)
                     var daysUntilFriday = ((int)DayOfWeek.Friday - (int)dayOfWeek + 7) % 7;
-                    if (daysUntilFriday == 0 && dayOfWeek != DayOfWeek.Friday)
+                    if (daysUntilFriday == 0) // If today is Friday, next withdrawal is next Friday
                         daysUntilFriday = 7;
                     var fridayWithdrawal = today.AddDays(daysUntilFriday);
 
