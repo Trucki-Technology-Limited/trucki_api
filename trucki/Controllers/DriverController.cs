@@ -108,7 +108,7 @@ public class DriverController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("CreateDriverAccount")]
-    public async Task<ActionResult<ApiResponseModel<bool>>> CreateDriverAccount([FromBody] CreateDriverRequestModel model)
+    public async Task<ActionResult<ApiResponseModel<string>>> CreateDriverAccount([FromBody] CreateDriverRequestModel model)
     {
         var response = await _driverService.CreateDriverAccount(model);
         return StatusCode(response.StatusCode, response);

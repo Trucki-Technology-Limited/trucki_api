@@ -23,6 +23,8 @@ services:
       - Cloudinary__cloudName=${CLOUDINARY_CLOUD_NAME}
       - Cloudinary__apiKey=${CLOUDINARY_API_KEY}
       - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
+      - Stripe__SecretKey=${STRIPE_TEST_SECRET_KEY}
+      - Stripe__WebhookSecret=${STRIPE_TEST_WEBHOOK_SECRET}
 networks:
   staging-network:
     driver: bridge

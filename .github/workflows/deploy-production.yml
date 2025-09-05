@@ -35,6 +35,8 @@ jobs:
         CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
         CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
         CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+        STRIPE_LIVE_SECRET_KEY=${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+        STRIPE_LIVE_WEBHOOK_SECRET=${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
         EOL
         
     - name: Add production server to known hosts

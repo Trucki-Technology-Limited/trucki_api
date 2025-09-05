@@ -29,7 +29,7 @@ public class CreateDriverRequestModel
     public string Email { set; get; }
     public string Number { set; get; }
     public string Country { set; get; }
-    public string address { set; get; }
+    public string? address { set; get; }
     public string password { set; get; }
 }
 
