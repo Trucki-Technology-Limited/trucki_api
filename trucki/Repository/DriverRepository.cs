@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -21,9 +22,10 @@ public class DriverRepository : IDriverRepository
     private readonly IAuthService _authService;
     private readonly IUploadService _uploadService;
     private readonly IEmailService _emailSender;
+    private readonly ILogger<DriverRepository> _logger;
 
     public DriverRepository(TruckiDBContext appDbContext, UserManager<User> userManager, IMapper mapper,
-        IAuthService authService, IUploadService uploadService, IEmailService emailSender)
+        IAuthService authService, IUploadService uploadService, IEmailService emailSender,ILogger<DriverRepository>  logger)
     {
         _context = appDbContext;
         _mapper = mapper;
@@ -31,6 +33,7 @@ public class DriverRepository : IDriverRepository
         _uploadService = uploadService;
         _emailSender = emailSender;
         _userManager = userManager;
+        _logger = logger;
     }
     public async Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model)
     {
@@ -360,54 +363,127 @@ public class DriverRepository : IDriverRepository
     }
     public async Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model)
     {
-        var existingManager = await _context.Drivers
-            .FirstOrDefaultAsync(m => m.EmailAddress == model.Email || m.Phone == model.Number);
-
-        if (existingManager != null)
+        // Validate input fields
+        var validationErrors = new List<string>();
+        
+        if (string.IsNullOrWhiteSpace(model.Name))
+            validationErrors.Add("Name is required");
+        else if (model.Name.Length < 2 || model.Name.Length > 100)
+            validationErrors.Add("Name must be between 2 and 100 characters");
+            
+        if (string.IsNullOrWhiteSpace(model.Email))
+            validationErrors.Add("Email is required");
+        else if (!IsValidEmail(model.Email))
+            validationErrors.Add("Invalid email format");
+        else if (model.Email.Length > 256)
+            validationErrors.Add("Email cannot exceed 256 characters");
+            
+        if (string.IsNullOrWhiteSpace(model.Number))
+            validationErrors.Add("Phone number is required");
+        else if (model.Number.Length < 10 || model.Number.Length > 20)
+            validationErrors.Add("Phone number must be between 10 and 20 characters");
+            
+        if (string.IsNullOrWhiteSpace(model.Country))
+            validationErrors.Add("Country is required");
+        else if (model.Country.Length < 2 || model.Country.Length > 50)
+            validationErrors.Add("Country must be between 2 and 50 characters");
+            
+        if (!string.IsNullOrWhiteSpace(model.address) && model.address.Length > 500)
+            validationErrors.Add("Address cannot exceed 500 characters");
+            
+        if (string.IsNullOrWhiteSpace(model.password))
+            validationErrors.Add("Password is required");
+        else if (model.password.Length < 5)
+            validationErrors.Add("Password must be at least 5 characters");
+        
+        if (validationErrors.Any())
         {
-            if (existingManager.EmailAddress == model.Email)
+            return new ApiResponseModel<string>
             {
-                return new ApiResponseModel<string>
-                {
-                    IsSuccessful = false,
-                    Message = "Email address already exists",
-                    StatusCode = 400 // Bad Request
-                };
-            }
-            else
-            {
-                return new ApiResponseModel<string>
-                {
-                    IsSuccessful = false,
-                    Message = "Phone number already exists",
-                    StatusCode = 400 // Bad Request
-                };
-            }
+                IsSuccessful = false,
+                Message = string.Join("; ", validationErrors),
+                StatusCode = 400,
+                Data = null
+            };
         }
 
-        var newDriver = new Driver
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
+        try
         {
-            Name = model.Name,
-            Phone = model.Number,
-            EmailAddress = model.Email,
-            Country = model.Country,
-            //PassportFile = "",
-            //DriversLicence = ""
-        };
-        newDriver.OnboardingStatus = DriverOnboardingStatus.OboardingPending;
-        _context.Drivers.Add(newDriver);
-        var res = await _authService.AddNewUserAsync(newDriver.Name, newDriver.EmailAddress, newDriver.Phone,
-            "driver", model.password, true);
-        //TODO:: Email password to user
-        if (res.StatusCode == 201)
-        {
-            var user = await _userManager.FindByEmailAsync(newDriver.EmailAddress);
-            newDriver.UserId = user.Id;
-            newDriver.User = user;
-            var emailSubject = "Account Created";
-            // await _emailSender.SendEmailAsync(newDriver.EmailAddress, emailSubject, password);
-            // **Save changes to database**
+            // Check for existing driver with same email or phone
+            var existingDriver = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.EmailAddress == model.Email || d.Phone == model.Number);
+
+            if (existingDriver != null)
+            {
+                if (existingDriver.EmailAddress == model.Email)
+                {
+                    return new ApiResponseModel<string>
+                    {
+                        IsSuccessful = false,
+                        Message = "Email address already exists",
+                        StatusCode = 400
+                    };
+                }
+                else
+                {
+                    return new ApiResponseModel<string>
+                    {
+                        IsSuccessful = false,
+                        Message = "Phone number already exists",
+                        StatusCode = 400
+                    };
+                }
+            }
+
+            // Create the authentication user first
+            var authResult = await _authService.AddNewUserAsync(
+                model.Name, 
+                model.Email, 
+                model.Number,
+                "driver", 
+                model.password, 
+                true);
+
+            if (authResult.StatusCode != 201)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = authResult.Message ?? "Failed to create user account",
+                    StatusCode = authResult.StatusCode
+                };
+            }
+
+            // Get the created user
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "User was created but could not be retrieved",
+                    StatusCode = 500
+                };
+            }
+
+            // Create the driver record
+            var newDriver = new Driver
+            {
+                Name = model.Name,
+                Phone = model.Number,
+                EmailAddress = model.Email,
+                Country = model.Country,
+                OnboardingStatus = DriverOnboardingStatus.OboardingPending,
+                UserId = user.Id,
+                User = user
+            };
+
+            _context.Drivers.Add(newDriver);
             await _context.SaveChangesAsync();
+
+            // Generate email confirmation token
             string confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             string confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}";
 
@@ -417,21 +493,30 @@ public class DriverRepository : IDriverRepository
                 newDriver.Name,
                 "driver",
                 confirmationLink);
+
+            await transaction.CommitAsync();
+
             return new ApiResponseModel<string>
             {
                 IsSuccessful = true,
-                Message = "Driver created successfully",
+                Message = "Driver account created successfully",
                 StatusCode = 201,
-                Data = ""
+                Data = newDriver.Id
             };
         }
-
-        return new ApiResponseModel<string>
+        catch (Exception ex)
         {
-            IsSuccessful = false,
-            Message = "An error occurred while creating the manager",
-            StatusCode = 400, // Bad Request
-        };
+            await transaction.RollbackAsync();
+            
+            // Log the exception (you might want to inject a logger)
+            _logger.LogError(ex, "Error creating driver account for email: {Email}", model.Email);
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = "An error occurred while creating the driver account",
+                StatusCode = 500
+            };
+        }
     }
 
     public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
@@ -863,5 +948,17 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
         };
     }
 }
-    
+
+    private static bool IsValidEmail(string email)
+    {
+        try
+        {
+            var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase);
+            return emailRegex.IsMatch(email);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

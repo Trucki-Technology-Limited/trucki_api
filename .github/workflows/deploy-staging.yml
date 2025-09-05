@@ -37,6 +37,8 @@ jobs:
         CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
         CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
         CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+        STRIPE_TEST_SECRET_KEY=${{ secrets.STRIPE_TEST_SECRET_KEY }}
+        STRIPE_TEST_WEBHOOK_SECRET=${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
         EOL
         
     - name: Upload .env.staging to server
