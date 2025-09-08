@@ -44,7 +44,7 @@ public class BusinessController : ControllerBase
             });
         }
 
-        if (pageSize < 1 || pageSize > 100)
+        if (pageSize < 1 || pageSize > 500)
         {
             return BadRequest(new ApiResponseModel<PaginatedListDto<AllBusinessResponseModel>>
             {
