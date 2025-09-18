@@ -90,6 +90,10 @@ namespace trucki.Services
                     PickupDateTime = createOrderDto.PickupDateTime,
                     RequiredTruckType = createOrderDto.RequiredTruckType,
                     Status = createOrderDto.OpenForBidding ? CargoOrderStatus.OpenForBidding : CargoOrderStatus.Draft,
+                    PickupContactName = createOrderDto.PickupContactName,
+                    PickupContactPhone = createOrderDto.PickupContactPhone,
+                    DeliveryContactName = createOrderDto.DeliveryContactName,
+                    DeliveryContactPhone = createOrderDto.DeliveryContactPhone,
                     Items = createOrderDto.Items.Select(item => new CargoOrderItem
                     {
                         Description = item.Description,
@@ -190,6 +194,10 @@ namespace trucki.Services
                 existingOrder.DeliveryLocationLong = updateOrderDto.DeliveryLocationLong;
                 existingOrder.CountryCode = updateOrderDto.CountryCode;
                 existingOrder.RequiredTruckType = updateOrderDto.RequiredTruckType;
+                existingOrder.PickupContactName = updateOrderDto.PickupContactName;
+                existingOrder.PickupContactPhone = updateOrderDto.PickupContactPhone;
+                existingOrder.DeliveryContactName = updateOrderDto.DeliveryContactName;
+                existingOrder.DeliveryContactPhone = updateOrderDto.DeliveryContactPhone;
 
                 // If OpenForBidding is true, update the status
                 if (updateOrderDto.OpenForBidding)
@@ -866,6 +874,33 @@ namespace trucki.Services
                 {
                     orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(cargoOrder.AcceptedBid.Truck.Driver);
                 }
+
+                // Set contact information based on order status
+                if (cargoOrder.Status == CargoOrderStatus.ReadyForPickup)
+                {
+                    // Return pickup contact info only
+                    orderResponse.PickupContactName = cargoOrder.PickupContactName;
+                    orderResponse.PickupContactPhone = cargoOrder.PickupContactPhone;
+                    orderResponse.DeliveryContactName = null;
+                    orderResponse.DeliveryContactPhone = null;
+                }
+                else if (cargoOrder.Status == CargoOrderStatus.InTransit)
+                {
+                    // Return delivery contact info only
+                    orderResponse.PickupContactName = null;
+                    orderResponse.PickupContactPhone = null;
+                    orderResponse.DeliveryContactName = cargoOrder.DeliveryContactName;
+                    orderResponse.DeliveryContactPhone = cargoOrder.DeliveryContactPhone;
+                }
+                else
+                {
+                    // For other statuses, don't return contact info to drivers
+                    orderResponse.PickupContactName = null;
+                    orderResponse.PickupContactPhone = null;
+                    orderResponse.DeliveryContactName = null;
+                    orderResponse.DeliveryContactPhone = null;
+                }
+
                 return ApiResponseModel<CargoOrderResponseModel>.Success(
                     "Cargo order retrieved successfully",
                     orderResponse,
@@ -1042,6 +1077,32 @@ namespace trucki.Services
                         {
                             orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(order.AcceptedBid.Truck.Driver);
                         }
+                    }
+
+                    // Set contact information based on order status
+                    if (order.Status == CargoOrderStatus.ReadyForPickup)
+                    {
+                        // Return pickup contact info only
+                        orderResponse.PickupContactName = order.PickupContactName;
+                        orderResponse.PickupContactPhone = order.PickupContactPhone;
+                        orderResponse.DeliveryContactName = null;
+                        orderResponse.DeliveryContactPhone = null;
+                    }
+                    else if (order.Status == CargoOrderStatus.InTransit)
+                    {
+                        // Return delivery contact info only
+                        orderResponse.PickupContactName = null;
+                        orderResponse.PickupContactPhone = null;
+                        orderResponse.DeliveryContactName = order.DeliveryContactName;
+                        orderResponse.DeliveryContactPhone = order.DeliveryContactPhone;
+                    }
+                    else
+                    {
+                        // For other statuses, don't return contact info to drivers
+                        orderResponse.PickupContactName = null;
+                        orderResponse.PickupContactPhone = null;
+                        orderResponse.DeliveryContactName = null;
+                        orderResponse.DeliveryContactPhone = null;
                     }
 
                     orderResponses.Add(orderResponse);

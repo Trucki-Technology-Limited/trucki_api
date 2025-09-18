@@ -67,6 +67,12 @@ public class CargoOrderResponseModel
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+    // Contact person fields (conditionally returned based on order status)
+    public string? PickupContactName { get; set; }
+    public string? PickupContactPhone { get; set; }
+    public string? DeliveryContactName { get; set; }
+    public string? DeliveryContactPhone { get; set; }
 }
 public class DriverBidInfo
 {
