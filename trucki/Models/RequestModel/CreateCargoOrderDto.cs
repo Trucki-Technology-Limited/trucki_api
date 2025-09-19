@@ -31,6 +31,12 @@ namespace trucki.Models.RequestModel
         public CargoTruckType? RequiredTruckType { get; set; }
         public bool OpenForBidding { get; set; }
         public DateTime PickupDateTime { get; set; }
+
+        // Optional contact person fields
+        public string? PickupContactName { get; set; }
+        public string? PickupContactPhone { get; set; }
+        public string? DeliveryContactName { get; set; }
+        public string? DeliveryContactPhone { get; set; }
     }
 
     public class SelectDriverDto

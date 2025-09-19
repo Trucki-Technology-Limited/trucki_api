@@ -90,6 +90,12 @@ public class CargoOrders : BaseClass
     public string? FlagResolutionNotes { get; set; }
     public decimal? DriverEarnings { get; set; }
 
+    // Contact person fields
+    public string? PickupContactName { get; set; }
+    public string? PickupContactPhone { get; set; }
+    public string? DeliveryContactName { get; set; }
+    public string? DeliveryContactPhone { get; set; }
+
 }
 
 public enum PaymentMethodType
