@@ -949,6 +949,202 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
     }
 }
 
+    public async Task<ApiResponseModel<AdminDriverDetailsResponseModel>> GetDriverDetailsForAdmin(string driverId)
+    {
+        try
+        {
+            var driver = await _context.Drivers
+                .Where(d => d.Id == driverId)
+                .Include(d => d.User)
+                .Include(d => d.Truck)
+                    .ThenInclude(t => t.TruckOwner)
+                .Include(d => d.BankAccounts)
+                .Include(d => d.TermsAcceptanceRecords)
+                .Include(d => d.DriverDocuments)
+                    .ThenInclude(dd => dd.DocumentType)
+                .FirstOrDefaultAsync();
+
+            if (driver == null)
+            {
+                return new ApiResponseModel<AdminDriverDetailsResponseModel>
+                {
+                    IsSuccessful = false,
+                    Message = "Driver not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Get all required document types for this driver's country
+            var requiredDocumentTypes = await _context.DocumentTypes
+                .Where(dt => dt.Country == driver.Country && dt.EntityType == "Driver" && dt.IsRequired)
+                .ToListAsync();
+
+            // Build document status list
+            var documentStatuses = new List<DriverDocumentStatusDto>();
+            foreach (var docType in requiredDocumentTypes)
+            {
+                var driverDoc = driver.DriverDocuments.FirstOrDefault(dd => dd.DocumentTypeId == docType.Id);
+
+                documentStatuses.Add(new DriverDocumentStatusDto
+                {
+                    DocumentTypeId = docType.Id,
+                    DocumentTypeName = docType.Name,
+                    IsRequired = docType.IsRequired,
+                    IsUploaded = driverDoc != null,
+                    ApprovalStatus = driverDoc?.ApprovalStatus ?? "NotUploaded",
+                    FileUrl = driverDoc?.FileUrl ?? "",
+                    RejectionReason = driverDoc?.RejectionReason ?? ""
+                });
+            }
+
+            // Calculate document summary
+            var documentSummary = new DocumentUploadSummary
+            {
+                TotalRequiredDocuments = requiredDocumentTypes.Count,
+                UploadedDocuments = documentStatuses.Count(ds => ds.IsUploaded),
+                ApprovedDocuments = documentStatuses.Count(ds => ds.ApprovalStatus == "Approved"),
+                RejectedDocuments = documentStatuses.Count(ds => ds.ApprovalStatus == "Rejected"),
+                PendingDocuments = documentStatuses.Count(ds => ds.ApprovalStatus == "Pending")
+            };
+
+            // Get terms acceptance history
+            var termsHistory = driver.TermsAcceptanceRecords
+                .OrderByDescending(t => t.AcceptedAt)
+                .Select(t => new TermsAcceptanceRecordDto
+                {
+                    TermsVersion = t.TermsVersion,
+                    AcceptedAt = t.AcceptedAt,
+                    AcceptedFromIp = t.AcceptedFromIp,
+                    DeviceInfo = t.DeviceInfo
+                })
+                .ToList();
+
+            // Build truck info if truck exists
+            AdminDriverTruckInfo? truckInfo = null;
+            if (driver.Truck != null)
+            {
+                truckInfo = new AdminDriverTruckInfo
+                {
+                    TruckId = driver.Truck.Id,
+                    PlateNumber = driver.Truck.PlateNumber,
+                    TruckName = driver.Truck.TruckName,
+                    TruckCapacity = driver.Truck.TruckCapacity,
+                    TruckType = driver.Truck.TruckType,
+                    ApprovalStatus = driver.Truck.ApprovalStatus,
+                    TruckStatus = driver.Truck.TruckStatus,
+                    IsDriverOwnedTruck = driver.Truck.IsDriverOwnedTruck,
+                    CreatedAt = driver.Truck.CreatedAt,
+                    ExternalTruckPictureUrl = driver.Truck.ExternalTruckPictureUrl,
+                    CargoSpacePictureUrl = driver.Truck.CargoSpacePictureUrl,
+                    Documents = driver.Truck.Documents ?? new List<string>(),
+                    TruckLicenseExpiryDate = driver.Truck.TruckLicenseExpiryDate,
+                    RoadWorthinessExpiryDate = driver.Truck.RoadWorthinessExpiryDate,
+                    InsuranceExpiryDate = driver.Truck.InsuranceExpiryDate,
+                    TruckOwnerId = driver.Truck.TruckOwnerId,
+                    TruckOwnerName = driver.Truck.TruckOwner?.Name
+                };
+            }
+
+            // Calculate onboarding progress
+            var progress = new OnboardingProgressSummary
+            {
+                TermsAccepted = termsHistory.Any(t => t.TermsVersion == "2025"), // Current version
+                ProfilePictureUploaded = !string.IsNullOrEmpty(driver.PassportFile),
+                AllDocumentsUploaded = documentSummary.AllRequiredDocumentsUploaded,
+                AllDocumentsApproved = documentSummary.AllDocumentsApproved,
+                TruckAdded = driver.Truck != null,
+                TruckApproved = driver.Truck?.ApprovalStatus == ApprovalStatus.Approved
+            };
+
+            // Build completed and pending steps lists
+            progress.CompletedSteps = new List<string>();
+            progress.PendingSteps = new List<string>();
+            progress.RejectedItems = new List<string>();
+
+            if (progress.TermsAccepted) progress.CompletedSteps.Add("Terms and Conditions Accepted");
+            else progress.PendingSteps.Add("Accept Terms and Conditions");
+
+            if (progress.ProfilePictureUploaded) progress.CompletedSteps.Add("Profile Picture Uploaded");
+            else progress.PendingSteps.Add("Upload Profile Picture");
+
+            if (progress.AllDocumentsUploaded) progress.CompletedSteps.Add("All Documents Uploaded");
+            else progress.PendingSteps.Add("Upload Required Documents");
+
+            if (progress.AllDocumentsApproved) progress.CompletedSteps.Add("All Documents Approved");
+            else if (progress.AllDocumentsUploaded) progress.PendingSteps.Add("Document Approval");
+
+            if (progress.TruckAdded) progress.CompletedSteps.Add("Truck Added");
+            else progress.PendingSteps.Add("Add Truck");
+
+            if (progress.TruckApproved) progress.CompletedSteps.Add("Truck Approved");
+            else if (progress.TruckAdded)
+            {
+                if (driver.Truck?.ApprovalStatus == ApprovalStatus.NotApproved || driver.Truck?.ApprovalStatus == ApprovalStatus.Blocked)
+                    progress.RejectedItems.Add("Truck approval rejected/blocked");
+                else
+                    progress.PendingSteps.Add("Truck Approval");
+            }
+
+            // Add rejected documents to rejected items
+            foreach (var rejectedDoc in documentStatuses.Where(ds => ds.ApprovalStatus == "Rejected"))
+            {
+                progress.RejectedItems.Add($"{rejectedDoc.DocumentTypeName} document rejected");
+            }
+
+            progress.CompletedStepCount = progress.CompletedSteps.Count;
+            progress.OverallStatus = progress.CanBeApproved ? "Ready for Approval" :
+                                   progress.RejectedItems.Any() ? "Has Rejections" :
+                                   "In Progress";
+
+            // Build the response
+            var response = new AdminDriverDetailsResponseModel
+            {
+                Id = driver.Id,
+                Name = driver.Name,
+                Phone = driver.Phone,
+                EmailAddress = driver.EmailAddress,
+                UserId = driver.UserId,
+                DriversLicence = driver.DriversLicence,
+                DotNumber = driver.DotNumber,
+                Country = driver.Country,
+                IsActive = driver.IsActive,
+                CreatedAt = driver.CreatedAt,
+                UpdatedAt = driver.UpdatedAt,
+                ProfilePictureUrl = driver.PassportFile,
+                OnboardingStatus = driver.OnboardingStatus,
+                HasAcceptedLatestTerms = progress.TermsAccepted,
+                TermsAcceptanceHistory = termsHistory,
+                LatestTermsAcceptedAt = termsHistory.FirstOrDefault()?.AcceptedAt,
+                DocumentStatuses = documentStatuses,
+                DocumentSummary = documentSummary,
+                TruckInfo = truckInfo,
+                StripeConnectAccountId = driver.StripeConnectAccountId,
+                StripeAccountStatus = driver.StripeAccountStatus,
+                CanReceivePayouts = driver.CanReceivePayouts,
+                BankAccounts = _mapper.Map<ICollection<DriverBankAccountResponseModel>>(driver.BankAccounts),
+                OnboardingProgress = progress
+            };
+
+            return new ApiResponseModel<AdminDriverDetailsResponseModel>
+            {
+                IsSuccessful = true,
+                Message = "Driver details retrieved successfully",
+                Data = response,
+                StatusCode = 200
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving driver details for admin for driver {DriverId}", driverId);
+            return new ApiResponseModel<AdminDriverDetailsResponseModel>
+            {
+                IsSuccessful = false,
+                Message = "An error occurred while retrieving driver details",
+                StatusCode = 500
+            };
+        }
+    }
+
     private static bool IsValidEmail(string email)
     {
         try

@@ -14,13 +14,15 @@ namespace trucki.Controllers
         private readonly IAdminService _adminService;
         private readonly ICargoOwnerService _cargoOwnerService;
         private readonly ICargoOrderService _cargoOrderService;
+        private readonly IDriverService _driverService;
 
 
-        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService)
+        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService, IDriverService driverService)
         {
             _adminService = adminService;
             _cargoOwnerService = cargoOwnerService;
             _cargoOrderService = cargoOrderService;
+            _driverService = driverService;
         }
 
         [HttpGet("GetDashboardData")]
@@ -236,6 +238,51 @@ namespace trucki.Controllers
                 endDate = DateTime.UtcNow.Date;
 
             var response = await _adminService.GetCargoFinancialSummary(startDate, endDate);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Get comprehensive driver details including onboarding status for admin
+        /// </summary>
+        [HttpGet("driversbyId")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<AdminDriverDetailsResponseModel>>> GetDriverDetails(string driverId)
+        {
+            if (string.IsNullOrWhiteSpace(driverId))
+            {
+                return BadRequest(ApiResponseModel<AdminDriverDetailsResponseModel>.Fail(
+                    "Driver ID is required",
+                    400));
+            }
+
+            var response = await _driverService.GetDriverDetailsForAdmin(driverId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Update driver onboarding status (approve/reject driver)
+        /// </summary>
+        [HttpPatch("drivers/onboarding-status")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> UpdateDriverOnboardingStatus(
+            string driverId,
+            [FromBody] UpdateDriverOnboardingStatusRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(driverId))
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Driver ID is required",
+                    400));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Invalid request data",
+                    400));
+            }
+
+            var response = await _driverService.UpdateDriverOnboardingStatus(driverId, request.OnboardingStatus);
             return StatusCode(response.StatusCode, response);
         }
     }
