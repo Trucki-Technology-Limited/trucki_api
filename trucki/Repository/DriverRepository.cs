@@ -988,6 +988,7 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
                 documentStatuses.Add(new DriverDocumentStatusDto
                 {
                     DocumentTypeId = docType.Id,
+                    DocumentId = driverDoc?.Id ?? "",
                     DocumentTypeName = docType.Name,
                     IsRequired = docType.IsRequired,
                     IsUploaded = driverDoc != null,
@@ -1143,6 +1144,103 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
                 StatusCode = 500
             };
         }
+    }
+
+    public async Task<ApiResponseModel<bool>> CompleteDriverApprovalAsync(string driverId)
+    {
+        try
+        {
+            var driver = await _context.Drivers
+                .Include(d => d.DriverDocuments)
+                    .ThenInclude(dd => dd.DocumentType)
+                .Include(d => d.Truck)
+                .Include(d => d.TermsAcceptanceRecords)
+                .FirstOrDefaultAsync(d => d.Id == driverId);
+
+            if (driver == null)
+            {
+                return ApiResponseModel<bool>.Fail("Driver not found", 404);
+            }
+
+            // Check if driver can be approved
+            var validationResults = await ValidateDriverForApproval(driver);
+            if (!validationResults.CanBeApproved)
+            {
+                return ApiResponseModel<bool>.Fail(
+                    $"Driver cannot be approved: {string.Join(", ", validationResults.BlockingIssues)}",
+                    400);
+            }
+
+            // Update driver status to approved
+            driver.OnboardingStatus = DriverOnboardingStatus.OnboardingCompleted;
+            await _context.SaveChangesAsync();
+
+            return ApiResponseModel<bool>.Success(
+                "Driver has been successfully approved and can now start working",
+                true,
+                200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<bool>.Fail(
+                $"An error occurred while approving driver: {ex.Message}",
+                500);
+        }
+    }
+
+    private async Task<(bool CanBeApproved, List<string> BlockingIssues)> ValidateDriverForApproval(Driver driver)
+    {
+        var blockingIssues = new List<string>();
+
+        // 1. Check terms acceptance
+        if (!driver.TermsAcceptanceRecords.Any(t => t.TermsVersion == "2025")) // Update with your current version
+        {
+            blockingIssues.Add("Driver has not accepted the latest terms and conditions");
+        }
+
+        // 2. Check profile picture/passport
+        if (string.IsNullOrWhiteSpace(driver.PassportFile))
+        {
+            blockingIssues.Add("Driver has not uploaded profile picture/passport");
+        }
+
+        // 3. Check DOT number for US drivers
+        if (driver.Country == "US" && string.IsNullOrWhiteSpace(driver.DotNumber))
+        {
+            blockingIssues.Add("US driver must provide DOT number");
+        }
+
+        // 4. Check required documents
+        var requiredDocTypes = await _context.DocumentTypes
+            .Where(dt => dt.IsRequired && dt.EntityType == "Driver" &&
+                        (dt.Country == driver.Country || dt.Country == "ALL"))
+            .ToListAsync();
+
+        var approvedDocs = driver.DriverDocuments
+            .Where(dd => dd.ApprovalStatus == "Approved")
+            .Select(dd => dd.DocumentTypeId)
+            .ToList();
+
+        var missingDocs = requiredDocTypes
+            .Where(rt => !approvedDocs.Contains(rt.Id))
+            .Select(rt => rt.Name)
+            .ToList();
+
+        if (missingDocs.Any())
+        {
+            blockingIssues.Add($"Missing approved documents: {string.Join(", ", missingDocs)}");
+        }
+
+        // 5. Check truck approval (if driver owns a truck)
+        if (driver.Truck != null && driver.Truck.IsDriverOwnedTruck)
+        {
+            if (driver.Truck.ApprovalStatus != ApprovalStatus.Approved)
+            {
+                blockingIssues.Add("Driver's truck is not approved");
+            }
+        }
+
+        return (CanBeApproved: !blockingIssues.Any(), BlockingIssues: blockingIssues);
     }
 
     private static bool IsValidEmail(string email)

@@ -26,4 +26,7 @@ public interface IDriverService
     Task<ApiResponseModel<AdminDriverSummaryResponseModel>> GetAdminDriversSummary();
     Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequestModel model);
     Task<ApiResponseModel<AdminDriverDetailsResponseModel>> GetDriverDetailsForAdmin(string driverId);
+
+    // Complete driver approval process
+    Task<ApiResponseModel<bool>> CompleteDriverApprovalAsync(string driverId);
 }

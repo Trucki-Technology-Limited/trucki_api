@@ -42,7 +42,7 @@ namespace trucki.Services
             return await _driverDocumentRepository.CreateAsync(driverDocument);
         }
 
-        public async Task<DriverDocument> ApproveDocumentAsync(string driverDocumentId)
+        public async Task<DriverDocumentResponseDto> ApproveDocumentAsync(string driverDocumentId)
         {
             var doc = await _driverDocumentRepository.GetByIdAsync(driverDocumentId);
             if (doc == null) return null;
@@ -50,10 +50,22 @@ namespace trucki.Services
             doc.ApprovalStatus = "Approved";
             doc.ReviewedAt = DateTime.UtcNow;
             doc.RejectionReason = null; // Clear any existing reason
-            return await _driverDocumentRepository.UpdateAsync(doc);
+            var updatedDoc = await _driverDocumentRepository.UpdateAsync(doc);
+
+            return new DriverDocumentResponseDto
+            {
+                Id = updatedDoc.Id,
+                DriverId = updatedDoc.DriverId,
+                DocumentTypeId = updatedDoc.DocumentTypeId,
+                FileUrl = updatedDoc.FileUrl,
+                ApprovalStatus = updatedDoc.ApprovalStatus,
+                RejectionReason = updatedDoc.RejectionReason,
+                SubmittedAt = updatedDoc.SubmittedAt,
+                ReviewedAt = updatedDoc.ReviewedAt
+            };
         }
 
-        public async Task<DriverDocument> RejectDocumentAsync(string driverDocumentId, string reason)
+        public async Task<DriverDocumentResponseDto> RejectDocumentAsync(string driverDocumentId, string reason)
         {
             var doc = await _driverDocumentRepository.GetByIdAsync(driverDocumentId);
             if (doc == null) return null;
@@ -61,7 +73,19 @@ namespace trucki.Services
             doc.ApprovalStatus = "Rejected";
             doc.ReviewedAt = DateTime.UtcNow;
             doc.RejectionReason = reason;
-            return await _driverDocumentRepository.UpdateAsync(doc);
+            var updatedDoc = await _driverDocumentRepository.UpdateAsync(doc);
+
+            return new DriverDocumentResponseDto
+            {
+                Id = updatedDoc.Id,
+                DriverId = updatedDoc.DriverId,
+                DocumentTypeId = updatedDoc.DocumentTypeId,
+                FileUrl = updatedDoc.FileUrl,
+                ApprovalStatus = updatedDoc.ApprovalStatus,
+                RejectionReason = updatedDoc.RejectionReason,
+                SubmittedAt = updatedDoc.SubmittedAt,
+                ReviewedAt = updatedDoc.ReviewedAt
+            };
         }
 
         public async Task<bool> DeleteDriverDocumentAsync(string driverDocumentId)
@@ -168,6 +192,121 @@ namespace trucki.Services
             // For now, we only included the "required" doc types.
 
             return result;
+        }
+
+        public async Task<ApiResponseModel<BatchApprovalResponseModel>> BatchApproveDocumentsAsync(List<string> documentIds)
+        {
+            var result = new BatchApprovalResponseModel
+            {
+                TotalRequested = documentIds.Count
+            };
+
+            foreach (var documentId in documentIds)
+            {
+                try
+                {
+                    var doc = await _driverDocumentRepository.GetByIdAsync(documentId);
+                    if (doc == null)
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new BatchApprovalError
+                        {
+                            ItemId = documentId,
+                            Error = "Document not found"
+                        });
+                        continue;
+                    }
+
+                    doc.ApprovalStatus = "Approved";
+                    doc.ReviewedAt = DateTime.UtcNow;
+                    doc.RejectionReason = null;
+
+                    await _driverDocumentRepository.UpdateAsync(doc);
+
+                    result.SuccessfullyProcessed++;
+                    result.SuccessfulIds.Add(documentId);
+
+                    // Check if driver can now be auto-approved
+                    if (await ShouldAutoApproveDriver(doc.DriverId))
+                    {
+                        if (!result.AutoApprovedDrivers.Contains(doc.DriverId))
+                        {
+                            result.AutoApprovedDrivers.Add(doc.DriverId);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result.Failed++;
+                    result.Errors.Add(new BatchApprovalError
+                    {
+                        ItemId = documentId,
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            return ApiResponseModel<BatchApprovalResponseModel>.Success(
+                $"Batch approval completed. {result.SuccessfullyProcessed}/{result.TotalRequested} documents approved.",
+                result,
+                200
+            );
+        }
+
+        public async Task<ApiResponseModel<BatchApprovalResponseModel>> BatchRejectDocumentsAsync(List<string> documentIds, string rejectionReason)
+        {
+            var result = new BatchApprovalResponseModel
+            {
+                TotalRequested = documentIds.Count
+            };
+
+            foreach (var documentId in documentIds)
+            {
+                try
+                {
+                    var doc = await _driverDocumentRepository.GetByIdAsync(documentId);
+                    if (doc == null)
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new BatchApprovalError
+                        {
+                            ItemId = documentId,
+                            Error = "Document not found"
+                        });
+                        continue;
+                    }
+
+                    doc.ApprovalStatus = "Rejected";
+                    doc.ReviewedAt = DateTime.UtcNow;
+                    doc.RejectionReason = rejectionReason;
+
+                    await _driverDocumentRepository.UpdateAsync(doc);
+
+                    result.SuccessfullyProcessed++;
+                    result.SuccessfulIds.Add(documentId);
+                }
+                catch (Exception ex)
+                {
+                    result.Failed++;
+                    result.Errors.Add(new BatchApprovalError
+                    {
+                        ItemId = documentId,
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            return ApiResponseModel<BatchApprovalResponseModel>.Success(
+                $"Batch rejection completed. {result.SuccessfullyProcessed}/{result.TotalRequested} documents rejected.",
+                result,
+                200
+            );
+        }
+
+        private async Task<bool> ShouldAutoApproveDriver(string driverId)
+        {
+            // Check if all required documents are approved for this driver
+            return await AreAllRequiredDocumentsApprovedAsync(driverId);
         }
     }
 }

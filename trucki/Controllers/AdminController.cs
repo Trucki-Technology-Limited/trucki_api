@@ -15,14 +15,16 @@ namespace trucki.Controllers
         private readonly ICargoOwnerService _cargoOwnerService;
         private readonly ICargoOrderService _cargoOrderService;
         private readonly IDriverService _driverService;
+        private readonly IDriverDocumentService _driverDocumentService;
 
 
-        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService, IDriverService driverService)
+        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService, IDriverService driverService, IDriverDocumentService driverDocumentService)
         {
             _adminService = adminService;
             _cargoOwnerService = cargoOwnerService;
             _cargoOrderService = cargoOrderService;
             _driverService = driverService;
+            _driverDocumentService = driverDocumentService;
         }
 
         [HttpGet("GetDashboardData")]
@@ -285,5 +287,98 @@ namespace trucki.Controllers
             var response = await _driverService.UpdateDriverOnboardingStatus(driverId, request.OnboardingStatus);
             return StatusCode(response.StatusCode, response);
         }
+
+
+        /// <summary>
+        /// Batch approve multiple documents
+        /// </summary>
+        [HttpPost("documents/batch-approve")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<BatchApprovalResponseModel>>> BatchApproveDocuments(
+            [FromBody] BatchDocumentApprovalRequest request)
+        {
+            if (!ModelState.IsValid || !request.DocumentIds.Any())
+            {
+                return BadRequest(ApiResponseModel<BatchApprovalResponseModel>.Fail(
+                    "Invalid request or empty document list",
+                    400));
+            }
+
+            try
+            {
+                var response = await _driverDocumentService.BatchApproveDocumentsAsync(request.DocumentIds);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponseModel<BatchApprovalResponseModel>.Fail(
+                    $"Internal server error: {ex.Message}",
+                    500));
+            }
+        }
+
+        /// <summary>
+        /// Batch reject multiple documents
+        /// </summary>
+        [HttpPost("documents/batch-reject")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<BatchApprovalResponseModel>>> BatchRejectDocuments(
+            [FromBody] BatchDocumentApprovalRequest request)
+        {
+            if (!ModelState.IsValid || !request.DocumentIds.Any())
+            {
+                return BadRequest(ApiResponseModel<BatchApprovalResponseModel>.Fail(
+                    "Invalid request or empty document list",
+                    400));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.RejectionReason))
+            {
+                return BadRequest(ApiResponseModel<BatchApprovalResponseModel>.Fail(
+                    "Rejection reason is required for batch rejection",
+                    400));
+            }
+
+            try
+            {
+                var response = await _driverDocumentService.BatchRejectDocumentsAsync(request.DocumentIds, request.RejectionReason);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponseModel<BatchApprovalResponseModel>.Fail(
+                    $"Internal server error: {ex.Message}",
+                    500));
+            }
+        }
+
+
+        /// <summary>
+        /// Complete driver approval process - approve driver after all requirements are met
+        /// </summary>
+        [HttpPost("drivers/{driverId}/complete-approval")]
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> CompleteDriverApproval(string driverId)
+        {
+            if (string.IsNullOrWhiteSpace(driverId))
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Driver ID is required",
+                    400));
+            }
+
+            try
+            {
+                var response = await _driverService.CompleteDriverApprovalAsync(driverId);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponseModel<bool>.Fail(
+                    $"Internal server error: {ex.Message}",
+                    500));
+            }
+        }
+
     }
 }
