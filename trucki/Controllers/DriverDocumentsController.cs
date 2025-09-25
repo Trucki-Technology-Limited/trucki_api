@@ -83,61 +83,59 @@ namespace trucki.Controllers
 
         // PUT: api/DriverDocuments/approve/{documentId}
         [HttpPut("approve/{documentId}")]
-        public async Task<IActionResult> Approve(string documentId)
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<DriverDocumentResponseDto>>> Approve(string documentId)
         {
             try
             {
                 var doc = await _driverDocumentService.ApproveDocumentAsync(documentId);
                 if (doc == null)
                 {
-                    var notFound = ApiResponseModel<string>.Fail(
+                    return NotFound(ApiResponseModel<DriverDocumentResponseDto>.Fail(
                         "Driver document not found",
                         StatusCodes.Status404NotFound
-                    );
-                    return NotFound(notFound);
+                    ));
                 }
 
-                var success = ApiResponseModel<DriverDocument>.Success(
+                return Ok(ApiResponseModel<DriverDocumentResponseDto>.Success(
                     "Driver document approved",
                     doc,
                     StatusCodes.Status200OK
-                );
-                return Ok(success);
+                ));
             }
             catch (Exception ex)
             {
-                var error = ApiResponseModel<string>.Fail(ex.Message, StatusCodes.Status500InternalServerError);
-                return StatusCode(StatusCodes.Status500InternalServerError, error);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponseModel<DriverDocument>.Fail(ex.Message, StatusCodes.Status500InternalServerError));
             }
         }
 
         // PUT: api/DriverDocuments/reject/{documentId}
         [HttpPut("reject/{documentId}")]
-        public async Task<IActionResult> Reject(string documentId, [FromBody] string reason)
+        [Authorize(Roles = "admin,manager")]
+        public async Task<ActionResult<ApiResponseModel<DriverDocumentResponseDto>>> Reject(string documentId, [FromBody] string reason)
         {
             try
             {
                 var doc = await _driverDocumentService.RejectDocumentAsync(documentId, reason);
                 if (doc == null)
                 {
-                    var notFound = ApiResponseModel<string>.Fail(
+                    return NotFound(ApiResponseModel<DriverDocumentResponseDto>.Fail(
                         "Driver document not found",
                         StatusCodes.Status404NotFound
-                    );
-                    return NotFound(notFound);
+                    ));
                 }
 
-                var success = ApiResponseModel<DriverDocument>.Success(
+                return Ok(ApiResponseModel<DriverDocumentResponseDto>.Success(
                     "Driver document rejected",
                     doc,
                     StatusCodes.Status200OK
-                );
-                return Ok(success);
+                ));
             }
             catch (Exception ex)
             {
-                var error = ApiResponseModel<string>.Fail(ex.Message, StatusCodes.Status500InternalServerError);
-                return StatusCode(StatusCodes.Status500InternalServerError, error);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponseModel<DriverDocumentResponseDto>.Fail(ex.Message, StatusCodes.Status500InternalServerError));
             }
         }
 

@@ -122,4 +122,10 @@ public class DriverService : IDriverService
         var response = await _driverRepository.GetDriverDetailsForAdmin(driverId);
         return response;
     }
+
+    public async Task<ApiResponseModel<bool>> CompleteDriverApprovalAsync(string driverId)
+    {
+        var response = await _driverRepository.CompleteDriverApprovalAsync(driverId);
+        return response;
+    }
 }

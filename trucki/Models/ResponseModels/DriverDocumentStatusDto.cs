@@ -3,6 +3,7 @@ namespace trucki.Models.ResponseModels
     public class DriverDocumentStatusDto
     {
         public string DocumentTypeId { get; set; }
+        public string DocumentId { get; set; }
         public string DocumentTypeName { get; set; }
         public bool IsRequired { get; set; }
 
