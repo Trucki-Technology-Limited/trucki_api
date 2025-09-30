@@ -23,7 +23,7 @@ jobs:
 
     - name: Create Firebase credentials file
       run: |
-        cat > trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json <<'EOL'
+        cat > trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json <<'EOL'
         {
           "type": "service_account",
           "project_id": "${{ secrets.FIREBASE_PROJECT_ID }}",
@@ -64,8 +64,7 @@ jobs:
     - name: Upload files to server
       run: |
         scp .env.production ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/.env.production
-        ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} "mkdir -p ${{ secrets.PRODUCTION_DEPLOY_PATH }}/trucki"
-        scp trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json
+        scp trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json
         
     - name: Deploy to production server
       run: |
