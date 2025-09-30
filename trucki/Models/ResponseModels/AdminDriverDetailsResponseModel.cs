@@ -14,6 +14,7 @@ namespace trucki.Models.ResponseModels
         public string UserId { get; set; }
         public string DriversLicence { get; set; }
         public string? DotNumber { get; set; }
+        public string? McNumber { get; set; }
         public string Country { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }

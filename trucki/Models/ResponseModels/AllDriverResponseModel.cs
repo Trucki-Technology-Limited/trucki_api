@@ -17,6 +17,7 @@ namespace trucki.Models.ResponseModels
 
         public string DriversLicence { get; set; }
         public string? DotNumber { get; set; }
+        public string? McNumber { get; set; }
 
         public string PassportFile { get; set; }
     }
@@ -43,6 +44,7 @@ namespace trucki.Models.ResponseModels
 
         public string DriversLicence { get; set; }
         public string? DotNumber { get; set; }
+        public string? McNumber { get; set; }
         public AllTruckResponseModel Truck { get; set; }
         public ICollection<DriverBankAccountResponseModel> BankAccounts { get; set; }
 

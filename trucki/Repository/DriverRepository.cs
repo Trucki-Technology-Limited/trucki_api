@@ -909,10 +909,40 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
             }
         }
 
+        // Validate MC number if provided
+        if (!string.IsNullOrEmpty(model.McNumber))
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.McNumber, @"^\d{6,12}$"))
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "MC number must be 6-12 digits",
+                    StatusCode = 400
+                };
+            }
+
+            // Check if MC number already exists for another driver
+            var existingMcNumber = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.McNumber == model.McNumber && d.Id != model.DriverId);
+
+            if (existingMcNumber != null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "This MC number is already in use by another driver",
+                    StatusCode = 400
+                };
+            }
+        }
+
         // Check if DOT number already exists for another driver
         var existingDotNumber = await _context.Drivers
             .FirstOrDefaultAsync(d => d.DotNumber == model.DotNumber && d.Id != model.DriverId);
-        
+
         if (existingDotNumber != null)
         {
             return new ApiResponseModel<bool>
@@ -925,15 +955,22 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
         }
 
         driver.DotNumber = model.DotNumber;
+        driver.McNumber = model.McNumber;
         driver.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        string successMessage = "DOT number updated successfully";
+        if (!string.IsNullOrEmpty(model.McNumber))
+        {
+            successMessage = "DOT and MC numbers updated successfully";
+        }
 
         return new ApiResponseModel<bool>
         {
             Data = true,
             IsSuccessful = true,
-            Message = "DOT number updated successfully",
+            Message = successMessage,
             StatusCode = 200
         };
     }
@@ -943,7 +980,126 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
         {
             Data = false,
             IsSuccessful = false,
-            Message = $"An error occurred while updating DOT number: {ex.Message}",
+            Message = $"An error occurred while updating transportation numbers: {ex.Message}",
+            StatusCode = 500
+        };
+    }
+}
+
+public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTransportationNumbersRequestModel model)
+{
+    try
+    {
+        var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == model.DriverId);
+
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                Data = false,
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        // Validate DOT number if provided
+        if (!string.IsNullOrEmpty(model.DotNumber))
+        {
+            // Validate DOT number based on driver's country
+            if (driver.Country == "US")
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.DotNumber, @"^\d{7,12}$"))
+                {
+                    return new ApiResponseModel<bool>
+                    {
+                        Data = false,
+                        IsSuccessful = false,
+                        Message = "DOT number must be 7-12 digits for US drivers",
+                        StatusCode = 400
+                    };
+                }
+            }
+
+            // Check if DOT number already exists for another driver
+            var existingDotNumber = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.DotNumber == model.DotNumber && d.Id != model.DriverId);
+
+            if (existingDotNumber != null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "This DOT number is already in use by another driver",
+                    StatusCode = 400
+                };
+            }
+        }
+
+        // Validate MC number if provided
+        if (!string.IsNullOrEmpty(model.McNumber))
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.McNumber, @"^\d{6,12}$"))
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "MC number must be 6-12 digits",
+                    StatusCode = 400
+                };
+            }
+
+            // Check if MC number already exists for another driver
+            var existingMcNumber = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.McNumber == model.McNumber && d.Id != model.DriverId);
+
+            if (existingMcNumber != null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "This MC number is already in use by another driver",
+                    StatusCode = 400
+                };
+            }
+        }
+
+        // Update the driver's transportation numbers
+        if (!string.IsNullOrEmpty(model.DotNumber))
+            driver.DotNumber = model.DotNumber;
+
+        if (!string.IsNullOrEmpty(model.McNumber))
+            driver.McNumber = model.McNumber;
+
+        driver.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Build success message
+        List<string> updatedNumbers = new List<string>();
+        if (!string.IsNullOrEmpty(model.DotNumber)) updatedNumbers.Add("DOT number");
+        if (!string.IsNullOrEmpty(model.McNumber)) updatedNumbers.Add("MC number");
+
+        string successMessage = $"{string.Join(" and ", updatedNumbers)} updated successfully";
+
+        return new ApiResponseModel<bool>
+        {
+            Data = true,
+            IsSuccessful = true,
+            Message = successMessage,
+            StatusCode = 200
+        };
+    }
+    catch (Exception ex)
+    {
+        return new ApiResponseModel<bool>
+        {
+            Data = false,
+            IsSuccessful = false,
+            Message = $"An error occurred while updating transportation numbers: {ex.Message}",
             StatusCode = 500
         };
     }
