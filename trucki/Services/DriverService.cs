@@ -117,6 +117,12 @@ public class DriverService : IDriverService
         return response;
     }
 
+    public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTransportationNumbersRequestModel model)
+    {
+        var response = await _driverRepository.UpdateTransportationNumbers(model);
+        return response;
+    }
+
     public async Task<ApiResponseModel<AdminDriverDetailsResponseModel>> GetDriverDetailsForAdmin(string driverId)
     {
         var response = await _driverRepository.GetDriverDetailsForAdmin(driverId);

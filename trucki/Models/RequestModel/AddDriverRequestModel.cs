@@ -107,4 +107,22 @@ public class UpdateDotNumberRequestModel
     [StringLength(12, MinimumLength = 7, ErrorMessage = "DOT number must be between 7 and 12 characters")]
     [RegularExpression(@"^\d+$", ErrorMessage = "DOT number must contain only digits")]
     public string DotNumber { get; set; }
+
+    [StringLength(12, MinimumLength = 6, ErrorMessage = "MC number must be between 6 and 12 characters")]
+    [RegularExpression(@"^\d+$", ErrorMessage = "MC number must contain only digits")]
+    public string? McNumber { get; set; }
+}
+
+public class UpdateTransportationNumbersRequestModel
+{
+    [Required]
+    public string DriverId { get; set; }
+
+    [StringLength(12, MinimumLength = 7, ErrorMessage = "DOT number must be between 7 and 12 characters")]
+    [RegularExpression(@"^\d+$", ErrorMessage = "DOT number must contain only digits")]
+    public string? DotNumber { get; set; }
+
+    [StringLength(12, MinimumLength = 6, ErrorMessage = "MC number must be between 6 and 12 characters")]
+    [RegularExpression(@"^\d+$", ErrorMessage = "MC number must contain only digits")]
+    public string? McNumber { get; set; }
 }

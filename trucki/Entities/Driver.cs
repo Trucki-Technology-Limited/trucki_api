@@ -22,6 +22,9 @@ namespace trucki.Entities
         // DOT Number - Required for US drivers, optional for others
         public string? DotNumber { get; set; }
 
+        // MC Number - Required for US drivers if they have one
+        public string? McNumber { get; set; }
+
         public string? PassportFile { get; set; }
         public bool IsActive { get; set; } = true;
         [ForeignKey("User")]
