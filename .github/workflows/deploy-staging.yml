@@ -62,6 +62,7 @@ jobs:
     - name: Upload files to server
       run: |
         scp .env.staging ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:${{ secrets.STAGING_DEPLOY_PATH }}/.env.staging
+        ssh ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} "mkdir -p ${{ secrets.STAGING_DEPLOY_PATH }}/trucki"
         scp trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:${{ secrets.STAGING_DEPLOY_PATH }}/trucki/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json
 
     - name: Deploy to staging server
