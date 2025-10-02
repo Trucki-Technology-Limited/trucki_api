@@ -55,6 +55,7 @@ jobs:
         CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
         STRIPE_LIVE_SECRET_KEY=${{ secrets.STRIPE_LIVE_SECRET_KEY }}
         STRIPE_LIVE_WEBHOOK_SECRET=${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+        EmailSettings__SendVerificationEmails=true
         EOL
         
     - name: Add production server to known hosts

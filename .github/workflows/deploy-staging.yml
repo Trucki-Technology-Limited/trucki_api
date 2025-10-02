@@ -57,6 +57,7 @@ jobs:
         CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
         STRIPE_TEST_SECRET_KEY=${{ secrets.STRIPE_TEST_SECRET_KEY }}
         STRIPE_TEST_WEBHOOK_SECRET=${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+        EmailSettings__SendVerificationEmails=false
         EOL
         
     - name: Upload files to server
