@@ -55,4 +55,9 @@ public interface INotificationService
         string relatedEntityId = null,
         string relatedEntityType = null);
 
+    // Admin bulk notification methods
+    Task<ApiResponseModel<AdminNotificationResponseModel>> SendAdminNotificationAsync(AdminNotificationRequestModel request);
+    Task<ApiResponseModel<AdminNotificationResponseModel>> SendAdminEmailNotificationAsync(AdminEmailNotificationRequestModel request);
+    Task<ApiResponseModel<List<UserTypeOptionResponseModel>>> GetUserTypeOptionsAsync();
+    Task<ApiResponseModel<PagedResponse<AdminUserSearchResponseModel>>> SearchUsersForNotificationAsync(AdminUserSearchRequestModel request);
 }

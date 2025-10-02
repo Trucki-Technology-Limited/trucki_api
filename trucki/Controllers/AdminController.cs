@@ -16,15 +16,17 @@ namespace trucki.Controllers
         private readonly ICargoOrderService _cargoOrderService;
         private readonly IDriverService _driverService;
         private readonly IDriverDocumentService _driverDocumentService;
+        private readonly INotificationService _notificationService;
 
 
-        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService, IDriverService driverService, IDriverDocumentService driverDocumentService)
+        public AdminController(IAdminService adminService, ICargoOwnerService cargoOwnerService,ICargoOrderService cargoOrderService, IDriverService driverService, IDriverDocumentService driverDocumentService, INotificationService notificationService)
         {
             _adminService = adminService;
             _cargoOwnerService = cargoOwnerService;
             _cargoOrderService = cargoOrderService;
             _driverService = driverService;
             _driverDocumentService = driverDocumentService;
+            _notificationService = notificationService;
         }
 
         [HttpGet("GetDashboardData")]
@@ -378,6 +380,110 @@ namespace trucki.Controllers
                     $"Internal server error: {ex.Message}",
                     500));
             }
+        }
+
+        // Admin Notification Endpoints
+
+        /// <summary>
+        /// Get available user types and their counts for notification targeting
+        /// </summary>
+        [HttpGet("notifications/user-types")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<List<UserTypeOptionResponseModel>>>> GetUserTypeOptions()
+        {
+            var response = await _notificationService.GetUserTypeOptionsAsync();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Search users for notification targeting (supports pagination, search, and filtering)
+        /// </summary>
+        [HttpGet("notifications/users")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<PagedResponse<AdminUserSearchResponseModel>>>> SearchUsersForNotification(
+            [FromQuery] AdminUserSearchRequestModel request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponseModel<PagedResponse<AdminUserSearchResponseModel>>.Fail(
+                    "Invalid request parameters",
+                    400));
+            }
+
+            var response = await _notificationService.SearchUsersForNotificationAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Send bulk notifications to users via push notifications, email, or both
+        /// </summary>
+        [HttpPost("notifications/send")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<AdminNotificationResponseModel>>> SendAdminNotification(
+            [FromBody] AdminNotificationRequestModel request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponseModel<AdminNotificationResponseModel>.Fail(
+                    "Invalid request data",
+                    400));
+            }
+
+            // Validate target-specific requirements
+            if (request.TargetType == NotificationTargetType.SpecificUsers &&
+                (request.UserIds == null || !request.UserIds.Any()))
+            {
+                return BadRequest(ApiResponseModel<AdminNotificationResponseModel>.Fail(
+                    "User IDs are required when target type is SpecificUsers",
+                    400));
+            }
+
+            if (request.TargetType == NotificationTargetType.UserType &&
+                string.IsNullOrWhiteSpace(request.UserType))
+            {
+                return BadRequest(ApiResponseModel<AdminNotificationResponseModel>.Fail(
+                    "User type is required when target type is UserType",
+                    400));
+            }
+
+            var response = await _notificationService.SendAdminNotificationAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Send bulk email notifications with custom HTML content
+        /// </summary>
+        [HttpPost("notifications/send-email")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<AdminNotificationResponseModel>>> SendAdminEmailNotification(
+            [FromBody] AdminEmailNotificationRequestModel request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponseModel<AdminNotificationResponseModel>.Fail(
+                    "Invalid request data",
+                    400));
+            }
+
+            // Validate target-specific requirements
+            if (request.TargetType == NotificationTargetType.SpecificUsers &&
+                (request.UserIds == null || !request.UserIds.Any()))
+            {
+                return BadRequest(ApiResponseModel<AdminNotificationResponseModel>.Fail(
+                    "User IDs are required when target type is SpecificUsers",
+                    400));
+            }
+
+            if (request.TargetType == NotificationTargetType.UserType &&
+                string.IsNullOrWhiteSpace(request.UserType))
+            {
+                return BadRequest(ApiResponseModel<AdminNotificationResponseModel>.Fail(
+                    "User type is required when target type is UserType",
+                    400));
+            }
+
+            var response = await _notificationService.SendAdminEmailNotificationAsync(request);
+            return StatusCode(response.StatusCode, response);
         }
 
     }
