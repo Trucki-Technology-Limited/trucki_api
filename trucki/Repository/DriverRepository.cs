@@ -23,9 +23,10 @@ public class DriverRepository : IDriverRepository
     private readonly IUploadService _uploadService;
     private readonly IEmailService _emailSender;
     private readonly ILogger<DriverRepository> _logger;
+    private readonly IConfiguration _configuration;
 
     public DriverRepository(TruckiDBContext appDbContext, UserManager<User> userManager, IMapper mapper,
-        IAuthService authService, IUploadService uploadService, IEmailService emailSender,ILogger<DriverRepository>  logger)
+        IAuthService authService, IUploadService uploadService, IEmailService emailSender,ILogger<DriverRepository>  logger, IConfiguration configuration)
     {
         _context = appDbContext;
         _mapper = mapper;
@@ -34,6 +35,7 @@ public class DriverRepository : IDriverRepository
         _emailSender = emailSender;
         _userManager = userManager;
         _logger = logger;
+        _configuration = configuration;
     }
     public async Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model)
     {
@@ -487,12 +489,20 @@ public class DriverRepository : IDriverRepository
             string confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             string confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}";
 
-            // Send welcome email
-            await _emailSender.SendWelcomeEmailAsync(
-                newDriver.EmailAddress,
-                newDriver.Name,
-                "driver",
-                confirmationLink);
+            // Send welcome email only if enabled in configuration (for production)
+            var shouldSendEmails = _configuration.GetValue<bool>("EmailSettings:SendVerificationEmails", false);
+            if (shouldSendEmails)
+            {
+                await _emailSender.SendWelcomeEmailAsync(
+                    newDriver.EmailAddress,
+                    newDriver.Name,
+                    "driver",
+                    confirmationLink);
+            }
+            else
+            {
+                _logger.LogInformation($"Email verification disabled by configuration for {newDriver.EmailAddress}. Confirmation link: {confirmationLink}");
+            }
 
             await transaction.CommitAsync();
 
@@ -909,10 +919,40 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
             }
         }
 
+        // Validate MC number if provided
+        if (!string.IsNullOrEmpty(model.McNumber))
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.McNumber, @"^\d{6,12}$"))
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "MC number must be 6-12 digits",
+                    StatusCode = 400
+                };
+            }
+
+            // Check if MC number already exists for another driver
+            var existingMcNumber = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.McNumber == model.McNumber && d.Id != model.DriverId);
+
+            if (existingMcNumber != null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "This MC number is already in use by another driver",
+                    StatusCode = 400
+                };
+            }
+        }
+
         // Check if DOT number already exists for another driver
         var existingDotNumber = await _context.Drivers
             .FirstOrDefaultAsync(d => d.DotNumber == model.DotNumber && d.Id != model.DriverId);
-        
+
         if (existingDotNumber != null)
         {
             return new ApiResponseModel<bool>
@@ -925,15 +965,22 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
         }
 
         driver.DotNumber = model.DotNumber;
+        driver.McNumber = model.McNumber;
         driver.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        string successMessage = "DOT number updated successfully";
+        if (!string.IsNullOrEmpty(model.McNumber))
+        {
+            successMessage = "DOT and MC numbers updated successfully";
+        }
 
         return new ApiResponseModel<bool>
         {
             Data = true,
             IsSuccessful = true,
-            Message = "DOT number updated successfully",
+            Message = successMessage,
             StatusCode = 200
         };
     }
@@ -943,11 +990,424 @@ public async Task<ApiResponseModel<bool>> UpdateDotNumber(UpdateDotNumberRequest
         {
             Data = false,
             IsSuccessful = false,
-            Message = $"An error occurred while updating DOT number: {ex.Message}",
+            Message = $"An error occurred while updating transportation numbers: {ex.Message}",
             StatusCode = 500
         };
     }
 }
+
+public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTransportationNumbersRequestModel model)
+{
+    try
+    {
+        var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == model.DriverId);
+
+        if (driver == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                Data = false,
+                IsSuccessful = false,
+                Message = "Driver not found",
+                StatusCode = 404
+            };
+        }
+
+        // Validate DOT number if provided
+        if (!string.IsNullOrEmpty(model.DotNumber))
+        {
+            // Validate DOT number based on driver's country
+            if (driver.Country == "US")
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.DotNumber, @"^\d{7,12}$"))
+                {
+                    return new ApiResponseModel<bool>
+                    {
+                        Data = false,
+                        IsSuccessful = false,
+                        Message = "DOT number must be 7-12 digits for US drivers",
+                        StatusCode = 400
+                    };
+                }
+            }
+
+            // Check if DOT number already exists for another driver
+            var existingDotNumber = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.DotNumber == model.DotNumber && d.Id != model.DriverId);
+
+            if (existingDotNumber != null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "This DOT number is already in use by another driver",
+                    StatusCode = 400
+                };
+            }
+        }
+
+        // Validate MC number if provided
+        if (!string.IsNullOrEmpty(model.McNumber))
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.McNumber, @"^\d{6,12}$"))
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "MC number must be 6-12 digits",
+                    StatusCode = 400
+                };
+            }
+
+            // Check if MC number already exists for another driver
+            var existingMcNumber = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.McNumber == model.McNumber && d.Id != model.DriverId);
+
+            if (existingMcNumber != null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    Data = false,
+                    IsSuccessful = false,
+                    Message = "This MC number is already in use by another driver",
+                    StatusCode = 400
+                };
+            }
+        }
+
+        // Update the driver's transportation numbers
+        if (!string.IsNullOrEmpty(model.DotNumber))
+            driver.DotNumber = model.DotNumber;
+
+        if (!string.IsNullOrEmpty(model.McNumber))
+            driver.McNumber = model.McNumber;
+
+        driver.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Build success message
+        List<string> updatedNumbers = new List<string>();
+        if (!string.IsNullOrEmpty(model.DotNumber)) updatedNumbers.Add("DOT number");
+        if (!string.IsNullOrEmpty(model.McNumber)) updatedNumbers.Add("MC number");
+
+        string successMessage = $"{string.Join(" and ", updatedNumbers)} updated successfully";
+
+        return new ApiResponseModel<bool>
+        {
+            Data = true,
+            IsSuccessful = true,
+            Message = successMessage,
+            StatusCode = 200
+        };
+    }
+    catch (Exception ex)
+    {
+        return new ApiResponseModel<bool>
+        {
+            Data = false,
+            IsSuccessful = false,
+            Message = $"An error occurred while updating transportation numbers: {ex.Message}",
+            StatusCode = 500
+        };
+    }
+}
+
+    public async Task<ApiResponseModel<AdminDriverDetailsResponseModel>> GetDriverDetailsForAdmin(string driverId)
+    {
+        try
+        {
+            var driver = await _context.Drivers
+                .Where(d => d.Id == driverId)
+                .Include(d => d.User)
+                .Include(d => d.Truck)
+                    .ThenInclude(t => t.TruckOwner)
+                .Include(d => d.BankAccounts)
+                .Include(d => d.TermsAcceptanceRecords)
+                .Include(d => d.DriverDocuments)
+                    .ThenInclude(dd => dd.DocumentType)
+                .FirstOrDefaultAsync();
+
+            if (driver == null)
+            {
+                return new ApiResponseModel<AdminDriverDetailsResponseModel>
+                {
+                    IsSuccessful = false,
+                    Message = "Driver not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Get all required document types for this driver's country
+            var requiredDocumentTypes = await _context.DocumentTypes
+                .Where(dt => dt.Country == driver.Country && dt.EntityType == "Driver" && dt.IsRequired)
+                .ToListAsync();
+
+            // Build document status list
+            var documentStatuses = new List<DriverDocumentStatusDto>();
+            foreach (var docType in requiredDocumentTypes)
+            {
+                var driverDoc = driver.DriverDocuments.FirstOrDefault(dd => dd.DocumentTypeId == docType.Id);
+
+                documentStatuses.Add(new DriverDocumentStatusDto
+                {
+                    DocumentTypeId = docType.Id,
+                    DocumentId = driverDoc?.Id ?? "",
+                    DocumentTypeName = docType.Name,
+                    IsRequired = docType.IsRequired,
+                    IsUploaded = driverDoc != null,
+                    ApprovalStatus = driverDoc?.ApprovalStatus ?? "NotUploaded",
+                    FileUrl = driverDoc?.FileUrl ?? "",
+                    RejectionReason = driverDoc?.RejectionReason ?? ""
+                });
+            }
+
+            // Calculate document summary
+            var documentSummary = new DocumentUploadSummary
+            {
+                TotalRequiredDocuments = requiredDocumentTypes.Count,
+                UploadedDocuments = documentStatuses.Count(ds => ds.IsUploaded),
+                ApprovedDocuments = documentStatuses.Count(ds => ds.ApprovalStatus == "Approved"),
+                RejectedDocuments = documentStatuses.Count(ds => ds.ApprovalStatus == "Rejected"),
+                PendingDocuments = documentStatuses.Count(ds => ds.ApprovalStatus == "Pending")
+            };
+
+            // Get terms acceptance history
+            var termsHistory = driver.TermsAcceptanceRecords
+                .OrderByDescending(t => t.AcceptedAt)
+                .Select(t => new TermsAcceptanceRecordDto
+                {
+                    TermsVersion = t.TermsVersion,
+                    AcceptedAt = t.AcceptedAt,
+                    AcceptedFromIp = t.AcceptedFromIp,
+                    DeviceInfo = t.DeviceInfo
+                })
+                .ToList();
+
+            // Build truck info if truck exists
+            AdminDriverTruckInfo? truckInfo = null;
+            if (driver.Truck != null)
+            {
+                truckInfo = new AdminDriverTruckInfo
+                {
+                    TruckId = driver.Truck.Id,
+                    PlateNumber = driver.Truck.PlateNumber,
+                    TruckName = driver.Truck.TruckName,
+                    TruckCapacity = driver.Truck.TruckCapacity,
+                    TruckType = driver.Truck.TruckType,
+                    ApprovalStatus = driver.Truck.ApprovalStatus,
+                    TruckStatus = driver.Truck.TruckStatus,
+                    IsDriverOwnedTruck = driver.Truck.IsDriverOwnedTruck,
+                    CreatedAt = driver.Truck.CreatedAt,
+                    ExternalTruckPictureUrl = driver.Truck.ExternalTruckPictureUrl,
+                    CargoSpacePictureUrl = driver.Truck.CargoSpacePictureUrl,
+                    Documents = driver.Truck.Documents ?? new List<string>(),
+                    TruckLicenseExpiryDate = driver.Truck.TruckLicenseExpiryDate,
+                    RoadWorthinessExpiryDate = driver.Truck.RoadWorthinessExpiryDate,
+                    InsuranceExpiryDate = driver.Truck.InsuranceExpiryDate,
+                    TruckOwnerId = driver.Truck.TruckOwnerId,
+                    TruckOwnerName = driver.Truck.TruckOwner?.Name
+                };
+            }
+
+            // Calculate onboarding progress
+            var progress = new OnboardingProgressSummary
+            {
+                TermsAccepted = termsHistory.Any(t => t.TermsVersion == "2025"), // Current version
+                ProfilePictureUploaded = !string.IsNullOrEmpty(driver.PassportFile),
+                AllDocumentsUploaded = documentSummary.AllRequiredDocumentsUploaded,
+                AllDocumentsApproved = documentSummary.AllDocumentsApproved,
+                TruckAdded = driver.Truck != null,
+                TruckApproved = driver.Truck?.ApprovalStatus == ApprovalStatus.Approved
+            };
+
+            // Build completed and pending steps lists
+            progress.CompletedSteps = new List<string>();
+            progress.PendingSteps = new List<string>();
+            progress.RejectedItems = new List<string>();
+
+            if (progress.TermsAccepted) progress.CompletedSteps.Add("Terms and Conditions Accepted");
+            else progress.PendingSteps.Add("Accept Terms and Conditions");
+
+            if (progress.ProfilePictureUploaded) progress.CompletedSteps.Add("Profile Picture Uploaded");
+            else progress.PendingSteps.Add("Upload Profile Picture");
+
+            if (progress.AllDocumentsUploaded) progress.CompletedSteps.Add("All Documents Uploaded");
+            else progress.PendingSteps.Add("Upload Required Documents");
+
+            if (progress.AllDocumentsApproved) progress.CompletedSteps.Add("All Documents Approved");
+            else if (progress.AllDocumentsUploaded) progress.PendingSteps.Add("Document Approval");
+
+            if (progress.TruckAdded) progress.CompletedSteps.Add("Truck Added");
+            else progress.PendingSteps.Add("Add Truck");
+
+            if (progress.TruckApproved) progress.CompletedSteps.Add("Truck Approved");
+            else if (progress.TruckAdded)
+            {
+                if (driver.Truck?.ApprovalStatus == ApprovalStatus.NotApproved || driver.Truck?.ApprovalStatus == ApprovalStatus.Blocked)
+                    progress.RejectedItems.Add("Truck approval rejected/blocked");
+                else
+                    progress.PendingSteps.Add("Truck Approval");
+            }
+
+            // Add rejected documents to rejected items
+            foreach (var rejectedDoc in documentStatuses.Where(ds => ds.ApprovalStatus == "Rejected"))
+            {
+                progress.RejectedItems.Add($"{rejectedDoc.DocumentTypeName} document rejected");
+            }
+
+            progress.CompletedStepCount = progress.CompletedSteps.Count;
+            progress.OverallStatus = progress.CanBeApproved ? "Ready for Approval" :
+                                   progress.RejectedItems.Any() ? "Has Rejections" :
+                                   "In Progress";
+
+            // Build the response
+            var response = new AdminDriverDetailsResponseModel
+            {
+                Id = driver.Id,
+                Name = driver.Name,
+                Phone = driver.Phone,
+                EmailAddress = driver.EmailAddress,
+                UserId = driver.UserId,
+                DriversLicence = driver.DriversLicence,
+                DotNumber = driver.DotNumber,
+                Country = driver.Country,
+                IsActive = driver.IsActive,
+                CreatedAt = driver.CreatedAt,
+                UpdatedAt = driver.UpdatedAt,
+                ProfilePictureUrl = driver.PassportFile,
+                OnboardingStatus = driver.OnboardingStatus,
+                HasAcceptedLatestTerms = progress.TermsAccepted,
+                TermsAcceptanceHistory = termsHistory,
+                LatestTermsAcceptedAt = termsHistory.FirstOrDefault()?.AcceptedAt,
+                DocumentStatuses = documentStatuses,
+                DocumentSummary = documentSummary,
+                TruckInfo = truckInfo,
+                StripeConnectAccountId = driver.StripeConnectAccountId,
+                StripeAccountStatus = driver.StripeAccountStatus,
+                CanReceivePayouts = driver.CanReceivePayouts,
+                BankAccounts = _mapper.Map<ICollection<DriverBankAccountResponseModel>>(driver.BankAccounts),
+                OnboardingProgress = progress
+            };
+
+            return new ApiResponseModel<AdminDriverDetailsResponseModel>
+            {
+                IsSuccessful = true,
+                Message = "Driver details retrieved successfully",
+                Data = response,
+                StatusCode = 200
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving driver details for admin for driver {DriverId}", driverId);
+            return new ApiResponseModel<AdminDriverDetailsResponseModel>
+            {
+                IsSuccessful = false,
+                Message = "An error occurred while retrieving driver details",
+                StatusCode = 500
+            };
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> CompleteDriverApprovalAsync(string driverId)
+    {
+        try
+        {
+            var driver = await _context.Drivers
+                .Include(d => d.DriverDocuments)
+                    .ThenInclude(dd => dd.DocumentType)
+                .Include(d => d.Truck)
+                .Include(d => d.TermsAcceptanceRecords)
+                .FirstOrDefaultAsync(d => d.Id == driverId);
+
+            if (driver == null)
+            {
+                return ApiResponseModel<bool>.Fail("Driver not found", 404);
+            }
+
+            // Check if driver can be approved
+            var validationResults = await ValidateDriverForApproval(driver);
+            if (!validationResults.CanBeApproved)
+            {
+                return ApiResponseModel<bool>.Fail(
+                    $"Driver cannot be approved: {string.Join(", ", validationResults.BlockingIssues)}",
+                    400);
+            }
+
+            // Update driver status to approved
+            driver.OnboardingStatus = DriverOnboardingStatus.OnboardingCompleted;
+            await _context.SaveChangesAsync();
+
+            return ApiResponseModel<bool>.Success(
+                "Driver has been successfully approved and can now start working",
+                true,
+                200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<bool>.Fail(
+                $"An error occurred while approving driver: {ex.Message}",
+                500);
+        }
+    }
+
+    private async Task<(bool CanBeApproved, List<string> BlockingIssues)> ValidateDriverForApproval(Driver driver)
+    {
+        var blockingIssues = new List<string>();
+
+        // 1. Check terms acceptance
+        if (!driver.TermsAcceptanceRecords.Any(t => t.TermsVersion == "2025")) // Update with your current version
+        {
+            blockingIssues.Add("Driver has not accepted the latest terms and conditions");
+        }
+
+        // 2. Check profile picture/passport
+        if (string.IsNullOrWhiteSpace(driver.PassportFile))
+        {
+            blockingIssues.Add("Driver has not uploaded profile picture/passport");
+        }
+
+        // 3. Check DOT number for US drivers
+        if (driver.Country == "US" && string.IsNullOrWhiteSpace(driver.DotNumber))
+        {
+            blockingIssues.Add("US driver must provide DOT number");
+        }
+
+        // 4. Check required documents
+        var requiredDocTypes = await _context.DocumentTypes
+            .Where(dt => dt.IsRequired && dt.EntityType == "Driver" &&
+                        (dt.Country == driver.Country || dt.Country == "ALL"))
+            .ToListAsync();
+
+        var approvedDocs = driver.DriverDocuments
+            .Where(dd => dd.ApprovalStatus == "Approved")
+            .Select(dd => dd.DocumentTypeId)
+            .ToList();
+
+        var missingDocs = requiredDocTypes
+            .Where(rt => !approvedDocs.Contains(rt.Id))
+            .Select(rt => rt.Name)
+            .ToList();
+
+        if (missingDocs.Any())
+        {
+            blockingIssues.Add($"Missing approved documents: {string.Join(", ", missingDocs)}");
+        }
+
+        // 5. Check truck approval (if driver owns a truck)
+        if (driver.Truck != null && driver.Truck.IsDriverOwnedTruck)
+        {
+            if (driver.Truck.ApprovalStatus != ApprovalStatus.Approved)
+            {
+                blockingIssues.Add("Driver's truck is not approved");
+            }
+        }
+
+        return (CanBeApproved: !blockingIssues.Any(), BlockingIssues: blockingIssues);
+    }
 
     private static bool IsValidEmail(string email)
     {

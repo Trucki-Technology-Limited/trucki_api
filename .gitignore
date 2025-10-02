@@ -404,3 +404,7 @@ ASALocalRun/
 # Local History for Visual Studio
 .localhistory/trucki/database_export_20250818_112946.json
 trucki/database_export_20250818_112946.json
+
+# Firebase Admin SDK credentials - DO NOT COMMIT
+*firebase-adminsdk*.json
+trucki-*-firebase-adminsdk-*.json

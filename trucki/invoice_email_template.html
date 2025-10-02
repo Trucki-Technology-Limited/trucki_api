@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt - Trucki</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .receipt-info {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            flex: 1;
+        }
+        .info-value {
+            flex: 1;
+            text-align: right;
+            color: #212529;
+        }
+        .route-info {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .route-info h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+        .location {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .location-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .pickup-icon {
+            background-color: #27ae60;
+        }
+        .delivery-icon {
+            background-color: #e74c3c;
+        }
+        .pricing-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .pricing-table th,
+        .pricing-table td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .pricing-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            text-align: left;
+        }
+        .pricing-table td:first-child {
+            text-align: left;
+        }
+        .total-row {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #27ae60;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 25px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .content {
+                padding: 20px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .info-row {
+                flex-direction: column;
+                text-align: left;
+            }
+            .info-value {
+                text-align: left;
+                margin-top: 5px;
+                font-weight: 600;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Payment Receipt</h1>
+            <p>Thank you for your payment</p>
+        </div>
+
+        <div class="content">
+            <div class="receipt-info">
+                <div class="info-row">
+                    <span class="info-label">Order ID:</span>
+                    <span class="info-value">{{orderId}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value">{{date}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value"><span class="status-badge">{{status}}</span></span>
+                </div>
+            </div>
+
+            <div class="route-info">
+                <h3>Shipment Route</h3>
+                <div class="location">
+                    <div class="location-icon pickup-icon"></div>
+                    <strong>Pickup:</strong>&nbsp;&nbsp;{{pickupLocation}}
+                </div>
+                <div class="location">
+                    <div class="location-icon delivery-icon"></div>
+                    <strong>Delivery:</strong>&nbsp;&nbsp;{{deliveryAddress}}
+                </div>
+            </div>
+
+            <table class="pricing-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Shipment Cost</td>
+                        <td>{{currency}} {{bidAmount}}</td>
+                    </tr>
+                    <tr>
+                        <td>Service Fee</td>
+                        <td>{{currency}} {{systemFee}}</td>
+                    </tr>
+                    <tr>
+                        <td>Tax</td>
+                        <td>{{currency}} {{tax}}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Amount</td>
+                        <td>{{currency}} {{totalAmount}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p><strong>Trucki</strong></p>
+            <p>Your trusted logistics partner</p>
+            <p>Need help? Contact us at <a href="mailto:info@trucki.co">info@trucki.co</a></p>
+            <p>Visit us at <a href="https://trucki.co">trucki.co</a></p>
+        </div>
+    </div>
+</body>
+</html>

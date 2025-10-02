@@ -11,6 +11,7 @@ public class DriverProfileResponseModel
     public string TruckId { get; set; }
     public string DriversLicence { get; set; }
     public string? DotNumber { get; set; }
+    public string? McNumber { get; set; }
     public string PassportFile { get; set; }
     public string Country { get; set; }
     public bool IsActive { get; set; }

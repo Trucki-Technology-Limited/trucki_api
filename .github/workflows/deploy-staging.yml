@@ -19,10 +19,28 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
 
+    - name: Create Firebase credentials file
+      run: |
+        cat > trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json <<'EOL'
+        {
+          "type": "service_account",
+          "project_id": "${{ secrets.FIREBASE_PROJECT_ID }}",
+          "private_key_id": "${{ secrets.FIREBASE_PRIVATE_KEY_ID }}",
+          "private_key": "${{ secrets.FIREBASE_PRIVATE_KEY }}",
+          "client_email": "${{ secrets.FIREBASE_CLIENT_EMAIL }}",
+          "client_id": "${{ secrets.FIREBASE_CLIENT_ID }}",
+          "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+          "token_uri": "https://oauth2.googleapis.com/token",
+          "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+          "client_x509_cert_url": "${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}",
+          "universe_domain": "googleapis.com"
+        }
+        EOL
+
     - name: Add staging server to known hosts
       run: |
         ssh-keyscan -H ${{ secrets.STAGING_SERVER_HOST }} >> ~/.ssh/known_hosts
-        
+
     - name: Create .env.staging file
       run: |
         cat > .env.staging <<'EOL'
@@ -39,11 +57,13 @@ jobs:
         CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
         STRIPE_TEST_SECRET_KEY=${{ secrets.STRIPE_TEST_SECRET_KEY }}
         STRIPE_TEST_WEBHOOK_SECRET=${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+        EmailSettings__SendVerificationEmails=false
         EOL
         
-    - name: Upload .env.staging to server
+    - name: Upload files to server
       run: |
         scp .env.staging ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:${{ secrets.STAGING_DEPLOY_PATH }}/.env.staging
+        scp trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:${{ secrets.STAGING_DEPLOY_PATH }}/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json
 
     - name: Deploy to staging server
       run: |

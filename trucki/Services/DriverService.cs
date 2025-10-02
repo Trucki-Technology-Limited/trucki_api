@@ -116,4 +116,22 @@ public class DriverService : IDriverService
         var response = await _driverRepository.UpdateDotNumber(model);
         return response;
     }
+
+    public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTransportationNumbersRequestModel model)
+    {
+        var response = await _driverRepository.UpdateTransportationNumbers(model);
+        return response;
+    }
+
+    public async Task<ApiResponseModel<AdminDriverDetailsResponseModel>> GetDriverDetailsForAdmin(string driverId)
+    {
+        var response = await _driverRepository.GetDriverDetailsForAdmin(driverId);
+        return response;
+    }
+
+    public async Task<ApiResponseModel<bool>> CompleteDriverApprovalAsync(string driverId)
+    {
+        var response = await _driverRepository.CompleteDriverApprovalAsync(driverId);
+        return response;
+    }
 }

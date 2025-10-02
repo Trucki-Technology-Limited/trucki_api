@@ -98,4 +98,27 @@ public class AuthController : ControllerBase
         var result = await _authService.RegisterDeviceTokenAsync(userId, model.Token, model.DeviceType);
         return StatusCode(result.StatusCode, result);
     }
+
+    [HttpPost("ConfirmEmail")]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequestModel request)
+    {
+        if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
+        {
+            return BadRequest("User ID and token are required");
+        }
+
+        var result = await _authService.ConfirmEmailAsync(request.UserId, request.Token);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("ResendEmailConfirmation")]
+    public async Task<IActionResult> ResendEmailConfirmation([FromBody] ResendEmailConfirmationRequestModel request)
+    {
+        string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+        if (!(Regex.IsMatch(request.Email, emailPattern)))
+            return StatusCode(400, "Invalid email address format");
+
+        var result = await _authService.ResendEmailConfirmationAsync(request.Email);
+        return StatusCode(result.StatusCode, result);
+    }
 }

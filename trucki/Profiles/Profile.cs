@@ -47,6 +47,7 @@ public class Profiles : Profile
            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount));
         CreateMap<CargoOwner, AdminCargoOwnerResponseModel>();
         CreateMap<CargoOwner, AdminCargoOwnerDetailsResponseModel>();
+        CreateMap<AccountDeletionRequest, AccountDeletionResponseModel>();
 
     }
 }

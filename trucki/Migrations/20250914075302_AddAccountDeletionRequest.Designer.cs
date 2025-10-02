@@ -3,18 +3,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using trucki.DatabaseContext;
 
 #nullable disable
 
-namespace trucki.Migrations
+namespace trucki.Migrations.TruckiDB
 {
     [DbContext(typeof(TruckiDBContext))]
-    partial class TruckiDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250914075302_AddAccountDeletionRequest")]
+    partial class AddAccountDeletionRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -388,12 +390,6 @@ namespace trucki.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("DeliveryContactName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DeliveryContactPhone")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("DeliveryDateTime")
                         .HasColumnType("timestamp without time zone");
 
@@ -459,12 +455,6 @@ namespace trucki.Migrations
 
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
-
-                    b.Property<string>("PickupContactName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PickupContactPhone")
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("PickupDateTime")
                         .HasColumnType("timestamp without time zone");
@@ -869,9 +859,6 @@ namespace trucki.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("McNumber")
-                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()

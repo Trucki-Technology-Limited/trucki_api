@@ -169,6 +169,13 @@ namespace trucki.DatabaseContext
                     .HasForeignKey(r => r.CargoOwnerId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+            // Configure AccountDeletionRequest
+            modelBuilder.Entity<AccountDeletionRequest>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -203,6 +210,7 @@ namespace trucki.DatabaseContext
         public DbSet<OrderCancellation> OrderCancellations { get; set; }
         public DbSet<DriverPayout> DriverPayouts { get; set; }
         public DbSet<DriverRating> DriverRatings { get; set; }
+        public DbSet<AccountDeletionRequest> AccountDeletionRequests { get; set; }
 
 
 

@@ -265,7 +265,7 @@ public class EmailService : IEmailService
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
         message.To.Add(new MailboxAddress("", toEmail));
-        message.Subject = $"Payment Receipt - Order #{orderId}";
+        message.Subject = $"Payment Receipt: {pickupLocation} to {deliveryAddress}";
         var bodyBuilder = new BodyBuilder();
         bodyBuilder.HtmlBody = htmlBody;
 
