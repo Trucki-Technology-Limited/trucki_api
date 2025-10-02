@@ -17,8 +17,9 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
+    private readonly IConfiguration _configuration;
 
-    public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper, ITokenService tokenService, IEmailService emailService, INotificationService notificationService
+    public AuthService(UserManager<User> userManager, TruckiDBContext context, IMapper mapper, ITokenService tokenService, IEmailService emailService, INotificationService notificationService, IConfiguration configuration
 
     )
     {
@@ -26,6 +27,7 @@ public class AuthService : IAuthService
         _emailService = emailService;
         _tokenService = tokenService;
         _notificationService = notificationService;
+        _configuration = configuration;
     }
     public async Task<ApiResponseModel<LoginResponseModel>> Login(LoginRequestModel request)
     {
@@ -91,11 +93,12 @@ public class AuthService : IAuthService
             response.StatusCode = (int)HttpStatusCode.UnprocessableEntity;
             return response;
         }
-        //TODO:: Implement email Confirmation
-        //if (!await _userManager.IsEmailConfirmedAsync(user))
-        //{
-        //    return new ApiResponseModel<bool> { Message = "Email Address not confirmed", StatusCode = (int)HttpStatusCode.UnprocessableEntity, IsSuccessful = false };
-        //}
+        // Only require email confirmation if verification emails are enabled (production)
+        var requireEmailConfirmation = _configuration.GetValue<bool>("EmailSettings:SendVerificationEmails", false);
+        if (requireEmailConfirmation && !await _userManager.IsEmailConfirmedAsync(user))
+        {
+            return new ApiResponseModel<bool> { Message = "Email address not confirmed. Please check your email for the confirmation link.", StatusCode = (int)HttpStatusCode.UnprocessableEntity, IsSuccessful = false };
+        }
 
 
         response.IsSuccessful = true;
@@ -111,7 +114,7 @@ public class AuthService : IAuthService
             NormalizedUserName = email.ToUpper(),
             Email = email,
             NormalizedEmail = email.ToUpper(),
-            EmailConfirmed = true,
+            EmailConfirmed = false,
             PhoneNumber = phone,
             PasswordHash =
                 new PasswordHasher<User>().HashPassword(null,
@@ -483,6 +486,130 @@ public class AuthService : IAuthService
             {
                 IsSuccessful = false,
                 Message = $"Error registering device token: {ex.Message}",
+                StatusCode = 500
+            };
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> ConfirmEmailAsync(string userId, string token)
+    {
+        try
+        {
+            // Find the user by ID
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Check if email is already confirmed
+            if (user.EmailConfirmed)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = true,
+                    Message = "Email is already confirmed",
+                    StatusCode = 200,
+                    Data = true
+                };
+            }
+
+            // Confirm the email using the token
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (!result.Succeeded)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "Invalid or expired confirmation token",
+                    StatusCode = 400
+                };
+            }
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "Email confirmed successfully",
+                StatusCode = 200,
+                Data = true
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred while confirming email: {ex.Message}",
+                StatusCode = 500
+            };
+        }
+    }
+
+    public async Task<ApiResponseModel<bool>> ResendEmailConfirmationAsync(string email)
+    {
+        try
+        {
+            // Find the user by email
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                // For security reasons, we still return success even if the email doesn't exist
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = true,
+                    Message = "If your email exists in our system, you will receive a confirmation email shortly",
+                    StatusCode = 200
+                };
+            }
+
+            // Check if email is already confirmed
+            if (user.EmailConfirmed)
+            {
+                return new ApiResponseModel<bool>
+                {
+                    IsSuccessful = false,
+                    Message = "Email is already confirmed",
+                    StatusCode = 400
+                };
+            }
+
+            // Generate new confirmation token
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+            // Determine user type for email template
+            var roles = await _userManager.GetRolesAsync(user);
+            var userType = roles.FirstOrDefault()?.ToLower() ?? "user";
+
+            // Send confirmation email only if enabled in configuration
+            var shouldSendEmails = _configuration.GetValue<bool>("EmailSettings:SendVerificationEmails", false);
+            if (shouldSendEmails)
+            {
+                await _emailService.SendWelcomeEmailAsync(
+                    user.Email,
+                    user.firstName,
+                    userType,
+                    confirmationLink);
+            }
+
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = true,
+                Message = "If your email exists in our system, you will receive a confirmation email shortly",
+                StatusCode = 200
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred while sending confirmation email: {ex.Message}",
                 StatusCode = 500
             };
         }
