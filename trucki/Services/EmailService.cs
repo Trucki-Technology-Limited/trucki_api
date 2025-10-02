@@ -278,4 +278,23 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+
+    public async Task SendGenericEmailAsync(string toEmail, string subject, string htmlBody)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = subject;
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = htmlBody;
+
+        message.Body = bodyBuilder.ToMessageBody();
+        using (var client = new SmtpClient())
+        {
+            client.Connect(_smtpServer, _smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_Email, _Password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
 }
