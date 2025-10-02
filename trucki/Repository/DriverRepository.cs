@@ -23,9 +23,10 @@ public class DriverRepository : IDriverRepository
     private readonly IUploadService _uploadService;
     private readonly IEmailService _emailSender;
     private readonly ILogger<DriverRepository> _logger;
+    private readonly IConfiguration _configuration;
 
     public DriverRepository(TruckiDBContext appDbContext, UserManager<User> userManager, IMapper mapper,
-        IAuthService authService, IUploadService uploadService, IEmailService emailSender,ILogger<DriverRepository>  logger)
+        IAuthService authService, IUploadService uploadService, IEmailService emailSender,ILogger<DriverRepository>  logger, IConfiguration configuration)
     {
         _context = appDbContext;
         _mapper = mapper;
@@ -34,6 +35,7 @@ public class DriverRepository : IDriverRepository
         _emailSender = emailSender;
         _userManager = userManager;
         _logger = logger;
+        _configuration = configuration;
     }
     public async Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model)
     {
@@ -487,12 +489,20 @@ public class DriverRepository : IDriverRepository
             string confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             string confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}";
 
-            // Send welcome email
-            await _emailSender.SendWelcomeEmailAsync(
-                newDriver.EmailAddress,
-                newDriver.Name,
-                "driver",
-                confirmationLink);
+            // Send welcome email only if enabled in configuration (for production)
+            var shouldSendEmails = _configuration.GetValue<bool>("EmailSettings:SendVerificationEmails", false);
+            if (shouldSendEmails)
+            {
+                await _emailSender.SendWelcomeEmailAsync(
+                    newDriver.EmailAddress,
+                    newDriver.Name,
+                    "driver",
+                    confirmationLink);
+            }
+            else
+            {
+                _logger.LogInformation($"Email verification disabled by configuration for {newDriver.EmailAddress}. Confirmation link: {confirmationLink}");
+            }
 
             await transaction.CommitAsync();
 

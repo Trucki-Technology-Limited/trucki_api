@@ -25,6 +25,7 @@ services:
       - Cloudinary__apiSecret=${CLOUDINARY_API_SECRET}
       - Stripe__SecretKey=${STRIPE_LIVE_SECRET_KEY}
       - Stripe__WebhookSecret=${STRIPE_LIVE_WEBHOOK_SECRET}
+      - EmailSettings__SendVerificationEmails=${EmailSettings__SendVerificationEmails}
 networks:
   production-network:
     driver: bridge
