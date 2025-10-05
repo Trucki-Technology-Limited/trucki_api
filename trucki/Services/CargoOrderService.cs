@@ -2664,6 +2664,94 @@ namespace trucki.Services
         }
 
         /// <summary>
+        /// Delete a cargo order (admin only) - For cleaning test data
+        /// </summary>
+        public async Task<ApiResponseModel<bool>> DeleteCargoOrderAsync(string orderId, string adminUserId)
+        {
+            try
+            {
+                var order = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.Items)
+                    .Include(o => o.Bids)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Cargo order not found", 404);
+                }
+
+                using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        // First, break the circular reference by clearing AcceptedBidId
+                        if (!string.IsNullOrEmpty(order.AcceptedBidId))
+                        {
+                            order.AcceptedBidId = null;
+                            order.AcceptedBid = null;
+                            await _dbContext.SaveChangesAsync();
+                        }
+
+                        // Delete related data first
+                        if (order.Items != null && order.Items.Any())
+                        {
+                            _dbContext.Set<CargoOrderItem>().RemoveRange(order.Items);
+                        }
+
+                        if (order.Bids != null && order.Bids.Any())
+                        {
+                            _dbContext.Set<Bid>().RemoveRange(order.Bids);
+                        }
+
+                        // Delete any delivery location updates for this order
+                        var deliveryUpdates = await _dbContext.Set<DeliveryLocationUpdate>()
+                            .Where(d => d.OrderId == orderId)
+                            .ToListAsync();
+                        if (deliveryUpdates.Any())
+                        {
+                            _dbContext.Set<DeliveryLocationUpdate>().RemoveRange(deliveryUpdates);
+                        }
+
+                        // Delete any driver wallet transactions related to this order
+                        var driverWalletTransactions = await _dbContext.Set<DriverWalletTransaction>()
+                            .Where(t => t.RelatedOrderId == orderId)
+                            .ToListAsync();
+                        if (driverWalletTransactions.Any())
+                        {
+                            _dbContext.Set<DriverWalletTransaction>().RemoveRange(driverWalletTransactions);
+                        }
+
+                        // Delete any wallet transactions related to this order
+                        var walletTransactions = await _dbContext.Set<WalletTransaction>()
+                            .Where(t => t.RelatedOrderId == orderId)
+                            .ToListAsync();
+                        if (walletTransactions.Any())
+                        {
+                            _dbContext.Set<WalletTransaction>().RemoveRange(walletTransactions);
+                        }
+
+                        // Delete the order itself
+                        _dbContext.Set<CargoOrders>().Remove(order);
+
+                        await _dbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return ApiResponseModel<bool>.Success("Cargo order deleted successfully", true, 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        return ApiResponseModel<bool>.Fail($"Error deleting cargo order: {ex.Message}", 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error deleting cargo order: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
         /// Helper method to get cargo owner statistics
         /// </summary>
         private async Task<(int TotalOrders, int CompletedOrders, decimal TotalSpent)> GetCargoOwnerStats(string cargoOwnerId)
