@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using trucki.Entities;
 using trucki.Interfaces.IServices;
@@ -169,15 +170,11 @@ namespace trucki.Controllers
                     400));
             }
 
-            // Get admin user ID from claims
-            var adminUserId = User.FindFirst("userId")?.Value;
+            var adminUserId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(adminUserId))
             {
-                return Unauthorized(ApiResponseModel<bool>.Fail(
-                    "User not authenticated",
-                    401));
+                return Unauthorized();
             }
-
             var response = await _cargoOrderService.FlagCargoOrderAsync(orderId, model.IsFlagged, model.FlagReason, adminUserId);
             return StatusCode(response.StatusCode, response);
         }
@@ -215,17 +212,35 @@ namespace trucki.Controllers
                     "Invalid request data",
                     400));
             }
-
-            // Get admin user ID from claims
-            var adminUserId = User.FindFirst("userId")?.Value;
+            var adminUserId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(adminUserId))
             {
-                return Unauthorized(ApiResponseModel<bool>.Fail(
-                    "User not authenticated",
-                    401));
+                return Unauthorized();
             }
 
             var response = await _cargoOrderService.UpdateCargoOrderStatusByAdminAsync(orderId, model.Status, model.Reason, adminUserId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        /// <summary>
+        /// Delete a cargo order (admin only) - For cleaning test data
+        /// </summary>
+        [HttpDelete("cargo-orders/{orderId}")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> DeleteCargoOrder(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return BadRequest(ApiResponseModel<bool>.Fail(
+                    "Order ID is required",
+                    400));
+            }
+            var adminUserId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(adminUserId))
+            {
+                return Unauthorized();
+            }
+            var response = await _cargoOrderService.DeleteCargoOrderAsync(orderId, adminUserId);
             return StatusCode(response.StatusCode, response);
         }
         [HttpGet("cargo-financial-summary")]
