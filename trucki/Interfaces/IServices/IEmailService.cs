@@ -7,4 +7,5 @@ public interface IEmailService
     Task SendPasswordResetEmailAsync(string toEmail, string subject, string resetCode);
     Task SendWelcomeEmailAsync(string toEmail, string name, string userType, string confirmationLink);
     Task SendPaymentReceiptEmailAsync(string toEmail, string orderId, decimal bidAmount, decimal systemFee, decimal tax, decimal totalAmount, string currency, string pickupLocation, string deliveryAddress);
+    Task SendGenericEmailAsync(string toEmail, string subject, string htmlBody);
 }

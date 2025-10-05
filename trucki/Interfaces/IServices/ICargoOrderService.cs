@@ -61,6 +61,11 @@ public interface ICargoOrderService
         /// </summary>
         Task<ApiResponseModel<List<CargoOrderStatusSummaryModel>>> GetCargoOrdersSummaryAsync();
 
+        /// <summary>
+        /// Delete a cargo order (admin only)
+        /// </summary>
+        Task<ApiResponseModel<bool>> DeleteCargoOrderAsync(string orderId, string adminUserId);
+
         #endregion
 
 }
