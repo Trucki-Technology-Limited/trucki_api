@@ -124,7 +124,7 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetTruckStatusCountByOwnerId")]
-        [Authorize(Roles = "transporter")]
+        [Authorize(Roles = "transporter,dispatcher")]
         public async Task<ActionResult<ApiResponseModel<TruckStatusCountResponseModel>>> GetTruckStatusCountByOwnerId(string ownerId)
         {
             var response = await _truckService.GetTruckStatusCountByOwnerId(ownerId);
@@ -207,7 +207,7 @@ namespace trucki.Controllers
         /// Returns complete truck info with current trip status and order history
         /// </summary>
         [HttpGet("GetTruckDetailsById")]
-        [Authorize(Roles = "admin,transporter,manager")]
+        [Authorize(Roles = "admin,transporter,manager,dispatcher")]
         public async Task<ActionResult<ApiResponseModel<TruckDetailResponseModel>>> GetTruckDetailsById(
             [FromQuery] string truckId)
         {
@@ -316,14 +316,14 @@ namespace trucki.Controllers
         /// Returns detailed statistics for truck owner dashboard
         /// </summary>
         [HttpGet("GetTruckStatusCountsByOwnerId")]
-        [Authorize(Roles = "transporter,admin")]
+        [Authorize(Roles = "transporter,admin,dispatcher")]
         public async Task<ActionResult<ApiResponseModel<EnhancedTruckStatusCountResponseModel>>> GetTruckStatusCountsByOwnerId(
             [FromQuery] string ownerId)
         {
             try
             {
                 // For truck owners, ensure they can only access their own data
-                if (User.IsInRole("transporter"))
+                if (User.IsInRole("transporter,dispatcher"))
                 {
                     var userOwnerId = HttpContext.User.FindFirst("OwnerId")?.Value; // Adjust claim name as needed
                     if (!string.IsNullOrEmpty(userOwnerId) && userOwnerId != ownerId)

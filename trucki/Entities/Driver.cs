@@ -44,11 +44,20 @@ namespace trucki.Entities
         public DateTime? StripeAccountCreatedAt { get; set; }
         public bool CanReceivePayouts { get; set; } = false;
 
-        // Navigation property for documents
+        // Enhanced relationship properties for dispatcher functionality
+        public DriverOwnershipType OwnershipType { get; set; } = DriverOwnershipType.Independent;
+        public string? ManagedByDispatcherId { get; set; } // For dispatcher-managed drivers
+        public TruckOwner? ManagedByDispatcher { get; set; }
+
+        // Navigation property for documents and other relationships
         public ICollection<DriverDocument> DriverDocuments { get; set; } = new List<DriverDocument>();
         public ICollection<DriverBankAccount> BankAccounts { get; set; } = new List<DriverBankAccount>();
         public ICollection<TermsAcceptanceRecord> TermsAcceptanceRecords { get; set; } = new List<TermsAcceptanceRecord>();
-                public ICollection<DriverPayout> Payouts { get; set; } = new List<DriverPayout>();
+        public ICollection<DriverPayout> Payouts { get; set; } = new List<DriverPayout>();
+
+        // Commission settings for dispatcher-managed drivers
+        public ICollection<DriverDispatcherCommission> CommissionStructures { get; set; } = new List<DriverDispatcherCommission>();
+
         [NotMapped] // Not stored in DB, calculated
         public bool HasAcceptedLatestTerms => TermsAcceptanceRecords.Any(t => t.TermsVersion == "2025"); // Update with your current version
         public DriverOnboardingStatus OnboardingStatus { get; set; } = DriverOnboardingStatus.OboardingPending;
@@ -60,6 +69,14 @@ namespace trucki.Entities
         OnboardingInReview,
         OnboardingCompleted
     }
+
+    public enum DriverOwnershipType
+    {
+        Independent,           // Driver owns their truck
+        TruckOwnerEmployee,   // Employee of truck owner
+        DispatcherManaged     // Managed by dispatcher
+    }
+
     public enum StripeAccountStatus
     {
         NotCreated,

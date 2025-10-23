@@ -200,7 +200,7 @@ public class DriverRepository : IDriverRepository
         };
     }
 
-    public async Task<DriverResponseModel> GetDriverById(string id)
+    public async Task<DriverResponseModel> GetDriverById(string id, string requesterId = null, string requesterRole = null)
     {
         var driver = await _context.Drivers
             .Where(x => x.Id == id)
@@ -208,6 +208,7 @@ public class DriverRepository : IDriverRepository
             .Include(d => d.Truck)
             .Include(d => d.BankAccounts)
             .Include(d => d.TermsAcceptanceRecords)
+            .Include(d => d.ManagedByDispatcher)
             .FirstOrDefaultAsync();
 
         if (driver == null)
@@ -216,8 +217,37 @@ public class DriverRepository : IDriverRepository
             return null;
         }
 
+        // Check ownership if requester is dispatcher or transporter
+        if (!string.IsNullOrEmpty(requesterId) && (requesterRole == "dispatcher" || requesterRole == "transporter"))
+        {
+            // requesterId is the userId, we need to find the TruckOwner by UserId first
+            var truckOwner = await _context.TruckOwners
+                .FirstOrDefaultAsync(to => to.UserId == requesterId);
+
+            if (truckOwner == null)
+            {
+                return null;
+            }
+
+            var isOwned = await _context.Drivers
+                .AnyAsync(d => d.Id == id &&
+                    (d.TruckOwnerId == truckOwner.Id || d.ManagedByDispatcherId == truckOwner.Id));
+
+            if (!isOwned)
+            {
+                // Driver is not managed by this dispatcher/transporter
+                return null;
+            }
+        }
+
+        // Get the current terms version
+        var currentTermsVersion = await _context.TermsAndConditions
+            .Where(t => t.IsCurrentVersion)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
         var driverToReturn = _mapper.Map<DriverResponseModel>(driver);
-        driverToReturn.HasAcceptedTerms = driver.TermsAcceptanceRecords.Any(r => r.TermsVersion == "2025"); // Current version
+        driverToReturn.HasAcceptedTerms = !string.IsNullOrEmpty(currentTermsVersion) && driver.TermsAcceptanceRecords.Any(r => r.TermsVersion == currentTermsVersion);
 
         if (driver.Truck != null)
         {
@@ -268,6 +298,7 @@ public class DriverRepository : IDriverRepository
             .Include(e => e.User)
             .Include(d => d.Truck)
             .Include(d => d.TermsAcceptanceRecords)
+            .Include(d => d.ManagedByDispatcher)
             .FirstOrDefaultAsync(d => d.UserId == driverId);
 
         if (driver == null)
@@ -280,8 +311,14 @@ public class DriverRepository : IDriverRepository
             };
         }
 
+        // Get the current terms version
+        var currentTermsVersion = await _context.TermsAndConditions
+            .Where(t => t.IsCurrentVersion)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
         var mappedDriver = _mapper.Map<DriverProfileResponseModel>(driver);
-        mappedDriver.HasAcceptedTerms = driver.TermsAcceptanceRecords.Any(r => r.TermsVersion == "2025"); // Current version
+        mappedDriver.HasAcceptedTerms = !string.IsNullOrEmpty(currentTermsVersion) && driver.TermsAcceptanceRecords.Any(r => r.TermsVersion == currentTermsVersion);
         return new ApiResponseModel<DriverProfileResponseModel>
         {
             IsSuccessful = true,
@@ -529,11 +566,12 @@ public class DriverRepository : IDriverRepository
         }
     }
 
-    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
+    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversForFleetManagerById(string fleetManagerId)
     {
-        // Retrieve drivers that are associated with the given TruckOwnerId
+        // Retrieve drivers that are associated with the given fleet manager
+        // Check both TruckOwnerId and ManagedByDispatcherId to support both traditional TruckOwners and Dispatchers
         var drivers = await _context.Drivers
-            .Where(d => d.TruckOwnerId == truckOwnerId)
+            .Where(d => d.TruckOwnerId == fleetManagerId || d.ManagedByDispatcherId == fleetManagerId)
             .ToListAsync();
 
         // If no drivers found, return a 404 response
@@ -542,13 +580,13 @@ public class DriverRepository : IDriverRepository
             return new ApiResponseModel<List<AllDriverResponseModel>>
             {
                 IsSuccessful = false,
-                Message = "No drivers found for this truck owner",
+                Message = "No drivers found for this fleet manager",
                 StatusCode = 404,
                 Data = new List<AllDriverResponseModel>()
             };
         }
 
-        // Map drivers to the response model
+        // Map drivers to the response model (IsActive and OnboardingStatus will be automatically mapped)
         var driverResponseModels = _mapper.Map<List<AllDriverResponseModel>>(drivers);
 
         return new ApiResponseModel<List<AllDriverResponseModel>>
@@ -558,6 +596,154 @@ public class DriverRepository : IDriverRepository
             StatusCode = 200,
             Data = driverResponseModels
         };
+    }
+
+    public async Task<ApiResponseModel<string>> AddDriverToFleetManager(AddDriverToFleetManagerRequestModel model)
+    {
+        try
+        {
+            // Get fleet manager to inherit country
+            var fleetManager = await _context.TruckOwners
+                .FirstOrDefaultAsync(fm => fm.Id == model.FleetManagerId);
+
+            if (fleetManager == null)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = "Fleet manager not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Check if driver with same email or phone already exists
+            var existingDriver = await _context.Drivers
+                .FirstOrDefaultAsync(d => d.EmailAddress == model.Email || d.Phone == model.Number);
+
+            if (existingDriver != null)
+            {
+                if (existingDriver.EmailAddress == model.Email)
+                {
+                    return new ApiResponseModel<string>
+                    {
+                        IsSuccessful = false,
+                        Message = "Email address already exists",
+                        StatusCode = 400
+                    };
+                }
+                else
+                {
+                    return new ApiResponseModel<string>
+                    {
+                        IsSuccessful = false,
+                        Message = "Phone number already exists",
+                        StatusCode = 400
+                    };
+                }
+            }
+
+            // Generate password for US drivers, use a default for others
+            string password = fleetManager.Country.ToUpper() == "US"
+                ? "Admin@1234"
+              //  ? HelperClass.GenerateRandomPassword()
+                : "TemporaryPassword123!"; // Will be changed on first login
+
+            // Create user account for driver
+            var user = new User
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                firstName = model.Name.Split(' ').FirstOrDefault() ?? model.Name,
+                lastName = model.Name.Split(' ').Skip(1).FirstOrDefault() ?? "",
+                EmailConfirmed = true, // Auto-confirm for fleet manager added drivers
+                PhoneNumber = model.Number,
+                IsActive = true
+            };
+
+            var userResult = await _userManager.CreateAsync(user, password);
+            if (!userResult.Succeeded)
+            {
+                return new ApiResponseModel<string>
+                {
+                    IsSuccessful = false,
+                    Message = $"Failed to create user account: {string.Join(", ", userResult.Errors.Select(e => e.Description))}",
+                    StatusCode = 400
+                };
+            }
+
+            // Assign driver role
+            await _userManager.AddToRoleAsync(user, "driver");
+
+            // Create driver with inherited country from fleet manager
+            var newDriver = new Driver
+            {
+                Name = model.Name,
+                EmailAddress = model.Email,
+                Phone = model.Number,
+                UserId = user.Id,
+                User = user,
+                Country = fleetManager.Country, // Inherit country from fleet manager
+                TruckOwnerId = model.FleetManagerId,
+                ManagedByDispatcherId = fleetManager.OwnerType == TruckOwnerType.Dispatcher ? model.FleetManagerId : null,
+                OwnershipType = fleetManager.OwnerType == TruckOwnerType.Dispatcher
+                    ? DriverOwnershipType.DispatcherManaged
+                    : DriverOwnershipType.TruckOwnerEmployee,
+                OnboardingStatus = DriverOnboardingStatus.OboardingPending,
+                IsActive = true
+            };
+
+            _context.Drivers.Add(newDriver);
+            await _context.SaveChangesAsync();
+
+            // Send password email only for US drivers
+            if (fleetManager.Country.ToUpper() == "US")
+            {
+                try
+                {
+                    var emailSubject = "Your Driver Account Has Been Created";
+                    var emailBody = $@"
+                        <h2>Welcome to Trucki!</h2>
+                        <p>Hello {newDriver.Name},</p>
+                        <p>Your driver account has been created by {fleetManager.Name}.</p>
+                        <p><strong>Your login credentials:</strong></p>
+                        <ul>
+                            <li>Email: {newDriver.EmailAddress}</li>
+                            <li>Temporary Password: {password}</li>
+                        </ul>
+                        <p>Please log in and complete your onboarding process.</p>
+                        <p>Thank you,<br/>Trucki Team</p>
+                    ";
+
+                    await _emailSender.SendEmailAsync(newDriver.EmailAddress, emailSubject, emailBody);
+                    _logger.LogInformation($"Password email sent to US driver: {newDriver.EmailAddress}");
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, $"Failed to send password email to {newDriver.EmailAddress}");
+                    // Don't fail the entire operation if email fails
+                }
+            }
+
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = true,
+                Message = fleetManager.Country.ToUpper() == "US"
+                    ? "Driver created successfully. Login credentials have been sent via email."
+                    : "Driver created successfully.",
+                StatusCode = 201,
+                Data = newDriver.Id
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding driver to fleet manager");
+            return new ApiResponseModel<string>
+            {
+                IsSuccessful = false,
+                Message = $"An error occurred while creating the driver: {ex.Message}",
+                StatusCode = 500
+            };
+        }
     }
     public async Task<ApiResponseModel<bool>> AcceptTermsAndConditions(AcceptTermsRequestModel model)
     {
@@ -613,12 +799,18 @@ public class DriverRepository : IDriverRepository
     {
         try
         {
+            // Get the current terms version
+            var currentTermsVersion = await _context.TermsAndConditions
+                .Where(t => t.IsCurrentVersion)
+                .Select(t => t.Id)
+                .FirstOrDefaultAsync();
+
             var latestAcceptance = await _context.TermsAcceptanceRecords
                 .Where(t => t.DriverId == driverId)
                 .OrderByDescending(t => t.AcceptedAt)
                 .FirstOrDefaultAsync();
 
-            bool hasAccepted = latestAcceptance != null && latestAcceptance.TermsVersion == "2025"; // Current version
+            bool hasAccepted = !string.IsNullOrEmpty(currentTermsVersion) && latestAcceptance != null && latestAcceptance.TermsVersion == currentTermsVersion;
 
             return new ApiResponseModel<bool>
             {
@@ -1140,6 +1332,12 @@ public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTran
                 };
             }
 
+            // Get the current terms version
+            var currentTermsVersion = await _context.TermsAndConditions
+                .Where(t => t.IsCurrentVersion)
+                .Select(t => t.Id)
+                .FirstOrDefaultAsync();
+
             // Get all required document types for this driver's country
             var requiredDocumentTypes = await _context.DocumentTypes
                 .Where(dt => dt.Country == driver.Country && dt.EntityType == "Driver" && dt.IsRequired)
@@ -1182,7 +1380,10 @@ public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTran
                     TermsVersion = t.TermsVersion,
                     AcceptedAt = t.AcceptedAt,
                     AcceptedFromIp = t.AcceptedFromIp,
-                    DeviceInfo = t.DeviceInfo
+                    DeviceInfo = t.DeviceInfo,
+                    DriverId = t.DriverId,
+                    DriverName = t.Driver.Name
+                    
                 })
                 .ToList();
 
@@ -1215,7 +1416,7 @@ public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTran
             // Calculate onboarding progress
             var progress = new OnboardingProgressSummary
             {
-                TermsAccepted = termsHistory.Any(t => t.TermsVersion == "2025"), // Current version
+                TermsAccepted = !string.IsNullOrEmpty(currentTermsVersion) && driver.TermsAcceptanceRecords.Any(t => t.TermsVersion == currentTermsVersion),
                 ProfilePictureUploaded = !string.IsNullOrEmpty(driver.PassportFile),
                 AllDocumentsUploaded = documentSummary.AllRequiredDocumentsUploaded,
                 AllDocumentsApproved = documentSummary.AllDocumentsApproved,
@@ -1358,8 +1559,14 @@ public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTran
     {
         var blockingIssues = new List<string>();
 
+        // Get the current terms version
+        var currentTermsVersion = await _context.TermsAndConditions
+            .Where(t => t.IsCurrentVersion)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
         // 1. Check terms acceptance
-        if (!driver.TermsAcceptanceRecords.Any(t => t.TermsVersion == "2025")) // Update with your current version
+        if (string.IsNullOrEmpty(currentTermsVersion) || !driver.TermsAcceptanceRecords.Any(t => t.TermsVersion == currentTermsVersion))
         {
             blockingIssues.Add("Driver has not accepted the latest terms and conditions");
         }
@@ -1371,10 +1578,10 @@ public async Task<ApiResponseModel<bool>> UpdateTransportationNumbers(UpdateTran
         }
 
         // 3. Check DOT number for US drivers
-        if (driver.Country == "US" && string.IsNullOrWhiteSpace(driver.DotNumber))
-        {
-            blockingIssues.Add("US driver must provide DOT number");
-        }
+        // if (driver.Country == "US" && string.IsNullOrWhiteSpace(driver.DotNumber))
+        //{
+          //  blockingIssues.Add("US driver must provide DOT number");
+        //}
 
         // 4. Check required documents
         var requiredDocTypes = await _context.DocumentTypes

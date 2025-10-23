@@ -20,6 +20,8 @@ namespace trucki.Models.ResponseModels
         public string? McNumber { get; set; }
 
         public string PassportFile { get; set; }
+        public bool IsActive { get; set; }
+        public DriverOnboardingStatus OnboardingStatus { get; set; }
     }
     public class AdminDriverSummaryResponseModel
     {
@@ -54,5 +56,11 @@ namespace trucki.Models.ResponseModels
         public DriverOnboardingStatus OnboardingStatus { get; set; }
 
         public bool HasAcceptedTerms { get; set; }
+
+        // Dispatcher management information
+        public int? OwnershipType { get; set; }
+        public bool? IsManagedByDispatcher { get; set; }
+        public string? ManagedByDispatcherId { get; set; }
+        public string? ManagedByDispatcherName { get; set; }
     }
 }

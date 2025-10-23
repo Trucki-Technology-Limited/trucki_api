@@ -20,4 +20,10 @@ public class DriverProfileResponseModel
     public DriverOnboardingStatus OnboardingStatus { get; set; }
     public AllTruckResponseModel? Truck { get; set; }
     public DriverRatingSummaryModel Rating { get; set; }
+
+    // Dispatcher management information
+    public DriverOwnershipType OwnershipType { get; set; }
+    public bool IsManagedByDispatcher => OwnershipType == DriverOwnershipType.DispatcherManaged;
+    public string? ManagedByDispatcherId { get; set; }
+    public string? ManagedByDispatcherName { get; set; }
 }

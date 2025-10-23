@@ -74,26 +74,6 @@ public class TruckOwnerController: ControllerBase
         var response = await _truckOwnerService.CreateNewTruckOwner(model);
         return StatusCode(response.StatusCode, response);
     }
-    [HttpPost("AddNewTransporter")]
-    public async Task<ActionResult<ApiResponseModel<bool>>> AddNewTransporter(
-        [FromBody] AddTransporterRequestBody model)
-    {
-        var response = await _truckOwnerService.AddNewTransporter(model);
-        return StatusCode(response.StatusCode, response);
-    }
-     [HttpGet("GetTransporterProfileById")]
-    [Authorize(Roles = "transporter")]
-    public async Task<ActionResult<ApiResponseModel<TruckOwnerResponseModel>>> GetTransporterProfileById()
-    {
-        
-        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized();
-        }
-        var response = await _truckOwnerService.GetTransporterProfileById(userId);
-        return StatusCode(response.StatusCode, response);
-    }
      [HttpPost("ApproveTruckOwner")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<bool>>> ApproveTruckOwner([FromQuery] string ownerId)
@@ -126,7 +106,7 @@ public class TruckOwnerController: ControllerBase
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("UploadIdCardAndProfilePicture")]
-[Authorize(Roles = "transporter")]
+[Authorize(Roles = "transporter,dispatcher")]
 public async Task<ActionResult<ApiResponseModel<bool>>> UploadIdCardAndProfilePicture(
     [FromBody] UploadIdCardAndProfilePictureRequestBody model)
 {
@@ -141,7 +121,7 @@ public async Task<ActionResult<ApiResponseModel<bool>>> UploadIdCardAndProfilePi
 }
 
 [HttpPost("UpdateBankDetails")]
-[Authorize(Roles = "transporter")]
+[Authorize(Roles = "transporter,dispatcher")]
 public async Task<ActionResult<ApiResponseModel<bool>>> UpdateBankDetails(
     [FromBody] UpdateBankDetailsRequestBody model)
 {

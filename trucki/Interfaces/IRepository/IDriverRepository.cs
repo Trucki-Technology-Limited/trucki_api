@@ -7,7 +7,7 @@ namespace trucki.Interfaces.IRepository;
 public interface IDriverRepository
 {
     Task<ApiResponseModel<List<AllDriverResponseModel>>> GetAllDrivers();
-    Task<DriverResponseModel> GetDriverById(string id);
+    Task<DriverResponseModel> GetDriverById(string id, string requesterId = null, string requesterRole = null);
     Task<ApiResponseModel<IEnumerable<AllDriverResponseModel>>> SearchDrivers(string searchWords);
     Task<ApiResponseModel<string>> AddDriver(AddDriverRequestModel model);
     Task<ApiResponseModel<bool>> EditDriver(EditDriverRequestModel model);
@@ -16,7 +16,8 @@ public interface IDriverRepository
     Task<ApiResponseModel<OrderCountByDriver>> GetOrderCountByDriver(string driverId);
     Task<ApiResponseModel<List<AllOrderResponseModel>>> GetOrderAssignedToDriver(string driverId);
     Task<ApiResponseModel<string>> CreateDriverAccount(CreateDriverRequestModel model);
-    Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId);
+    Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversForFleetManagerById(string fleetManagerId);
+    Task<ApiResponseModel<string>> AddDriverToFleetManager(AddDriverToFleetManagerRequestModel model);
     Task<ApiResponseModel<bool>> AcceptTermsAndConditions(AcceptTermsRequestModel model);
     Task<ApiResponseModel<bool>> HasAcceptedLatestTerms(string driverId);
     Task<ApiResponseModel<List<TermsAcceptanceRecordDto>>> GetTermsAcceptanceHistory(string driverId);

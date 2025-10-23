@@ -308,6 +308,18 @@ namespace trucki.Services
                     return ApiResponseModel<bool>.Fail("Driver or truck not found", 404);
                 }
 
+                // If FleetManagerId is provided, validate that the driver belongs to this fleet manager
+                if (!string.IsNullOrEmpty(createBidDto.FleetManagerId))
+                {
+                    var isDriverManagedByFleetManager = driver.TruckOwnerId == createBidDto.FleetManagerId ||
+                                                        driver.ManagedByDispatcherId == createBidDto.FleetManagerId;
+
+                    if (!isDriverManagedByFleetManager)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver does not belong to this fleet manager", 403);
+                    }
+                }
+
                 if (driver.Truck.TruckStatus != TruckStatus.Available)
                 {
                     return ApiResponseModel<bool>.Fail("Truck is not available for bidding", 400);
@@ -318,6 +330,20 @@ namespace trucki.Services
                 {
                     return ApiResponseModel<bool>.Fail("Driver already has an active order and cannot place another bid until it's completed", 400);
                 }
+
+                // Check if dispatcher has already bid on behalf of ANY driver for this order
+                if (!string.IsNullOrEmpty(createBidDto.FleetManagerId))
+                {
+                    var dispatcherHasBid = order.Bids.Any(b =>
+                        b.SubmittedByDispatcherId == createBidDto.FleetManagerId &&
+                        b.Status == BidStatus.Pending);
+
+                    if (dispatcherHasBid)
+                    {
+                        return ApiResponseModel<bool>.Fail("You have already submitted a bid for this order with another driver", 400);
+                    }
+                }
+
                 // Check if driver already has a pending bid for this order
                 var existingBid = order.Bids.FirstOrDefault(b =>
                     b.TruckId == driver.TruckId &&
@@ -327,6 +353,14 @@ namespace trucki.Services
                 {
                     // Update existing bid
                     existingBid.Amount = createBidDto.Amount;
+                    existingBid.Notes = createBidDto.Notes;
+
+                    // Update dispatcher info if applicable
+                    if (!string.IsNullOrEmpty(createBidDto.FleetManagerId))
+                    {
+                        existingBid.SubmitterType = BidSubmitterType.Dispatcher;
+                        existingBid.SubmittedByDispatcherId = createBidDto.FleetManagerId;
+                    }
                 }
                 else
                 {
@@ -336,7 +370,12 @@ namespace trucki.Services
                         OrderId = order.Id,
                         TruckId = driver.TruckId,
                         Amount = createBidDto.Amount,
-                        Status = BidStatus.Pending
+                        Status = BidStatus.Pending,
+                        Notes = createBidDto.Notes,
+                        SubmitterType = !string.IsNullOrEmpty(createBidDto.FleetManagerId)
+                            ? BidSubmitterType.Dispatcher
+                            : BidSubmitterType.Driver,
+                        SubmittedByDispatcherId = createBidDto.FleetManagerId
                     };
 
                     _dbContext.Set<Bid>().Add(newBid);
@@ -811,9 +850,13 @@ namespace trucki.Services
      .Include(o => o.Bids)
          .ThenInclude(b => b.Truck)
              .ThenInclude(t => t.Driver)
+     .Include(o => o.Bids)
+         .ThenInclude(b => b.SubmittedByDispatcher)
      .Include(o => o.AcceptedBid)
          .ThenInclude(b => b.Truck)
              .ThenInclude(t => t.Driver)
+     .Include(o => o.AcceptedBid)
+         .ThenInclude(b => b.SubmittedByDispatcher)
      .AsSplitQuery()
      .FirstOrDefaultAsync(o => o.Id == orderId);
 
@@ -911,17 +954,27 @@ namespace trucki.Services
                 return ApiResponseModel<CargoOrderResponseModel>.Fail($"Error: {ex.Message}", 500);
             }
         }
-        public async Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetOpenCargoOrdersAsync(string? driverId = null)
+        public async Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetOpenCargoOrdersAsync(string? driverId = null, string? fleetManagerId = null)
         {
             try
             {
+                // If fleetManagerId is provided, get all driver IDs under that fleet manager
+                List<string>? fleetDriverIds = null;
+                if (!string.IsNullOrEmpty(fleetManagerId))
+                {
+                    fleetDriverIds = await _dbContext.Set<Driver>()
+                        .Where(d => d.TruckOwnerId == fleetManagerId || d.ManagedByDispatcherId == fleetManagerId)
+                        .Select(d => d.Id)
+                        .ToListAsync();
+                }
+
                 // Get orders that are open for bidding or in bidding progress
                 var openOrders = await _dbContext.Set<CargoOrders>()
                     .Include(o => o.CargoOwner)
                     .Include(o => o.Items)
                     .Include(o => o.Bids.Where(b =>
-                        driverId != null &&
-                        b.Truck.DriverId == driverId)) // Only include the driver's own bids
+                        (driverId != null && b.Truck.DriverId == driverId) || // Driver's own bids
+                        (fleetDriverIds != null && fleetDriverIds.Contains(b.Truck.DriverId)))) // Fleet manager's drivers' bids
                     .Where(o =>
                         (o.Status == CargoOrderStatus.OpenForBidding ||
                          o.Status == CargoOrderStatus.BiddingInProgress) &&
@@ -979,8 +1032,35 @@ namespace trucki.Services
                             } : null;
                         }
                     }
+                    // If fleetManagerId is provided, show bids from their drivers
+                    else if (!string.IsNullOrEmpty(fleetManagerId) && fleetDriverIds != null && fleetDriverIds.Any())
+                    {
+                        // For fleet managers, include bid information from all their drivers
+                        var fleetBids = order.Bids
+                            .Where(b => b.Truck != null && fleetDriverIds.Contains(b.Truck.DriverId) &&
+                                       (b.Status == BidStatus.Pending || b.Status == BidStatus.AdminApproved))
+                            .ToList();
 
-                    // Clear the bids list as it shouldn't be exposed to drivers
+                        // Map to DriverBidInfo if there are any bids from fleet drivers
+                        if (fleetBids.Any())
+                        {
+                            // Show the lowest bid or most recent bid from fleet drivers
+                            var bestBid = fleetBids.OrderBy(b => b.Amount).ThenByDescending(b => b.CreatedAt).FirstOrDefault();
+                            if (bestBid != null)
+                            {
+                                orderResponse.DriverBidInfo = new DriverBidInfo
+                                {
+                                    BidId = bestBid.Id,
+                                    Amount = bestBid.Amount,
+                                    Status = bestBid.Status,
+                                    CreatedAt = bestBid.CreatedAt,
+                                    UpdatedAt = bestBid.UpdatedAt
+                                };
+                            }
+                        }
+                    }
+
+                    // Clear the bids list as it shouldn't be exposed
                     orderResponse.Bids = null;
 
                     orderResponses.Add(orderResponse);
@@ -1171,6 +1251,24 @@ namespace trucki.Services
                     return ApiResponseModel<bool>.Fail("Order not found", 404);
                 }
 
+                // If FleetManagerId is provided, validate that the driver belongs to this fleet manager
+                if (!string.IsNullOrEmpty(uploadManifestDto.FleetManagerId))
+                {
+                    var driver = order.AcceptedBid?.Truck?.Driver;
+                    if (driver == null)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver information not found for this order", 404);
+                    }
+
+                    var isDriverManagedByFleetManager = driver.TruckOwnerId == uploadManifestDto.FleetManagerId ||
+                                                        driver.ManagedByDispatcherId == uploadManifestDto.FleetManagerId;
+
+                    if (!isDriverManagedByFleetManager)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver does not belong to this fleet manager", 403);
+                    }
+                }
+
                 // Verify order status
                 if (order.Status != CargoOrderStatus.ReadyForPickup)
                 {
@@ -1264,6 +1362,24 @@ namespace trucki.Services
                 if (order == null)
                 {
                     return ApiResponseModel<bool>.Fail("Order not found", 404);
+                }
+
+                // If FleetManagerId is provided, validate that the driver belongs to this fleet manager
+                if (!string.IsNullOrEmpty(completeDeliveryDto.FleetManagerId))
+                {
+                    var driver = order.AcceptedBid?.Truck?.Driver;
+                    if (driver == null)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver information not found for this order", 404);
+                    }
+
+                    var isDriverManagedByFleetManager = driver.TruckOwnerId == completeDeliveryDto.FleetManagerId ||
+                                                        driver.ManagedByDispatcherId == completeDeliveryDto.FleetManagerId;
+
+                    if (!isDriverManagedByFleetManager)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver does not belong to this fleet manager", 403);
+                    }
                 }
 
                 if (order.Status != CargoOrderStatus.InTransit)
@@ -1607,11 +1723,31 @@ namespace trucki.Services
                 // Find the bid to update
                 var bid = await _dbContext.Set<Bid>()
                     .Include(b => b.Order)
+                    .Include(b => b.Truck)
+                    .ThenInclude(t => t.Driver)
                     .FirstOrDefaultAsync(b => b.Id == updateBidDto.BidId && b.OrderId == updateBidDto.OrderId);
 
                 if (bid == null)
                 {
                     return ApiResponseModel<bool>.Fail("Bid not found", 404);
+                }
+
+                // If FleetManagerId is provided, validate that the driver belongs to this fleet manager
+                if (!string.IsNullOrEmpty(updateBidDto.FleetManagerId))
+                {
+                    var driver = bid.Truck?.Driver;
+                    if (driver == null)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver information not found for this bid", 404);
+                    }
+
+                    var isDriverManagedByFleetManager = driver.TruckOwnerId == updateBidDto.FleetManagerId ||
+                                                        driver.ManagedByDispatcherId == updateBidDto.FleetManagerId;
+
+                    if (!isDriverManagedByFleetManager)
+                    {
+                        return ApiResponseModel<bool>.Fail("Driver does not belong to this fleet manager", 403);
+                    }
                 }
 
                 // Check if the order is still in bidding process
@@ -1903,6 +2039,9 @@ namespace trucki.Services
                         404);
                 }
 
+                // Check if driver is managed by a dispatcher
+                bool isDispatcherManaged = driver.OwnershipType == DriverOwnershipType.DispatcherManaged;
+
                 // Build the query for all orders for this driver
                 var ordersQuery = _dbContext.Set<CargoOrders>()
                     .Include(o => o.CargoOwner)
@@ -1914,11 +2053,12 @@ namespace trucki.Services
                 (o.AcceptedBid != null && o.AcceptedBid.TruckId == driver.Truck.Id) ||
                 // 2. Orders where this driver has placed a bid (pending, accepted, or expired)
                 o.Bids.Any(b => b.TruckId == driver.Truck.Id) ||
-                // 3. Open orders that the driver hasn't bid on yet (NEW ADDITION)
-                (o.Status == CargoOrderStatus.OpenForBidding ||
-                 o.Status == CargoOrderStatus.BiddingInProgress) &&
-                o.AcceptedBidId == null &&
-                !o.Bids.Any(b => b.TruckId == driver.Truck.Id));
+                // 3. Open orders that the driver hasn't bid on yet (only for independent drivers)
+                (!isDispatcherManaged &&
+                 (o.Status == CargoOrderStatus.OpenForBidding ||
+                  o.Status == CargoOrderStatus.BiddingInProgress) &&
+                 o.AcceptedBidId == null &&
+                 !o.Bids.Any(b => b.TruckId == driver.Truck.Id)));
 
                 // Apply status filter if provided
                 if (query.Status.HasValue)
@@ -2765,6 +2905,644 @@ namespace trucki.Services
             var totalSpent = orders.Where(o => o.IsPaid).Sum(o => o.TotalAmount);
 
             return (totalOrders, completedOrders, totalSpent);
+        }
+
+        #endregion
+
+        #region Dispatcher Methods
+
+        public async Task<ApiResponseModel<bool>> CreateBidOnBehalfAsync(CreateBidOnBehalfDto createBidDto)
+        {
+            try
+            {
+                // Validate dispatcher can bid for this driver
+                var commission = await _dbContext.DriverDispatcherCommissions
+                    .FirstOrDefaultAsync(c => c.DriverId == createBidDto.DriverId
+                                           && c.DispatcherId == createBidDto.DispatcherId
+                                           && c.IsActive);
+
+                if (commission == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Dispatcher not authorized to bid for this driver", 400);
+                }
+
+                var driver = await _dbContext.Drivers
+                    .Include(d => d.Truck)
+                    .FirstOrDefaultAsync(d => d.Id == createBidDto.DriverId);
+
+                if (driver?.Truck == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver or truck not found", 404);
+                }
+
+                // Validate driver is approved and active
+                if (driver.OnboardingStatus != DriverOnboardingStatus.OnboardingCompleted || !driver.IsActive)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver is not approved or active", 400);
+                }
+
+                // Check if order exists and is open for bidding
+                var order = await _dbContext.CargoOrders
+                    .FirstOrDefaultAsync(o => o.Id == createBidDto.OrderId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Order not found", 404);
+                }
+
+                if (order.Status != CargoOrderStatus.OpenForBidding)
+                {
+                    return ApiResponseModel<bool>.Fail("Order is not open for bidding", 400);
+                }
+
+                // Check if driver already has a bid for this order
+                var existingBid = await _dbContext.Bids
+                    .FirstOrDefaultAsync(b => b.OrderId == createBidDto.OrderId && b.TruckId == driver.TruckId);
+
+                if (existingBid != null)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver already has a bid for this order", 400);
+                }
+
+                // Calculate dispatcher commission
+                var systemFee = createBidDto.Amount * 0.20m;
+                var netAmount = createBidDto.Amount - systemFee;
+                var dispatcherCommission = netAmount * (commission.CommissionPercentage / 100);
+
+                // Create bid - IMPORTANT: Bid references the driver, not the dispatcher
+                var bid = new Bid
+                {
+                    OrderId = createBidDto.OrderId,
+                    TruckId = driver.TruckId,
+                    Amount = createBidDto.Amount,
+                    Status = BidStatus.Pending,
+
+                    // Dispatcher tracking (hidden from cargo owner)
+                    SubmitterType = BidSubmitterType.Dispatcher,
+                    SubmittedByDispatcherId = createBidDto.DispatcherId,
+                    DispatcherCommissionAmount = dispatcherCommission,
+
+                    // Notes can include dispatcher info for admin
+                    Notes = $"Bid submitted by dispatcher on behalf of driver. {createBidDto.Notes ?? ""}"
+                };
+
+                _dbContext.Bids.Add(bid);
+                await _dbContext.SaveChangesAsync();
+
+                // Send notification to cargo owner about new bid
+                await _notificationService.SendNotificationAsync(order.CargoOwnerId, "New Bid Received", $"A new bid has been placed on your order {order.Id}");
+
+                return ApiResponseModel<bool>.Success("Bid created successfully", true, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error creating bid: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetAvailableOrdersForDispatcherAsync(string dispatcherId)
+        {
+            try
+            {
+                // Get dispatcher to check their country
+                var dispatcher = await _dbContext.TruckOwners
+                    .FirstOrDefaultAsync(d => d.Id == dispatcherId && d.OwnerType == TruckOwnerType.Dispatcher);
+
+                if (dispatcher == null)
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail("Dispatcher not found", 404);
+                }
+
+                // Get orders available for bidding in dispatcher's country
+                var orders = await _dbContext.CargoOrders
+                    .Include(o => o.Items)
+                    .Include(o => o.CargoOwner)
+                    .Include(o => o.Bids)
+                    .Where(o => o.Status == CargoOrderStatus.OpenForBidding
+                             && o.CountryCode == dispatcher.Country)
+                    .Select(o => new CargoOrderResponseModel
+                    {
+                        Id = o.Id,
+                        CargoOwnerId = o.CargoOwnerId,
+                        CargoOwner = new CargoOwnerResponseModel { Name = o.CargoOwner.Name },
+                        PickupLocation = o.PickupLocation,
+                        DeliveryLocation = o.DeliveryLocation,
+                        Status = o.Status,
+                        // Country filtering already applied in WHERE clause
+                        TotalAmount = o.TotalAmount,
+                        PickupDateTime = o.PickupDateTime,
+                        DeliveryDateTime = o.DeliveryDateTime,
+                        // TruckType information not available in simplified response
+                        CreatedAt = o.CreatedAt,
+                        Bids = o.Bids.Select(b => new BidResponseModel { Amount = b.Amount }).ToList(),
+                        // Don't include sensitive details in listing
+                    })
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success("Orders retrieved successfully", orders, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail($"Error retrieving orders: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponseModel<List<CargoOwnerBidResponseModel>>> GetBidsForCargoOwnerAsync(string orderId, string cargoOwnerId)
+        {
+            try
+            {
+                // Validate cargo owner owns this order
+                var order = await _dbContext.CargoOrders
+                    .FirstOrDefaultAsync(o => o.Id == orderId && o.CargoOwnerId == cargoOwnerId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<List<CargoOwnerBidResponseModel>>.Fail("Order not found or access denied", 404);
+                }
+
+                // CargoOwner sees driver information with dispatcher indicator
+                var bids = await _dbContext.Bids
+                    .Include(b => b.Truck)
+                        .ThenInclude(t => t.Driver)
+                    .Where(b => b.OrderId == orderId)
+                    .Select(b => new CargoOwnerBidResponseModel
+                    {
+                        Id = b.Id,
+                        Amount = b.Amount,
+                        Status = b.Status,
+                        DriverId = b.Truck.Driver.Id,
+                        DriverName = b.Truck.Driver.Name,
+                        TruckId = b.TruckId,
+                        Truck = new CargoTruckResponseModel
+                        {
+                            Id = b.Truck.Id,
+                            PlateNumber = b.Truck.PlateNumber,
+                            TruckCapacity = b.Truck.TruckCapacity,
+                            DriverId = b.Truck.DriverId,
+                            DriverName = b.Truck.Driver.Name,
+                            Capacity = b.Truck.TruckCapacity,
+                            TruckName = b.Truck.TruckName,
+                            TruckType = b.Truck.TruckType,
+                            TruckNumber = b.Truck.TruckiNumber ?? "N/A"
+                        },
+                        CreatedAt = b.CreatedAt,
+                        Notes = b.Notes != null ? b.Notes.Split(new string[] { "Bid submitted by dispatcher" }, StringSplitOptions.None)[0].Trim() : null, // Remove dispatcher info from notes
+                        IsFromDispatcher = b.SubmitterType == BidSubmitterType.Dispatcher // Simple boolean indicator
+                    })
+                    .OrderByDescending(b => b.CreatedAt)
+                    .ToListAsync();
+
+                return ApiResponseModel<List<CargoOwnerBidResponseModel>>.Success("Bids retrieved successfully", bids, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<List<CargoOwnerBidResponseModel>>.Fail($"Error retrieving bids: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponseModel<List<AdminBidResponseModel>>> GetBidsForAdminAsync(string orderId)
+        {
+            try
+            {
+                // Admin sees full information including dispatcher details
+                var bids = await _dbContext.Bids
+                    .Include(b => b.Truck)
+                        .ThenInclude(t => t.Driver)
+                    .Include(b => b.SubmittedByDispatcher)
+                    .Where(b => b.OrderId == orderId)
+                    .Select(b => new AdminBidResponseModel
+                    {
+                        Id = b.Id,
+                        Amount = b.Amount,
+                        Status = b.Status,
+                        DriverId = b.Truck.Driver.Id,
+                        DriverName = b.Truck.Driver.Name,
+                        TruckId = b.TruckId,
+                        Truck = new CargoTruckResponseModel
+                        {
+                            Id = b.Truck.Id,
+                            PlateNumber = b.Truck.PlateNumber,
+                            TruckCapacity = b.Truck.TruckCapacity,
+                            DriverId = b.Truck.DriverId,
+                            DriverName = b.Truck.Driver.Name,
+                            Capacity = b.Truck.TruckCapacity,
+                            TruckName = b.Truck.TruckName,
+                            TruckType = b.Truck.TruckType,
+                            TruckNumber = b.Truck.TruckiNumber ?? "N/A"
+                        },
+                        CreatedAt = b.CreatedAt,
+                        Notes = b.Notes,
+
+                        // Dispatcher information for admin
+                        SubmitterType = b.SubmitterType,
+                        SubmittedByDispatcherId = b.SubmittedByDispatcherId,
+                        DispatcherName = b.SubmittedByDispatcher != null ? b.SubmittedByDispatcher.Name : null,
+                        DispatcherCommissionAmount = b.DispatcherCommissionAmount
+                    })
+                    .OrderByDescending(b => b.CreatedAt)
+                    .ToListAsync();
+
+                return ApiResponseModel<List<AdminBidResponseModel>>.Success("Bids retrieved successfully", bids, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<List<AdminBidResponseModel>>.Fail($"Error retrieving bids: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponseModel<bool>> UploadManifestOnBehalfAsync(UploadManifestOnBehalfDto dto)
+        {
+            try
+            {
+                // Validate dispatcher manages this driver
+                var driver = await _dbContext.Drivers
+                    .FirstOrDefaultAsync(d => d.Id == dto.DriverId && d.ManagedByDispatcherId == dto.DispatcherId);
+
+                if (driver == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver not found or not managed by this dispatcher", 404);
+                }
+
+                // Validate order belongs to this driver
+                var order = await _dbContext.CargoOrders
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                    .FirstOrDefaultAsync(o => o.Id == dto.OrderId &&
+                                            o.AcceptedBid != null &&
+                                            o.AcceptedBid.Truck.DriverId == dto.DriverId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Order not found or not assigned to this driver", 404);
+                }
+
+                if (order.Status != CargoOrderStatus.DriverAcknowledged && order.Status != CargoOrderStatus.ReadyForPickup)
+                {
+                    return ApiResponseModel<bool>.Fail("Order is not ready for manifest upload", 400);
+                }
+
+                // Upload manifest documents (same logic as driver upload)
+                order.Documents = dto.ManifestUrls;
+                order.Status = CargoOrderStatus.InTransit; // Status change when manifest uploaded
+
+                await _dbContext.SaveChangesAsync();
+
+                // Notify cargo owner
+                await _notificationService.SendNotificationAsync(order.CargoOwnerId, "Manifest Uploaded", $"Manifest has been uploaded for order {order.Id}");
+
+                return ApiResponseModel<bool>.Success("Manifest uploaded successfully on behalf of driver", true, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error uploading manifest: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponseModel<bool>> CompleteDeliveryOnBehalfAsync(CompleteDeliveryOnBehalfDto dto)
+        {
+            try
+            {
+                // Validate dispatcher manages this driver
+                var driver = await _dbContext.Drivers
+                    .FirstOrDefaultAsync(d => d.Id == dto.DriverId && d.ManagedByDispatcherId == dto.DispatcherId);
+
+                if (driver == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Driver not found or not managed by this dispatcher", 404);
+                }
+
+                // Validate order belongs to this driver
+                var order = await _dbContext.CargoOrders
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                    .FirstOrDefaultAsync(o => o.Id == dto.OrderId &&
+                                            o.AcceptedBid != null &&
+                                            o.AcceptedBid.Truck.DriverId == dto.DriverId);
+
+                if (order == null)
+                {
+                    return ApiResponseModel<bool>.Fail("Order not found or not assigned to this driver", 404);
+                }
+
+                if (order.Status != CargoOrderStatus.InTransit)
+                {
+                    return ApiResponseModel<bool>.Fail("Order is not in transit", 400);
+                }
+
+                // Upload delivery documents and complete order
+                order.DeliveryDocuments = dto.DeliveryDocumentUrls;
+                order.Status = CargoOrderStatus.Delivered; // Status change when delivery docs uploaded
+
+                await _dbContext.SaveChangesAsync();
+
+                // Process commission payments
+                await ProcessDispatcherOrderCompletion(order.Id);
+
+                // Notify cargo owner and driver
+                await _notificationService.SendNotificationAsync(order.CargoOwnerId, "Order Completed", $"Order {order.Id} has been completed");
+                await _notificationService.SendNotificationAsync(dto.DriverId, "Order Completed", $"Order {order.Id} has been completed");
+
+                return ApiResponseModel<bool>.Success("Delivery completed successfully on behalf of driver", true, 200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<bool>.Fail($"Error completing delivery: {ex.Message}", 500);
+            }
+        }
+
+        private async Task ProcessDispatcherOrderCompletion(string orderId)
+        {
+            try
+            {
+                var order = await _dbContext.CargoOrders
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                                .ThenInclude(d => d.CommissionStructures.Where(c => c.IsActive))
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order?.AcceptedBid == null) return;
+
+                var driver = order.AcceptedBid.Truck.Driver;
+                var activeCommission = driver.CommissionStructures.FirstOrDefault(c => c.IsActive);
+
+                if (activeCommission != null && driver.OwnershipType == DriverOwnershipType.DispatcherManaged)
+                {
+                    // Calculate commission split
+                    var totalAmount = order.AcceptedBid.Amount;
+                    var systemFee = totalAmount * 0.20m; // 20% system fee
+                    var netAmount = totalAmount - systemFee;
+
+                    var dispatcherCommission = netAmount * (activeCommission.CommissionPercentage / 100);
+                    var driverEarnings = netAmount - dispatcherCommission;
+
+                    // Update driver wallet
+                    await _driverWalletService.CreditDeliveryAmountAsync(driver.Id, orderId, driverEarnings, "Order completion earnings (dispatcher managed)");
+
+                    // Update dispatcher earnings (you might need to create a dispatcher wallet service)
+                    // For now, this could be tracked in a separate table or added to TruckOwner wallet
+
+                    // Update order with earnings breakdown
+                    order.DriverEarnings = driverEarnings;
+                    await _dbContext.SaveChangesAsync();
+                }
+                else
+                {
+                    // Standard driver payout (no dispatcher)
+                    var systemFee = order.AcceptedBid.Amount * 0.20m;
+                    var driverEarnings = order.AcceptedBid.Amount - systemFee;
+
+                    await _driverWalletService.CreditDeliveryAmountAsync(driver.Id, orderId, driverEarnings, "Order completion earnings");
+
+                    order.DriverEarnings = driverEarnings;
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the order completion
+                Console.WriteLine($"Error processing dispatcher order completion: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Fleet Manager Methods
+
+        public async Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetActiveOrdersForFleetManagerAsync(string fleetManagerId)
+        {
+            try
+            {
+                // Get all driver IDs under this fleet manager
+                var fleetDriverIds = await _dbContext.Set<Driver>()
+                    .Where(d => d.TruckOwnerId == fleetManagerId || d.ManagedByDispatcherId == fleetManagerId)
+                    .Select(d => d.Id)
+                    .ToListAsync();
+
+                if (!fleetDriverIds.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No drivers found for this fleet manager",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                // Get all trucks for these drivers
+                var truckIds = await _dbContext.Set<Truck>()
+                    .Where(t => fleetDriverIds.Contains(t.DriverId))
+                    .Select(t => t.Id)
+                    .ToListAsync();
+
+                if (!truckIds.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No trucks found for fleet drivers",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                // Get active orders for all fleet drivers
+                var activeOrders = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.CargoOwner)
+                    .Include(o => o.Items)
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                    .Where(o =>
+                        o.AcceptedBid != null &&
+                        truckIds.Contains(o.AcceptedBid.TruckId) &&
+                        (o.Status == CargoOrderStatus.DriverSelected ||
+                         o.Status == CargoOrderStatus.DriverAcknowledged ||
+                         o.Status == CargoOrderStatus.ReadyForPickup ||
+                         o.Status == CargoOrderStatus.InTransit))
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                if (!activeOrders.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No active orders found for this fleet manager",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                var orderResponses = new List<CargoOrderResponseModel>();
+
+                foreach (var order in activeOrders)
+                {
+                    // Initialize collections to prevent null reference
+                    order.Items ??= new List<CargoOrderItem>();
+                    order.Documents ??= new List<string>();
+                    order.DeliveryDocuments ??= new List<string>();
+
+                    var orderResponse = _mapper.Map<CargoOrderResponseModel>(order);
+
+                    // Calculate and add summary information
+                    var summary = await GetOrderSummary(order);
+                    orderResponse.TotalWeight = summary.TotalWeight;
+                    orderResponse.TotalVolume = summary.TotalVolume;
+                    orderResponse.HasFragileItems = summary.HasFragileItems;
+                    orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
+                    orderResponse.SpecialHandlingRequirements = summary.SpecialHandlingRequirements;
+
+                    // Add next required action based on status
+                    orderResponse.NextAction = GetNextRequiredAction(order.Status);
+
+                    // Add bid/payment information
+                    if (order.AcceptedBid != null)
+                    {
+                        orderResponse.AcceptedAmount = order.AcceptedBid.Amount;
+
+                        // Set the Driver property if the bid has a driver
+                        if (order.AcceptedBid.Truck != null && order.AcceptedBid.Truck.Driver != null)
+                        {
+                            orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(order.AcceptedBid.Truck.Driver);
+                        }
+                    }
+
+                    // Set contact information based on order status
+                    if (order.Status == CargoOrderStatus.ReadyForPickup)
+                    {
+                        // Return pickup contact info only
+                        orderResponse.PickupContactName = order.PickupContactName;
+                        orderResponse.PickupContactPhone = order.PickupContactPhone;
+                        orderResponse.DeliveryContactName = null;
+                        orderResponse.DeliveryContactPhone = null;
+                    }
+                    else if (order.Status == CargoOrderStatus.InTransit)
+                    {
+                        // Return delivery contact info only
+                        orderResponse.PickupContactName = null;
+                        orderResponse.PickupContactPhone = null;
+                        orderResponse.DeliveryContactName = order.DeliveryContactName;
+                        orderResponse.DeliveryContactPhone = order.DeliveryContactPhone;
+                    }
+                    else
+                    {
+                        // For other statuses, don't return contact info
+                        orderResponse.PickupContactName = null;
+                        orderResponse.PickupContactPhone = null;
+                        orderResponse.DeliveryContactName = null;
+                        orderResponse.DeliveryContactPhone = null;
+                    }
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                    "Active orders retrieved successfully",
+                    orderResponses,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail(
+                    $"Error retrieving active orders: {ex.Message}",
+                    500);
+            }
+        }
+
+        public async Task<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>> GetCompletedOrdersForFleetManagerAsync(string fleetManagerId)
+        {
+            try
+            {
+                // Get all driver IDs under this fleet manager
+                var fleetDriverIds = await _dbContext.Set<Driver>()
+                    .Where(d => d.TruckOwnerId == fleetManagerId || d.ManagedByDispatcherId == fleetManagerId)
+                    .Select(d => d.Id)
+                    .ToListAsync();
+
+                if (!fleetDriverIds.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No drivers found for this fleet manager",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                // Get all trucks for these drivers
+                var truckIds = await _dbContext.Set<Truck>()
+                    .Where(t => fleetDriverIds.Contains(t.DriverId))
+                    .Select(t => t.Id)
+                    .ToListAsync();
+
+                if (!truckIds.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No trucks found for fleet drivers",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                // Get completed orders for all fleet drivers
+                var completedOrders = await _dbContext.Set<CargoOrders>()
+                    .Include(o => o.CargoOwner)
+                    .Include(o => o.Items)
+                    .Include(o => o.AcceptedBid)
+                        .ThenInclude(b => b.Truck)
+                            .ThenInclude(t => t.Driver)
+                    .Where(o =>
+                        o.AcceptedBid != null &&
+                        truckIds.Contains(o.AcceptedBid.TruckId) &&
+                        (o.Status == CargoOrderStatus.Delivered ||
+                         o.Status == CargoOrderStatus.Cancelled))
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                if (!completedOrders.Any())
+                {
+                    return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                        "No completed orders found for this fleet manager",
+                        Enumerable.Empty<CargoOrderResponseModel>(),
+                        200);
+                }
+
+                var orderResponses = new List<CargoOrderResponseModel>();
+
+                foreach (var order in completedOrders)
+                {
+                    // Initialize collections to prevent null reference
+                    order.Items ??= new List<CargoOrderItem>();
+                    order.Documents ??= new List<string>();
+                    order.DeliveryDocuments ??= new List<string>();
+
+                    var orderResponse = _mapper.Map<CargoOrderResponseModel>(order);
+
+                    // Calculate and add summary information
+                    var summary = await GetOrderSummary(order);
+                    orderResponse.TotalWeight = summary.TotalWeight;
+                    orderResponse.TotalVolume = summary.TotalVolume;
+                    orderResponse.HasFragileItems = summary.HasFragileItems;
+                    orderResponse.ItemTypeBreakdown = summary.ItemTypeBreakdown;
+                    orderResponse.SpecialHandlingRequirements = summary.SpecialHandlingRequirements;
+
+                    // Add bid/payment information
+                    if (order.AcceptedBid != null)
+                    {
+                        orderResponse.AcceptedAmount = order.AcceptedBid.Amount;
+
+                        // Set the Driver property if the bid has a driver
+                        if (order.AcceptedBid.Truck != null && order.AcceptedBid.Truck.Driver != null)
+                        {
+                            orderResponse.Driver = _mapper.Map<DriverProfileResponseModel>(order.AcceptedBid.Truck.Driver);
+                        }
+                    }
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Success(
+                    "Completed orders retrieved successfully",
+                    orderResponses,
+                    200);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseModel<IEnumerable<CargoOrderResponseModel>>.Fail(
+                    $"Error retrieving completed orders: {ex.Message}",
+                    500);
+            }
         }
 
         #endregion
