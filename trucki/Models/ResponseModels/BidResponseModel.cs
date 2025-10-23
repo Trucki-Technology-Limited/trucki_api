@@ -1,3 +1,4 @@
+using trucki.Entities;
 
 namespace trucki.Models.ResponseModels;
 
@@ -13,4 +14,10 @@ public class BidResponseModel
     public AllTruckResponseModel Truck { get; set; }
     public DriverProfileResponseModel Driver { get; set; }
     public DriverRatingSummaryModel DriverRating { get; set; }
+
+    // Dispatcher/Bidding information
+    public BidSubmitterType SubmitterType { get; set; }
+    public string? SubmittedByDispatcherId { get; set; }
+    public string? SubmittedByDispatcherName { get; set; }
+    public string? Notes { get; set; }
 }

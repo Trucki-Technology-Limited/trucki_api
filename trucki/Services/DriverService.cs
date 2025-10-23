@@ -35,9 +35,9 @@ public class DriverService : IDriverService
         return res;
     }
 
-    public async Task<DriverResponseModel> GetDriverById(string id)
+    public async Task<DriverResponseModel> GetDriverById(string id, string requesterId = null, string requesterRole = null)
     {
-        var res = await _driverRepository.GetDriverById(id);
+        var res = await _driverRepository.GetDriverById(id, requesterId, requesterRole);
         return res;
     }
     public async Task<ApiResponseModel<DriverProfileResponseModel>> GetDriverProfileById(string id)
@@ -67,9 +67,14 @@ public class DriverService : IDriverService
         var res = await _driverRepository.CreateDriverAccount(model);
         return res;
     }
-    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
+    public async Task<ApiResponseModel<List<AllDriverResponseModel>>> GetDriversForFleetManagerById(string fleetManagerId)
     {
-        var res = await _driverRepository.GetDriversByTruckOwnerId(truckOwnerId);
+        var res = await _driverRepository.GetDriversForFleetManagerById(fleetManagerId);
+        return res;
+    }
+    public async Task<ApiResponseModel<string>> AddDriverToFleetManager(AddDriverToFleetManagerRequestModel model)
+    {
+        var res = await _driverRepository.AddDriverToFleetManager(model);
         return res;
     }
     public async Task<ApiResponseModel<bool>> AcceptTermsAndConditions(AcceptTermsRequestModel model)

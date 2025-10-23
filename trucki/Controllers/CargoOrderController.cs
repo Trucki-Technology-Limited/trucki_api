@@ -41,9 +41,9 @@ namespace trucki.Controllers
         }
 
         [HttpGet("GetOpenCargoOrders")]
-        public async Task<ActionResult<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>>> GetOpenCargoOrders([FromQuery] string? driverId)
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>>> GetOpenCargoOrders([FromQuery] string? driverId, [FromQuery] string? fleetManagerId)
         {
-            var result = await _cargoOrderService.GetOpenCargoOrdersAsync(driverId);
+            var result = await _cargoOrderService.GetOpenCargoOrdersAsync(driverId, fleetManagerId);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -145,6 +145,47 @@ namespace trucki.Controllers
     [FromQuery] GetDriverOrdersQueryDto query)
         {
             var result = await _cargoOrderService.GetAllOrdersForDriverAsync(driverId, query);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        // Role-based bid viewing endpoints from implementation plan Section 8.2
+        [HttpGet("{orderId}/bids")]
+        [Authorize(Roles = "cargo owner")]
+        public async Task<ActionResult<ApiResponseModel<List<CargoOwnerBidResponseModel>>>> GetBidsForCargoOwner(string orderId, [FromQuery] string cargoOwnerId)
+        {
+            var result = await _cargoOrderService.GetBidsForCargoOwnerAsync(orderId, cargoOwnerId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("{orderId}/bids/admin")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ApiResponseModel<List<AdminBidResponseModel>>>> GetBidsForAdmin(string orderId)
+        {
+            var result = await _cargoOrderService.GetBidsForAdminAsync(orderId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("bids/dispatcher")]
+        [Authorize(Roles = "dispatcher")]
+        public async Task<ActionResult<ApiResponseModel<bool>>> CreateBidOnBehalfAsDispatcher([FromBody] CreateBidOnBehalfDto model)
+        {
+            var result = await _cargoOrderService.CreateBidOnBehalfAsync(model);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("fleetmanager/{fleetManagerId}/active")]
+        [Authorize(Roles = "transporter,dispatcher")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>>> GetActiveOrdersForFleetManager(string fleetManagerId)
+        {
+            var result = await _cargoOrderService.GetActiveOrdersForFleetManagerAsync(fleetManagerId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("fleetmanager/{fleetManagerId}/completed")]
+        [Authorize(Roles = "transporter,dispatcher")]
+        public async Task<ActionResult<ApiResponseModel<IEnumerable<CargoOrderResponseModel>>>> GetCompletedOrdersForFleetManager(string fleetManagerId)
+        {
+            var result = await _cargoOrderService.GetCompletedOrdersForFleetManagerAsync(fleetManagerId);
             return StatusCode(result.StatusCode, result);
         }
     }

@@ -25,14 +25,19 @@ public class Profiles : Profile
         CreateMap<AllOrderResponseModel, Order>().ReverseMap();
         CreateMap<BankDetailsResponseModel, BankDetails>().ReverseMap();
         CreateMap<TruckOwnerResponseModel, TruckOwner>().ReverseMap();
-        CreateMap<DriverResponseModel, Driver>().ReverseMap();
-        CreateMap<DriverProfileResponseModel, Driver>().ReverseMap();
+        CreateMap<DriverResponseModel, Driver>().ReverseMap()
+            .ForMember(dest => dest.OwnershipType, opt => opt.MapFrom(src => (int?)src.OwnershipType))
+            .ForMember(dest => dest.IsManagedByDispatcher, opt => opt.MapFrom(src => (bool?)(src.OwnershipType == DriverOwnershipType.DispatcherManaged)))
+            .ForMember(dest => dest.ManagedByDispatcherName, opt => opt.MapFrom(src => src.ManagedByDispatcher != null ? src.ManagedByDispatcher.Name : null));
+        CreateMap<DriverProfileResponseModel, Driver>().ReverseMap()
+            .ForMember(dest => dest.ManagedByDispatcherName, opt => opt.MapFrom(src => src.ManagedByDispatcher != null ? src.ManagedByDispatcher.Name : null));
         CreateMap<OfficerBusinessResponseModel, Business>().ReverseMap();
         CreateMap<CargoOwner, CargoOwnerProfileResponseModel>();
         CreateMap<CargoOrders, CargoOrderResponseModel>();
         CreateMap<CargoTruckResponseModel, Truck>().ReverseMap();
         CreateMap<Bid, BidResponseModel>()
-         .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Truck.Driver));
+         .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Truck.Driver))
+         .ForMember(dest => dest.SubmittedByDispatcherName, opt => opt.MapFrom(src => src.SubmittedByDispatcher != null ? src.SubmittedByDispatcher.Name : null));
         CreateMap<Invoice, InvoiceResponseModel>()
      .ForMember(dest => dest.Order, opt => opt.Ignore());
         CreateMap<PaymentAccount, BankAccountResponseModel>();

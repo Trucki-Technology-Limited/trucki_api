@@ -188,7 +188,7 @@ public class SeedData
         {
             var userManagerService = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             var roleManagerService = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var roles = new[] { "admin","finance", "chiefmanager","manager", "driver", "cargo owner", "transporter", "hr", "field officer", "safety officer" };
+            var roles = new[] { "admin","finance", "chiefmanager","manager", "driver", "cargo owner", "transporter", "dispatcher", "hr", "field officer", "safety officer" };
             foreach (var roleName in roles)
             {
                 if (!await roleManagerService.RoleExistsAsync(roleName))

@@ -56,4 +56,11 @@ public class DocumentTypeRepository : IDocumentTypeRepository
                          && dt.EntityType == entityType)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<DocumentType>> GetByCountryAndEntityTypeAsync(string country, string entityType)
+    {
+        return await _dbContext.DocumentTypes
+            .Where(dt => dt.Country == country && dt.EntityType == entityType)
+            .ToListAsync();
+    }
 }
