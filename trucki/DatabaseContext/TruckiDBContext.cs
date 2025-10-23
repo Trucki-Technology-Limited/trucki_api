@@ -58,21 +58,6 @@ namespace trucki.DatabaseContext
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
             });
 
-            // New Bid configurations
-            modelBuilder.Entity<Bid>(builder =>
-            {
-                builder.HasKey(x => x.Id);
-
-                // Configure Order relationship
-                builder.HasOne(b => b.Order)
-                    .WithMany(o => o.Bids)
-                    .HasForeignKey(b => b.OrderId);
-
-                // Configure Truck relationship
-                builder.HasOne(b => b.Truck)
-                    .WithMany()
-                    .HasForeignKey(b => b.TruckId);
-            });
             modelBuilder.Entity<ChatMessage>(entity =>
           {
               entity.HasKey(e => e.Id);
@@ -176,6 +161,62 @@ namespace trucki.DatabaseContext
                 .WithMany()
                 .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure DriverDispatcherCommission entity relationships
+            modelBuilder.Entity<DriverDispatcherCommission>(builder =>
+            {
+                builder.HasKey(x => x.Id);
+
+                // Configure Driver relationship
+                builder.HasOne(dc => dc.Driver)
+                    .WithMany(d => d.CommissionStructures)
+                    .HasForeignKey(dc => dc.DriverId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Configure Dispatcher (TruckOwner) relationship
+                builder.HasOne(dc => dc.Dispatcher)
+                    .WithMany(to => to.DispatcherCommissions)
+                    .HasForeignKey(dc => dc.DispatcherId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Add unique index for active commissions (only one active commission per driver-dispatcher pair)
+                builder.HasIndex(dc => new { dc.DriverId, dc.DispatcherId, dc.IsActive })
+                    .HasFilter("IsActive = true")
+                    .IsUnique()
+                    .HasDatabaseName("IX_DriverDispatcherCommission_ActiveUnique");
+            });
+
+            // Update Bid entity configuration for dispatcher functionality
+            modelBuilder.Entity<Bid>(builder =>
+            {
+                builder.HasKey(x => x.Id);
+
+                // Configure Order relationship
+                builder.HasOne(b => b.Order)
+                    .WithMany(o => o.Bids)
+                    .HasForeignKey(b => b.OrderId);
+
+                // Configure Truck relationship
+                builder.HasOne(b => b.Truck)
+                    .WithMany()
+                    .HasForeignKey(b => b.TruckId);
+
+                // Configure SubmittedByDispatcher relationship (optional)
+                builder.HasOne(b => b.SubmittedByDispatcher)
+                    .WithMany()
+                    .HasForeignKey(b => b.SubmittedByDispatcherId)
+                    .IsRequired(false);
+            });
+
+            // Configure Driver entity relationships for dispatcher management
+            modelBuilder.Entity<Driver>(builder =>
+            {
+                // Configure ManagedByDispatcher relationship
+                builder.HasOne(d => d.ManagedByDispatcher)
+                    .WithMany(to => to.drivers)
+                    .HasForeignKey(d => d.ManagedByDispatcherId)
+                    .IsRequired(false);
+            });
         }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<Manager> Managers { get; set; }
@@ -211,6 +252,8 @@ namespace trucki.DatabaseContext
         public DbSet<DriverPayout> DriverPayouts { get; set; }
         public DbSet<DriverRating> DriverRatings { get; set; }
         public DbSet<AccountDeletionRequest> AccountDeletionRequests { get; set; }
+        public DbSet<Bid> Bids { get; set; }
+        public DbSet<DriverDispatcherCommission> DriverDispatcherCommissions { get; set; }
 
 
 

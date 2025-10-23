@@ -19,4 +19,21 @@ public interface ITruckOwnerService
     Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId);
     Task<ApiResponseModel<bool>> UploadIdCardAndProfilePicture(string truckOwnerId, string idCardUrl, string profilePictureUrl);
     Task<ApiResponseModel<bool>> UpdateBankDetails(UpdateBankDetailsRequestBody model);
+
+    // UNIFIED FLEET OWNER METHODS (Dispatcher + Transporter)
+    Task<ApiResponseModel<bool>> RegisterFleetOwner(AddDispatcherRequestBody model);
+    Task<ApiResponseModel<TruckOwnerResponseModel>> GetFleetOwnerProfile(string userId);
+
+    // Dispatcher-specific methods
+    Task<ApiResponseModel<List<DriverResponseModel>>> GetDispatcherDrivers(string dispatcherId);
+
+    // Driver onboarding methods for dispatchers
+    Task<ApiResponseModel<string>> AddDriverToDispatcher(AddDriverForDispatcherRequestModel model);
+    Task<ApiResponseModel<bool>> UploadDriverDocuments(UploadDriverDocumentsForDispatcherDto model);
+    Task<ApiResponseModel<bool>> AddTruckForDriver(AddTruckForDispatcherDriverDto model);
+    Task<ApiResponseModel<bool>> CompleteDriverOnboarding(CompleteDriverOnboardingDto model);
+
+    // Commission management
+    Task<ApiResponseModel<bool>> SetOrUpdateDriverCommission(string driverId, string dispatcherId, decimal commissionPercentage);
+    Task<ApiResponseModel<DriverCommissionHistoryResponseModel>> GetDriverCommissionHistory(string driverId, string dispatcherId);
 }

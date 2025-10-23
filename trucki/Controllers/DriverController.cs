@@ -26,6 +26,14 @@ public class DriverController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
 
+    [HttpPost("AddDriverToFleetManager")]
+    [Authorize(Roles = "admin,transporter,dispatcher")]
+    public async Task<ActionResult<ApiResponseModel<string>>> AddDriverToFleetManager([FromBody] AddDriverToFleetManagerRequestModel model)
+    {
+        var response = await _driverService.AddDriverToFleetManager(model);
+        return StatusCode(response.StatusCode, response);
+    }
+
     [HttpPost("EditDriver")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<bool>>> EditDriver([FromBody] EditDriverRequestModel model)
@@ -43,16 +51,21 @@ public class DriverController : ControllerBase
     }
 
     [HttpGet("GetDriverById")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,dispatcher,transporter")]
     public async Task<ActionResult<ApiResponseModel<DriverResponseModel>>> GetDriverById(string id)
     {
-        var driver = await _driverService.GetDriverById(id);
+        // Get the current user's ID and role from claims
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        // Pass userId and role to service for ownership validation
+        var driver = await _driverService.GetDriverById(id, userId, userRole);
 
         if (driver == null)
         {
             // Return 404 with ApiResponseModel
             return NotFound(
-                ApiResponseModel<DriverResponseModel>.Fail("Driver not found", StatusCodes.Status404NotFound)
+                ApiResponseModel<DriverResponseModel>.Fail("Driver not found or you don't have permission to view this driver", StatusCodes.Status404NotFound)
             );
         }
 
@@ -113,11 +126,11 @@ public class DriverController : ControllerBase
         var response = await _driverService.CreateDriverAccount(model);
         return StatusCode(response.StatusCode, response);
     }
-    [HttpGet("GetDriversByTruckOwnerId")]
-    [Authorize(Roles = "transporter")]
-    public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriversByTruckOwnerId(string truckOwnerId)
+    [HttpGet("GetDriversForFleetManagerById")]
+    [Authorize(Roles = "transporter,dispatcher")]
+    public async Task<ActionResult<ApiResponseModel<AllDriverResponseModel>>> GetDriversForFleetManagerById(string fleetManagerId)
     {
-        var response = await _driverService.GetDriversByTruckOwnerId(truckOwnerId);
+        var response = await _driverService.GetDriversForFleetManagerById(fleetManagerId);
         return StatusCode(response.StatusCode, response);
     }
     [HttpPost("AcceptTerms")]

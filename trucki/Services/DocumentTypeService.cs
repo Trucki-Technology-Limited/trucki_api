@@ -24,6 +24,11 @@ public class DocumentTypeService : IDocumentTypeService
         return await _documentTypeRepository.GetAllAsync();
     }
 
+    public async Task<IEnumerable<DocumentType>> GetDocumentTypesByCountryAndEntityAsync(string country, string entityType)
+    {
+        return await _documentTypeRepository.GetByCountryAndEntityTypeAsync(country, entityType);
+    }
+
     public async Task<DocumentType> CreateDocumentTypeAsync(DocumentType documentType)
     {
         // Example: Validate or transform the input

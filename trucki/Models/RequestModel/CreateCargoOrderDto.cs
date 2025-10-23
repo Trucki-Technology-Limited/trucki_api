@@ -62,6 +62,7 @@ namespace trucki.Models.RequestModel
     {
         public string OrderId { get; set; }
         public List<string> ManifestUrl { get; set; }
+        public string? FleetManagerId { get; set; }  // For fleet managers uploading on behalf of drivers
     }
 
     public class UpdateLocationDto
@@ -76,6 +77,7 @@ namespace trucki.Models.RequestModel
     {
         public string OrderId { get; set; }
         public List<string> DeliveryDocuments { get; set; }
+        public string? FleetManagerId { get; set; }  // For fleet managers completing on behalf of drivers
     }
 
     public class CreateBidDto
@@ -84,6 +86,7 @@ namespace trucki.Models.RequestModel
         public string DriverId { get; set; }
         public decimal Amount { get; set; }
         public string? Notes { get; set; }  // Optional notes from driver about the bid
+        public string? FleetManagerId { get; set; }  // Optional: For fleet managers bidding on behalf of drivers
     }
     public class UpdateBidDto
     {
@@ -98,6 +101,7 @@ namespace trucki.Models.RequestModel
         public decimal Amount { get; set; }
 
         public string? Notes { get; set; }
+        public string? FleetManagerId { get; set; }  // For fleet managers updating bids on behalf of drivers
     }
     public class StartOrderDto
     {
