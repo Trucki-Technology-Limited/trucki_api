@@ -22,6 +22,7 @@ namespace trucki.Models.ResponseModels
         public string PassportFile { get; set; }
         public bool IsActive { get; set; }
         public DriverOnboardingStatus OnboardingStatus { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
     public class AdminDriverSummaryResponseModel
     {

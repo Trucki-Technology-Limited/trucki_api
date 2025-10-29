@@ -959,7 +959,7 @@ public class DriverRepository : IDriverRepository
             driversQuery = driversQuery.Where(d => d.Country.ToLower() == request.Country.ToLower());
         }
 
-        // Apply sorting
+        // Apply sorting - Default: sort by CreatedAt descending (last added first)
         driversQuery = request.SortBy?.ToLower() switch
         {
             "name" => request.SortDescending
@@ -974,9 +974,7 @@ public class DriverRepository : IDriverRepository
             "createdat" => request.SortDescending
                 ? driversQuery.OrderByDescending(d => d.CreatedAt)
                 : driversQuery.OrderBy(d => d.CreatedAt),
-            _ => request.SortDescending
-                ? driversQuery.OrderByDescending(d => d.CreatedAt)
-                : driversQuery.OrderBy(d => d.CreatedAt)
+            _ => driversQuery.OrderByDescending(d => d.CreatedAt) // Default: last added first
         };
 
         // Get total count before pagination
