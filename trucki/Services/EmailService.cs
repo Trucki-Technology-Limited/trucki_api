@@ -225,6 +225,14 @@ public class EmailService : IEmailService
         var bodyBuilder = new BodyBuilder();
         bodyBuilder.HtmlBody = htmlBody;
 
+        // Attach logo as CID (Content-ID) resource
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
+        if (File.Exists(logoPath))
+        {
+            var logo = bodyBuilder.LinkedResources.Add(logoPath);
+            logo.ContentId = "logo";
+        }
+
         message.Body = bodyBuilder.ToMessageBody();
         using (var client = new SmtpClient())
         {
