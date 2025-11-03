@@ -254,6 +254,7 @@ namespace trucki.DatabaseContext
         public DbSet<AccountDeletionRequest> AccountDeletionRequests { get; set; }
         public DbSet<Bid> Bids { get; set; }
         public DbSet<DriverDispatcherCommission> DriverDispatcherCommissions { get; set; }
+        public DbSet<OnboardingReminderTracking> OnboardingReminderTrackings { get; set; }
 
 
 
