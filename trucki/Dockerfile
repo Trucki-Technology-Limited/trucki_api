@@ -28,12 +28,14 @@ COPY --from=publish /app/publish .
 
 # Copy necessary files
 
+COPY --from=build /src/logo.png ./
 COPY --from=build /src/otp_template.html ./
 COPY --from=build /src/password_reset_template.html ./
 COPY --from=build /src/welcome_email_template.html ./
 COPY --from=build /src/order_template.html ./
 COPY --from=build /src/invoice_email_template.html ./
-COPY --from=build /src/logo.png ./
+COPY --from=build /src/onboarding_reminder_first_template.html ./
+COPY --from=build /src/onboarding_reminder_second_template.html ./
 COPY --from=build /src/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ./
 
 # Create a non-root user

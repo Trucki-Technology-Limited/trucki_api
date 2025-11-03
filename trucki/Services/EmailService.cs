@@ -156,7 +156,7 @@ public class EmailService : IEmailService
         var template = Handlebars.Compile(templateSource);
 
         // Default values
-        string subject = "Welcome to Trucki! Confirm Your Email & Start Your Journey";
+        string subject = "Confirm Your Email & Start Your Journey";
         string welcomeMessage = "Welcome to Trucki, the smarter way to connect with loads and keep your wheels moving!";
         string actionText = "accepting trips and maximizing your earnings";
         string thankYouText = "joining Trucki, let's hit the road together!";
@@ -177,7 +177,7 @@ public class EmailService : IEmailService
                 break;
 
             case "cargo owner":
-                subject = "Welcome to Trucki! Confirm Your Email & Start Shipping";
+                subject = "Confirm Your Email & Start Shipping";
                 welcomeMessage = "Welcome to Trucki, your trusted platform for seamless freight shipping!";
                 actionText = "posting loads and connecting with reliable drivers";
                 thankYouText = "choosing Trucki, we're here to power your logistics!";
@@ -191,7 +191,7 @@ public class EmailService : IEmailService
                 break;
 
             case "truck owner":
-                subject = "Welcome to Trucki! Confirm Your Email & Start Managing Your Fleet";
+                subject = "Confirm Your Email & Start Managing Your Fleet";
                 welcomeMessage = "Welcome to Trucki, your all-in-one platform for fleet management and cargo fulfillment!";
                 actionText = "assigning loads to your drivers";
                 thankYouText = "joining Trucki, let's build a smarter, more connected fleet together!";
@@ -295,6 +295,90 @@ public class EmailService : IEmailService
         message.Subject = subject;
         var bodyBuilder = new BodyBuilder();
         bodyBuilder.HtmlBody = htmlBody;
+
+        message.Body = bodyBuilder.ToMessageBody();
+        using (var client = new SmtpClient())
+        {
+            client.Connect(_smtpServer, _smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_Email, _Password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
+
+    /// <summary>
+    /// Sends the first onboarding reminder email to drivers who haven't completed onboarding (4 hours after start)
+    /// </summary>
+    public async Task SendFirstOnboardingReminderAsync(string toEmail, string name, List<string> pendingItems)
+    {
+        var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "onboarding_reminder_first_template.html");
+        var templateSource = File.ReadAllText(templatePath);
+        var template = Handlebars.Compile(templateSource);
+
+        var htmlBody = template(new
+        {
+            name = name,
+            email = toEmail,
+            hasPendingItems = pendingItems.Any(),
+            pendingItems = pendingItems
+        });
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
+        message.To.Add(new MailboxAddress(name, toEmail));
+        message.Subject = "Complete Your Trucki Driver Onboarding";
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = htmlBody;
+
+        // Attach logo as CID (Content-ID) resource
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
+        if (File.Exists(logoPath))
+        {
+            var logo = bodyBuilder.LinkedResources.Add(logoPath);
+            logo.ContentId = "logo";
+        }
+
+        message.Body = bodyBuilder.ToMessageBody();
+        using (var client = new SmtpClient())
+        {
+            client.Connect(_smtpServer, _smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_Email, _Password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
+
+    /// <summary>
+    /// Sends the second onboarding reminder email to drivers who still haven't completed onboarding (24 hours after start)
+    /// </summary>
+    public async Task SendSecondOnboardingReminderAsync(string toEmail, string name, List<string> pendingItems)
+    {
+        var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "onboarding_reminder_second_template.html");
+        var templateSource = File.ReadAllText(templatePath);
+        var template = Handlebars.Compile(templateSource);
+
+        var htmlBody = template(new
+        {
+            name = name,
+            email = toEmail,
+            hasPendingItems = pendingItems.Any(),
+            pendingItems = pendingItems
+        });
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
+        message.To.Add(new MailboxAddress(name, toEmail));
+        message.Subject = "Don't Miss Out - Complete Your Trucki Onboarding";
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = htmlBody;
+
+        // Attach logo as CID (Content-ID) resource
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
+        if (File.Exists(logoPath))
+        {
+            var logo = bodyBuilder.LinkedResources.Add(logoPath);
+            logo.ContentId = "logo";
+        }
 
         message.Body = bodyBuilder.ToMessageBody();
         using (var client = new SmtpClient())

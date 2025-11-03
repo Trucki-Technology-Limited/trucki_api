@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Trucki Onboarding</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background-color: #360568;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .content {
+            padding: 30px 40px;
+        }
+
+        h1 {
+            color: #360568;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: #555555;
+        }
+
+        .cta-button {
+            display: block;
+            background-color: #360568;
+            color: white;
+            text-decoration: none;
+            padding: 14px 24px;
+            border-radius: 4px;
+            margin: 30px auto;
+            text-align: center;
+            font-weight: 500;
+            max-width: 250px;
+            transition: background-color 0.2s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #2a0450;
+        }
+
+        .pending-tasks {
+            background-color: #fff3f3;
+            border-left: 4px solid #e74c3c;
+            border-radius: 6px;
+            padding: 20px 25px;
+            margin: 25px 0;
+        }
+
+        .pending-tasks h2 {
+            font-size: 18px;
+            margin-top: 0;
+            color: #e74c3c;
+        }
+
+        .pending-tasks ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .pending-tasks li {
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 28px;
+        }
+
+        .pending-tasks li:before {
+            content: "⚠";
+            position: absolute;
+            left: 0;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .pending-tasks li:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-box {
+            background-color: #f8f5fb;
+            border-radius: 6px;
+            padding: 20px 25px;
+            margin: 25px 0;
+        }
+
+        .info-box h3 {
+            font-size: 16px;
+            margin-top: 0;
+            color: #360568;
+        }
+
+        .info-box p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #777777;
+        }
+
+        .help-text {
+            border-top: 1px solid #eeeeee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 15px;
+        }
+
+        .signature {
+            margin-top: 30px;
+            font-weight: 500;
+        }
+
+        .app-instruction {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        @media only screen and (max-width: 480px) {
+            .content {
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="cid:logo" alt="Trucki Logo">
+        </div>
+
+        <div class="content">
+            <h1>Hey {{name}}, Complete Your Onboarding!</h1>
+
+            <p>We noticed you started your driver onboarding with Trucki but haven't finished yet. You're almost there! 🚚</p>
+
+            <p>Completing your profile is quick and easy, and once you're done, you'll be able to start accepting loads and earning money right away.</p>
+
+            {{#if hasPendingItems}}
+            <div class="pending-tasks">
+                <h2>You still need to complete:</h2>
+                <ul>
+                    {{#each pendingItems}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+            {{/if}}
+
+            <div class="app-instruction">
+                <strong>📱 Open the Trucki app</strong> on your phone and complete your profile to get started!
+            </div>
+
+            <div class="info-box">
+                <h3>Why finish your onboarding?</h3>
+                <p>✓ Access to loads in your area</p>
+                <p>✓ Start earning with competitive rates</p>
+                <p>✓ Real-time tracking and support</p>
+                <p>✓ Weekly payouts to your bank account</p>
+            </div>
+
+            <div class="help-text">
+                <p>Having trouble with your documents or have questions? Our support team is here to help at <a href="mailto:info@trucki.co">info@trucki.co</a> or reach out via in-app chat.</p>
+            </div>
+
+            <p class="signature">Let's get you on the road!<br>- The Trucki Team</p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Trucki Limited. All rights reserved.</p>
+            <p>This email was sent to {{email}}</p>
+        </div>
+    </div>
+</body>
+
+</html>
