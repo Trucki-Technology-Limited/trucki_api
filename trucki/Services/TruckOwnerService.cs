@@ -17,6 +17,8 @@ public class TruckOwnerService: ITruckOwnerService
     private readonly IDriverService _driverService;
     private readonly INotificationService _notificationService;
     private readonly ITruckService _truckService;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
 
     public TruckOwnerService(
         ITruckOwnerRepository ownerRepository,
@@ -24,7 +26,9 @@ public class TruckOwnerService: ITruckOwnerService
         UserManager<User> userManager,
         IDriverService driverService,
         INotificationService notificationService,
-        ITruckService truckService)
+        ITruckService truckService,
+        IEmailService emailService,
+        IConfiguration configuration)
     {
         _ownerRepository = ownerRepository;
         _context = context;
@@ -32,6 +36,8 @@ public class TruckOwnerService: ITruckOwnerService
         _driverService = driverService;
         _notificationService = notificationService;
         _truckService = truckService;
+        _emailService = emailService;
+        _configuration = configuration;
     }
     
 
@@ -60,11 +66,6 @@ public class TruckOwnerService: ITruckOwnerService
         return res;
     }
 
-    public async Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners()
-    {
-        var res = await _ownerRepository.GetAllTruckOwners();
-        return res;
-    }
     public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         var res = await _ownerRepository.SearchTruckOwners(searchWords);
@@ -185,6 +186,30 @@ public class TruckOwnerService: ITruckOwnerService
 
             _context.TruckOwners.Add(fleetOwner);
             await _context.SaveChangesAsync();
+
+            // Generate email confirmation token and send welcome email
+            var shouldSendEmails = _configuration.GetValue<bool>("EmailSettings:SendVerificationEmails", false);
+            if (shouldSendEmails)
+            {
+                try
+                {
+                    // Generate email confirmation token
+                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    var confirmationLink = $"https://trucki.co/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+                    // Send welcome email with confirmation link
+                    await _emailService.SendWelcomeEmailAsync(
+                        user.Email,
+                        user.firstName,
+                        role, // Use the role (dispatcher/transporter) for email template selection
+                        confirmationLink);
+                }
+                catch (Exception emailEx)
+                {
+                    // Log the error but don't fail registration
+                    // You might want to log this: $"Failed to send welcome email: {emailEx.Message}"
+                }
+            }
 
             string registrationType = model.Country.ToUpper() == "US" ? "Dispatcher" : "Transporter";
             return ApiResponseModel<bool>.Success($"{registrationType} registered successfully", true, 201);
@@ -604,5 +629,24 @@ public class TruckOwnerService: ITruckOwnerService
 
         // Check if all required documents are uploaded
         return requiredDocTypes.All(rdt => uploadedDocTypes.Contains(rdt));
+    }
+
+    // New methods for getting specific owner types with filtering and sorting
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date")
+    {
+        var res = await _ownerRepository.GetDispatchers(searchTerm, sortBy);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTruckOwners(string? searchTerm = null, string? sortBy = "date")
+    {
+        var res = await _ownerRepository.GetTruckOwners(searchTerm, sortBy);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTransporters(string? searchTerm = null, string? sortBy = "date")
+    {
+        var res = await _ownerRepository.GetTransporters(searchTerm, sortBy);
+        return res;
     }
 }

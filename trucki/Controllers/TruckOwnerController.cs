@@ -17,14 +17,6 @@ public class TruckOwnerController: ControllerBase
         _truckOwnerService = truckOwnerService;
     }
       
-    [HttpGet("GetAllTruckOwners")]
-    [Authorize(Roles = "admin")]
-    public async Task<ActionResult<ApiResponseModel<List<AllTruckOwnerResponseModel>>>> GetAllTruckOwners()
-    {
-        var response = await _truckOwnerService.GetAllTruckOwners();
-        return StatusCode(response.StatusCode, response);
-    }
-
     [HttpPost("DeleteTruckOwner")]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<ApiResponseModel<bool>>> DeleteTruckOwner([FromQuery] string ownerId)
@@ -132,6 +124,36 @@ public async Task<ActionResult<ApiResponseModel<bool>>> UpdateBankDetails(
     }
 
     var response = await _truckOwnerService.UpdateBankDetails(model);
+    return StatusCode(response.StatusCode, response);
+}
+
+[HttpGet("GetDispatchers")]
+[Authorize(Roles = "admin")]
+public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>>> GetDispatchers(
+    [FromQuery] string? searchTerm = null,
+    [FromQuery] string? sortBy = "date")
+{
+    var response = await _truckOwnerService.GetDispatchers(searchTerm, sortBy);
+    return StatusCode(response.StatusCode, response);
+}
+
+[HttpGet("GetTruckOwners")]
+[Authorize(Roles = "admin")]
+public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>>> GetTruckOwners(
+    [FromQuery] string? searchTerm = null,
+    [FromQuery] string? sortBy = "date")
+{
+    var response = await _truckOwnerService.GetTruckOwners(searchTerm, sortBy);
+    return StatusCode(response.StatusCode, response);
+}
+
+[HttpGet("GetTransporters")]
+[Authorize(Roles = "admin")]
+public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>>> GetTransporters(
+    [FromQuery] string? searchTerm = null,
+    [FromQuery] string? sortBy = "date")
+{
+    var response = await _truckOwnerService.GetTransporters(searchTerm, sortBy);
     return StatusCode(response.StatusCode, response);
 }
 }

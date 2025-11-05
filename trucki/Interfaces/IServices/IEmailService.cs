@@ -8,4 +8,6 @@ public interface IEmailService
     Task SendWelcomeEmailAsync(string toEmail, string name, string userType, string confirmationLink);
     Task SendPaymentReceiptEmailAsync(string toEmail, string orderId, decimal bidAmount, decimal systemFee, decimal tax, decimal totalAmount, string currency, string pickupLocation, string deliveryAddress);
     Task SendGenericEmailAsync(string toEmail, string subject, string htmlBody);
+    Task SendFirstOnboardingReminderAsync(string toEmail, string name, List<string> pendingItems);
+    Task SendSecondOnboardingReminderAsync(string toEmail, string name, List<string> pendingItems);
 }

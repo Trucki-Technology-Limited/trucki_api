@@ -77,6 +77,7 @@ namespace trucki.CustomExtension
 
 
             services.AddHostedService<WeeklyPayoutBackgroundService>();
+            services.AddHostedService<OnboardingReminderBackgroundService>();
             services.AddScoped<IDriverRatingRepository, DriverRatingRepository>();
             services.AddScoped<IAccountDeletionRepository, AccountDeletionRepository>();
             services.AddScoped<IAccountDeletionService, AccountDeletionService>();

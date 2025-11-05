@@ -9,7 +9,6 @@ public interface ITruckOwnerService
     Task<ApiResponseModel<TruckOwnerResponseModel>> GetTruckOwnerById(string id);
     Task<ApiResponseModel<bool>> EditTruckOwner(EditTruckOwnerRequestBody model);
     Task<ApiResponseModel<bool>> DeleteTruckOwner(string id);
-    Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners();
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords);
     Task<ApiResponseModel<bool>> AddNewTransporter(AddTransporterRequestBody model);
     Task<ApiResponseModel<TruckOwnerResponseModel>> GetTransporterProfileById(string transporterId);
@@ -36,4 +35,9 @@ public interface ITruckOwnerService
     // Commission management
     Task<ApiResponseModel<bool>> SetOrUpdateDriverCommission(string driverId, string dispatcherId, decimal commissionPercentage);
     Task<ApiResponseModel<DriverCommissionHistoryResponseModel>> GetDriverCommissionHistory(string driverId, string dispatcherId);
+
+    // New methods for getting specific owner types with filtering and sorting
+    Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date");
+    Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTruckOwners(string? searchTerm = null, string? sortBy = "date");
+    Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTransporters(string? searchTerm = null, string? sortBy = "date");
 }

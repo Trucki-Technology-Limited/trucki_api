@@ -182,19 +182,6 @@ public class TruckOwnerRepository:ITruckOwnerRepository
         };
     }
 
-    public async Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners()
-    {
-        // Fetch all truck owners from the database
-        var owners = await _context.TruckOwners.ToListAsync();
-        var result = _mapper.Map<List<AllTruckOwnerResponseModel>>(owners);
-        return new ApiResponseModel<List<AllTruckOwnerResponseModel>>
-        {
-            IsSuccessful = true,
-            StatusCode = 200,
-            Data = result
-        };
-    }
-    
     public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         IQueryable<TruckOwner> query = _context.TruckOwners;
@@ -487,5 +474,70 @@ public async Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId)
         };
     }
 
-    
+    // New methods for getting specific owner types with filtering and sorting
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date")
+    {
+        return await GetOwnersByType(TruckOwnerType.Dispatcher, searchTerm, sortBy, "Dispatcher");
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTruckOwners(string? searchTerm = null, string? sortBy = "date")
+    {
+        return await GetOwnersByType(TruckOwnerType.TruckOwner, searchTerm, sortBy, "Truck Owner");
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTransporters(string? searchTerm = null, string? sortBy = "date")
+    {
+        return await GetOwnersByType(TruckOwnerType.Transporter, searchTerm, sortBy, "Transporter");
+    }
+
+    // Helper method to get owners by type with filtering and sorting
+    private async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetOwnersByType(
+        TruckOwnerType ownerType,
+        string? searchTerm,
+        string? sortBy,
+        string typeName)
+    {
+        IQueryable<TruckOwner> query = _context.TruckOwners.Where(o => o.OwnerType == ownerType);
+
+        // Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerSearchTerm = searchTerm.ToLower();
+            query = query.Where(o =>
+                o.Name.ToLower().Contains(lowerSearchTerm) ||
+                (o.EmailAddress != null && o.EmailAddress.ToLower().Contains(lowerSearchTerm)) ||
+                o.Phone.Contains(lowerSearchTerm));
+        }
+
+        // Apply sorting
+        query = sortBy?.ToLower() switch
+        {
+            "date" => query.OrderByDescending(o => o.CreatedAt),
+            "name" => query.OrderBy(o => o.Name),
+            _ => query.OrderByDescending(o => o.CreatedAt) // Default to date sorting
+        };
+
+        var owners = await query.ToListAsync();
+
+        if (!owners.Any())
+        {
+            return new ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>
+            {
+                Data = new List<AllTruckOwnerResponseModel>(),
+                IsSuccessful = true,
+                Message = $"No {typeName}s found",
+                StatusCode = 200
+            };
+        }
+
+        var data = _mapper.Map<IEnumerable<AllTruckOwnerResponseModel>>(owners);
+
+        return new ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>
+        {
+            Data = data,
+            IsSuccessful = true,
+            Message = $"{typeName}s retrieved successfully",
+            StatusCode = 200
+        };
+    }
 }
