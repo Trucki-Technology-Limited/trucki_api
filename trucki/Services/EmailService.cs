@@ -190,6 +190,38 @@ public class EmailService : IEmailService
                 };
                 break;
 
+            case "dispatcher":
+                subject = "Confirm Your Email & Start Managing Your Fleet";
+                welcomeMessage = "Welcome to Trucki, where driver management meets profitability! Say goodbye to spreadsheets and hello to streamlined operations.";
+                actionText = "managing drivers, assigning loads, and maximizing your earnings";
+                thankYouText = "joining Trucki! We're excited to help you grow your business and make more money with less hassle.";
+                supportEmail = "support@trucki.co";
+                helpType = "support";
+                steps = new List<string>
+                {
+                    "Onboard Your Drivers in Minutes – Add drivers, upload documents, and assign trucks all in one place.",
+                    "Bid on High-Paying Loads – Access premium freight opportunities and place bids on behalf of your drivers.",
+                    "Earn More with Smart Commission Management – Set flexible commission structures and track all earnings in real-time.",
+                    "Monitor Everything Live – Track driver locations, manage documents, and oversee all deliveries from your dashboard."
+                };
+                break;
+
+            case "transporter":
+                subject = "Confirm Your Email & Start Managing Your Fleet";
+                welcomeMessage = "Welcome to Trucki, your all-in-one platform for fleet management and cargo fulfillment!";
+                actionText = "managing your fleet and connecting with loads";
+                thankYouText = "joining Trucki, let's build a smarter, more profitable fleet together!";
+                supportEmail = "support@trucki.co";
+                helpType = "support";
+                steps = new List<string>
+                {
+                    "Onboard Your Drivers Seamlessly – Register drivers, upload required documents, and assign trucks effortlessly.",
+                    "Access More Loads – Connect with cargo owners and get matched with profitable opportunities.",
+                    "Manage Driver Commissions – Set and track commission structures to keep your drivers motivated.",
+                    "Track & Get Paid Fast – Real-time fleet monitoring, automated compliance, and quick payments."
+                };
+                break;
+
             case "truck owner":
                 subject = "Confirm Your Email & Start Managing Your Fleet";
                 welcomeMessage = "Welcome to Trucki, your all-in-one platform for fleet management and cargo fulfillment!";
