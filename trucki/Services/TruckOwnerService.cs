@@ -66,11 +66,6 @@ public class TruckOwnerService: ITruckOwnerService
         return res;
     }
 
-    public async Task<ApiResponseModel<List<AllTruckOwnerResponseModel>>> GetAllTruckOwners()
-    {
-        var res = await _ownerRepository.GetAllTruckOwners();
-        return res;
-    }
     public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> SearchTruckOwners(string searchWords)
     {
         var res = await _ownerRepository.SearchTruckOwners(searchWords);
@@ -634,5 +629,24 @@ public class TruckOwnerService: ITruckOwnerService
 
         // Check if all required documents are uploaded
         return requiredDocTypes.All(rdt => uploadedDocTypes.Contains(rdt));
+    }
+
+    // New methods for getting specific owner types with filtering and sorting
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date")
+    {
+        var res = await _ownerRepository.GetDispatchers(searchTerm, sortBy);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTruckOwners(string? searchTerm = null, string? sortBy = "date")
+    {
+        var res = await _ownerRepository.GetTruckOwners(searchTerm, sortBy);
+        return res;
+    }
+
+    public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTransporters(string? searchTerm = null, string? sortBy = "date")
+    {
+        var res = await _ownerRepository.GetTransporters(searchTerm, sortBy);
+        return res;
     }
 }
