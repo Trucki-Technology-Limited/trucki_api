@@ -101,7 +101,11 @@ public class TruckOwnerRepository:ITruckOwnerRepository
             noOfTrucks = owner.trucks.Count.ToString(),
             IsAccountApproved = owner.OwnersStatus == OwnersStatus.Approved,
             IsProfileSetupComplete = owner.IdCardUrl != null && owner.ProfilePictureUrl != null,
-            BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails), 
+            BankDetails = _mapper.Map<BankDetailsResponseModel>(owner.BankDetails),
+            HasProvidedDotMcNumbers = owner.OwnerType == TruckOwnerType.Dispatcher &&
+                (!string.IsNullOrEmpty(owner.DotNumber) || !string.IsNullOrEmpty(owner.McNumber)),
+            DotNumber = owner.DotNumber,
+            McNumber = owner.McNumber,
             CreatedAt = owner.CreatedAt,
             UpdatedAt = owner.UpdatedAt,
             OwnersStatus = owner.OwnersStatus
@@ -285,6 +289,10 @@ public class TruckOwnerRepository:ITruckOwnerRepository
 
     bool hasBankDetails = owner.BankDetails != null;
 
+    // Check if dispatcher has provided DOT or MC numbers
+    bool hasProvidedDotMcNumbers = owner.OwnerType == TruckOwnerType.Dispatcher &&
+        (!string.IsNullOrEmpty(owner.DotNumber) || !string.IsNullOrEmpty(owner.McNumber));
+
     // Map the response model
     var mappedDriver = _mapper.Map<TruckOwnerResponseModel>(owner);
 
@@ -292,6 +300,7 @@ public class TruckOwnerRepository:ITruckOwnerRepository
     mappedDriver.IsAccountApproved = isAccountApproved;
     mappedDriver.IsProfileSetupComplete = isProfileSetupComplete;
     mappedDriver.HasBankDetails = hasBankDetails;
+    mappedDriver.HasProvidedDotMcNumbers = hasProvidedDotMcNumbers;
 
     return new ApiResponseModel<TruckOwnerResponseModel>
     {

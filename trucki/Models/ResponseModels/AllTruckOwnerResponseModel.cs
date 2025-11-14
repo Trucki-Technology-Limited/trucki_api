@@ -34,6 +34,13 @@ public class TruckOwnerResponseModel
     public bool HasBankDetails { set; get; }
     public BankDetailsResponseModel BankDetails { set; get; }
 
+    // DOT and MC Numbers for dispatchers
+    public string? DotNumber { get; set; }
+    public string? McNumber { get; set; }
+
+    // Check if dispatcher has provided DOT or MC numbers
+    public bool HasProvidedDotMcNumbers { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }

@@ -150,4 +150,14 @@ public class DispatcherController : ControllerBase
 
         return Ok(ApiResponseModel<List<DocumentTypeResponseModel>>.Success("Document types retrieved successfully", responseModels, 200));
     }
+
+    // Update dispatcher DOT and MC numbers
+    [HttpPut("{dispatcherId}/dot-mc-numbers")]
+    [Authorize(Roles = "dispatcher,admin")]
+    public async Task<ActionResult<ApiResponseModel<bool>>> UpdateDotMcNumbers(string dispatcherId, [FromBody] UpdateDispatcherDotMcNumbersRequestModel model)
+    {
+        model.DispatcherId = dispatcherId; // Ensure dispatcher ID matches route
+        var result = await _truckOwnerService.UpdateDispatcherDotMcNumbers(model);
+        return Ok(result);
+    }
 }
