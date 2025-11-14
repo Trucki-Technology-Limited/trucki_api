@@ -25,6 +25,11 @@ public class TruckOwner : BaseClass
     public string Country { get; set; } = "NG"; // Country code (NG, US, etc.)
     public bool CanBidOnBehalf { get; set; } = false; // For dispatchers
 
+    // DOT and MC Numbers for dispatchers (optional)
+    // If dispatcher doesn't provide these, their drivers MUST provide them
+    public string? DotNumber { get; set; }
+    public string? McNumber { get; set; }
+
     // Navigation property for dispatcher commission structures
     public ICollection<DriverDispatcherCommission> DispatcherCommissions { get; set; } = new List<DriverDispatcherCommission>();
 }

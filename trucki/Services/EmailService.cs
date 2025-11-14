@@ -421,4 +421,46 @@ public class EmailService : IEmailService
             client.Disconnect(true);
         }
     }
+
+    /// <summary>
+    /// Sends a welcome email to a driver added by a dispatcher, including their login credentials
+    /// </summary>
+    public async Task SendDriverCredentialsEmailAsync(string toEmail, string name, string email, string password, string dispatcherName)
+    {
+        var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "driver_credentials_template.html");
+        var templateSource = File.ReadAllText(templatePath);
+        var template = Handlebars.Compile(templateSource);
+
+        var htmlBody = template(new
+        {
+            name = name,
+            email = email,
+            password = password,
+            dispatcherName = dispatcherName
+        });
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Trucki Limited", _fromEmail));
+        message.To.Add(new MailboxAddress(name, toEmail));
+        message.Subject = "Welcome to Trucki - Your Account Has Been Created";
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = htmlBody;
+
+        // Attach logo as CID (Content-ID) resource
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
+        if (File.Exists(logoPath))
+        {
+            var logo = bodyBuilder.LinkedResources.Add(logoPath);
+            logo.ContentId = "logo";
+        }
+
+        message.Body = bodyBuilder.ToMessageBody();
+        using (var client = new SmtpClient())
+        {
+            client.Connect(_smtpServer, _smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_Email, _Password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
 }

@@ -167,6 +167,7 @@ public class TruckOwnerService: ITruckOwnerService
                 OwnerType = ownerType,
                 Country = model.Country,
                 CanBidOnBehalf = canBidOnBehalf
+                // DOT and MC numbers will be added via separate endpoint
             };
 
             // Handle bank details if provided
@@ -328,6 +329,26 @@ public class TruckOwnerService: ITruckOwnerService
             _context.DriverDispatcherCommissions.Add(commission);
             await _context.SaveChangesAsync();
 
+            // Send welcome email with credentials to the driver
+            var shouldSendEmails = _configuration.GetValue<bool>("EmailSettings:SendVerificationEmails", false);
+            if (shouldSendEmails)
+            {
+                try
+                {
+                    await _emailService.SendDriverCredentialsEmailAsync(
+                        model.Email,
+                        model.Name,
+                        model.Email,
+                        model.Password,
+                        dispatcher.Name);
+                }
+                catch (Exception emailEx)
+                {
+                    // Log the error but don't fail driver creation
+                    // You might want to log this: $"Failed to send driver credentials email: {emailEx.Message}"
+                }
+            }
+
             return ApiResponseModel<string>.Success("Driver created successfully. Complete onboarding by uploading documents and adding truck.",200);
         }
         catch (Exception ex)
@@ -347,6 +368,24 @@ public class TruckOwnerService: ITruckOwnerService
             if (driver == null)
             {
                 return ApiResponseModel<bool>.Fail("Driver not found or not managed by this dispatcher",400);
+            }
+
+            // Get dispatcher to check if they have DOT/MC numbers
+            var dispatcher = await _context.TruckOwners
+                .FirstOrDefaultAsync(d => d.Id == model.DispatcherId);
+
+            if (dispatcher == null)
+            {
+                return ApiResponseModel<bool>.Fail("Dispatcher not found", 404);
+            }
+
+            // Validation: If dispatcher doesn't have DOT/MC numbers, driver MUST provide them
+            bool dispatcherHasDotMc = !string.IsNullOrEmpty(dispatcher.DotNumber) || !string.IsNullOrEmpty(dispatcher.McNumber);
+            bool driverProvidedDotMc = !string.IsNullOrEmpty(model.DotNumber) || !string.IsNullOrEmpty(model.McNumber);
+
+            if (!dispatcherHasDotMc && !driverProvidedDotMc)
+            {
+                return ApiResponseModel<bool>.Fail("Driver must provide DOT and/or MC number since dispatcher has not provided them", 400);
             }
 
             // Upload documents using existing driver document functionality
@@ -629,6 +668,33 @@ public class TruckOwnerService: ITruckOwnerService
 
         // Check if all required documents are uploaded
         return requiredDocTypes.All(rdt => uploadedDocTypes.Contains(rdt));
+    }
+
+    // Update dispatcher DOT and MC numbers
+    public async Task<ApiResponseModel<bool>> UpdateDispatcherDotMcNumbers(UpdateDispatcherDotMcNumbersRequestModel model)
+    {
+        try
+        {
+            var dispatcher = await _context.TruckOwners
+                .FirstOrDefaultAsync(d => d.Id == model.DispatcherId && d.OwnerType == TruckOwnerType.Dispatcher);
+
+            if (dispatcher == null)
+            {
+                return ApiResponseModel<bool>.Fail("Dispatcher not found", 404);
+            }
+
+            // Update DOT and MC numbers
+            dispatcher.DotNumber = model.DotNumber;
+            dispatcher.McNumber = model.McNumber;
+
+            await _context.SaveChangesAsync();
+
+            return ApiResponseModel<bool>.Success("DOT and MC numbers updated successfully", true, 200);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponseModel<bool>.Fail($"Error updating DOT/MC numbers: {ex.Message}", 500);
+        }
     }
 
     // New methods for getting specific owner types with filtering and sorting

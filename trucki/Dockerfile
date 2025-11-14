@@ -36,6 +36,7 @@ COPY --from=build /src/order_template.html ./
 COPY --from=build /src/invoice_email_template.html ./
 COPY --from=build /src/onboarding_reminder_first_template.html ./
 COPY --from=build /src/onboarding_reminder_second_template.html ./
+COPY --from=build /src/driver_credentials_template.html ./
 COPY --from=build /src/trucki-c0df5-firebase-adminsdk-fbsvc-14d406ba99.json ./
 
 # Create a non-root user
