@@ -10,4 +10,5 @@ public interface IEmailService
     Task SendGenericEmailAsync(string toEmail, string subject, string htmlBody);
     Task SendFirstOnboardingReminderAsync(string toEmail, string name, List<string> pendingItems);
     Task SendSecondOnboardingReminderAsync(string toEmail, string name, List<string> pendingItems);
+    Task SendDriverCredentialsEmailAsync(string toEmail, string name, string email, string password, string dispatcherName);
 }

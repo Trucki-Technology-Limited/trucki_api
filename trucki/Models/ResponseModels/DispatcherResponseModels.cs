@@ -12,6 +12,8 @@ public class DispatcherResponseModel
     public string Address { get; set; }
     public string Country { get; set; }
     public string? ProfilePictureUrl { get; set; }
+    public string? DotNumber { get; set; }
+    public string? McNumber { get; set; }
     public DateTime CreatedAt { get; set; }
     public int TotalDrivers { get; set; }
     public int ActiveDrivers { get; set; }

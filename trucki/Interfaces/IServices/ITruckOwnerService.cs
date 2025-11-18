@@ -36,6 +36,9 @@ public interface ITruckOwnerService
     Task<ApiResponseModel<bool>> SetOrUpdateDriverCommission(string driverId, string dispatcherId, decimal commissionPercentage);
     Task<ApiResponseModel<DriverCommissionHistoryResponseModel>> GetDriverCommissionHistory(string driverId, string dispatcherId);
 
+    // DOT and MC number management
+    Task<ApiResponseModel<bool>> UpdateDispatcherDotMcNumbers(UpdateDispatcherDotMcNumbersRequestModel model);
+
     // New methods for getting specific owner types with filtering and sorting
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date");
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetTruckOwners(string? searchTerm = null, string? sortBy = "date");

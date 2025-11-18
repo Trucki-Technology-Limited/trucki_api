@@ -16,6 +16,14 @@ public class AddDispatcherRequestBody
     public string? BankAccountName { get; set; }
 }
 
+// Update dispatcher DOT and MC numbers
+public class UpdateDispatcherDotMcNumbersRequestModel
+{
+    public string DispatcherId { get; set; }
+    public string? DotNumber { get; set; }
+    public string? McNumber { get; set; }
+}
+
 // Initial driver creation for dispatcher
 public class AddDriverForDispatcherRequestModel
 {
