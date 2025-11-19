@@ -47,3 +47,9 @@ public class UpdateBankDetailsRequestBody
     public string BankAccountNumber { get; set; }
     public string BankAccountName { get; set; }
 }
+
+public class UploadPaymentMethodDocumentRequestBody
+{
+    public string Id { set; get; }
+    public string PaymentMethodDocumentUrl { get; set; }
+}

@@ -118,6 +118,12 @@ public class TruckOwnerService: ITruckOwnerService
         return res;
     }
 
+    public async Task<ApiResponseModel<bool>> UploadPaymentMethodDocument(string truckOwnerId, string paymentMethodDocumentUrl)
+    {
+        var res = await _ownerRepository.UploadPaymentMethodDocument(truckOwnerId, paymentMethodDocumentUrl);
+        return res;
+    }
+
     // DISPATCHER METHODS
 
     // UNIFIED FLEET OWNER REGISTRATION (Dispatcher + Transporter)
