@@ -483,6 +483,34 @@ public async Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId)
         };
     }
 
+    public async Task<ApiResponseModel<bool>> UploadPaymentMethodDocument(string truckOwnerId, string paymentMethodDocumentUrl)
+    {
+        var owner = await _context.TruckOwners.FindAsync(truckOwnerId);
+        if (owner == null)
+        {
+            return new ApiResponseModel<bool>
+            {
+                IsSuccessful = false,
+                Message = "Truck owner not found",
+                StatusCode = 404,
+                Data = false
+            };
+        }
+
+        owner.PaymentMethodDocumentUrl = paymentMethodDocumentUrl;
+
+        _context.TruckOwners.Update(owner);
+        await _context.SaveChangesAsync();
+
+        return new ApiResponseModel<bool>
+        {
+            IsSuccessful = true,
+            Message = "Payment method document uploaded successfully",
+            StatusCode = 200,
+            Data = true
+        };
+    }
+
     // New methods for getting specific owner types with filtering and sorting
     public async Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date")
     {
