@@ -287,7 +287,9 @@ public class TruckOwnerRepository:ITruckOwnerRepository
     bool isProfileSetupComplete = !string.IsNullOrEmpty(owner.ProfilePictureUrl)
         && !string.IsNullOrEmpty(owner.IdCardUrl);
 
-    bool hasBankDetails = owner.BankDetails != null;
+    bool hasBankDetails = owner.OwnerType == TruckOwnerType.Dispatcher
+        ? !string.IsNullOrEmpty(owner.PaymentMethodDocumentUrl)
+        : owner.BankDetails != null;
 
     // Check if dispatcher has provided DOT or MC numbers
     bool hasProvidedDotMcNumbers = owner.OwnerType == TruckOwnerType.Dispatcher &&
