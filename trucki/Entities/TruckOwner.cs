@@ -10,6 +10,7 @@ public class TruckOwner : BaseClass
     public string Address { set; get; }
     public string? IdCardUrl { set; get; }
     public string? ProfilePictureUrl { set; get; }
+    public string? PaymentMethodDocumentUrl { set; get; } // Void check or direct deposit form for dispatchers
     public string? BankDetailsId { set; get; }
     public BankDetails? BankDetails { set; get; }
     public List<Truck> trucks { set; get; }

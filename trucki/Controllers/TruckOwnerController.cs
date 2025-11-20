@@ -127,6 +127,21 @@ public async Task<ActionResult<ApiResponseModel<bool>>> UpdateBankDetails(
     return StatusCode(response.StatusCode, response);
 }
 
+[HttpPost("UploadPaymentMethodDocument")]
+[Authorize(Roles = "dispatcher")]
+public async Task<ActionResult<ApiResponseModel<bool>>> UploadPaymentMethodDocument(
+    [FromBody] UploadPaymentMethodDocumentRequestBody model)
+{
+    var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+    {
+        return Unauthorized();
+    }
+
+    var response = await _truckOwnerService.UploadPaymentMethodDocument(model.Id, model.PaymentMethodDocumentUrl);
+    return StatusCode(response.StatusCode, response);
+}
+
 [HttpGet("GetDispatchers")]
 [Authorize(Roles = "admin")]
 public async Task<ActionResult<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>>> GetDispatchers(
