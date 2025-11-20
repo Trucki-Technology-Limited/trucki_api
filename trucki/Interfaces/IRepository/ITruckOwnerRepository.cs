@@ -18,6 +18,7 @@ public interface ITruckOwnerRepository
     Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId);
     Task<ApiResponseModel<bool>> UploadIdCardAndProfilePicture(string truckOwnerId, string idCardUrl, string profilePictureUrl);
     Task<ApiResponseModel<bool>> UpdateBankDetails(string truckOwnerId, UpdateBankDetailsRequestBody model);
+    Task<ApiResponseModel<bool>> UploadPaymentMethodDocument(string truckOwnerId, string paymentMethodDocumentUrl);
 
     // New methods for getting specific owner types with filtering and sorting
     Task<ApiResponseModel<IEnumerable<AllTruckOwnerResponseModel>>> GetDispatchers(string? searchTerm = null, string? sortBy = "date");

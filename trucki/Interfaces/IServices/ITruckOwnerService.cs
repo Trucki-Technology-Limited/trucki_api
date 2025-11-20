@@ -18,6 +18,7 @@ public interface ITruckOwnerService
     Task<ApiResponseModel<bool>> UnblockTruckOwner(string truckOwnerId);
     Task<ApiResponseModel<bool>> UploadIdCardAndProfilePicture(string truckOwnerId, string idCardUrl, string profilePictureUrl);
     Task<ApiResponseModel<bool>> UpdateBankDetails(UpdateBankDetailsRequestBody model);
+    Task<ApiResponseModel<bool>> UploadPaymentMethodDocument(string truckOwnerId, string paymentMethodDocumentUrl);
 
     // UNIFIED FLEET OWNER METHODS (Dispatcher + Transporter)
     Task<ApiResponseModel<bool>> RegisterFleetOwner(AddDispatcherRequestBody model);
